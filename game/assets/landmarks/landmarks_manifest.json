@@ -1,0 +1,214 @@
+{
+ "_comment": "SKYRUSH landmarks - placement and lighting contract for the world unit. Map frame: X east, Z south, Y up (metres). anchor = the node's world position; rotation_y = the Godot Y rotation to apply (0 for the towers). The three bridges are modelled in a bridge-local frame: origin at the anchor, local +Y along the deck.",
+ "assets": [
+  {
+   "name": "oriental_pearl",
+   "glb": "res://assets/landmarks/oriental_pearl.glb",
+   "wrapper": "res://assets/landmarks/oriental_pearl.tscn",
+   "anchor": [
+    637.5,
+    0.0,
+    -634.9
+   ],
+   "rotation_y": 0.0,
+   "height_m": 468.0,
+   "notes": "Oriental Pearl Tower. The LED_Sphere_* meshes carry the LED dot skin; the wrapper (oriental_pearl.tscn) puts a ShaderMaterial on them (materials/opt_dots.gdshader): a 0.4 m dot grid with a 0.75 Hz chase wave, the colour cycled pink #FF3FA4 -> violet #8A3CFF -> blue #2E7BFF over 40 s, and the five small spheres at E5. The tubes carry a baked flood wash (warm #FFF1E0 at the foot, violet #7A4CFF up the shafts), a light ring every 10 m and a 2.4 m LED strip. The glass is #B0306A. NOTE: led_cycle.gd casts to StandardMaterial3D and skips ShaderMaterials - the sphere colour is driven by the wrapper (materials/opt_led.gd)."
+  },
+  {
+   "name": "pearl_ring",
+   "glb": "res://assets/landmarks/pearl_ring.glb",
+   "wrapper": "res://assets/landmarks/pearl_ring.tscn",
+   "anchor": [
+    748.0,
+    0.0,
+    -488.8
+   ],
+   "rotation_y": 0.0,
+   "height_m": 8.7,
+   "notes": "Pearl Ring skybridge, deck top Y = 6.7 m, girder soffit 5.7 m (5.5 m clearance kept). PearlRing_ColDeck-colonly is the trimesh collision ring; PearlRing_ColColumns / _ColStairs are the column and stair hulls."
+  },
+  {
+   "name": "jin_mao",
+   "glb": "res://assets/landmarks/jin_mao.glb",
+   "wrapper": "res://assets/landmarks/jin_mao.tscn",
+   "anchor": [
+    1133.0,
+    0.0,
+    -199.8
+   ],
+   "rotation_y": 0.0,
+   "height_m": 420.5,
+   "notes": "Jin Mao, 13 octagonal tiers. Use the wrapper scene: it applies the shared facade shader (materials/lujiazui_facade.tres) with this tower's building_seed. LED_JinMao_Edges is the gold #FFD27A setback wash (3.2 m tall); LED_JinMao_Crown is the gold-white lattice crown and mast (#FFE6A8, E3.5)."
+  },
+  {
+   "name": "swfc",
+   "glb": "res://assets/landmarks/swfc.glb",
+   "wrapper": "res://assets/landmarks/swfc.tscn",
+   "anchor": [
+    1262.2,
+    0.0,
+    -136.0
+   ],
+   "rotation_y": 0.0,
+   "height_m": 492.0,
+   "notes": "SWFC. Wrapper scene for the facade shader. LED_SWFC_Edges = the 2.4 m white arris + aperture outline (#CFE6FF, E3.5). The inverted-trapezoid aperture is 440-472 m; SWFC_Skywalk is the 100F beam at 474 m; a 4-floor 15.8 m podium sits at the base."
+  },
+  {
+   "name": "shanghai_tower",
+   "glb": "res://assets/landmarks/shanghai_tower.glb",
+   "wrapper": "res://assets/landmarks/shanghai_tower.tscn",
+   "anchor": [
+    1122.8,
+    0.0,
+    -42.5
+   ],
+   "rotation_y": 0.0,
+   "height_m": 632.0,
+   "notes": "Shanghai Tower, 120 twisted rings + crown fins to 632 m. Wrapper scene for the facade shader. LED_Tower_Bands = the white floor-band dots (#E6F2FF); LED_Tower_CornerLines = the three twisting corner lines (1.6 m, E3); LED_Tower_Notch = the 2.0 m V-notch line (E3.5); LED_Tower_Crown / _CrownTop = the lit crown faces and the ring on the sloped top edge."
+  },
+  {
+   "name": "lujiazui_backdrop",
+   "glb": "res://assets/landmarks/lujiazui_backdrop.glb",
+   "wrapper": "res://assets/landmarks/lujiazui_backdrop.tscn",
+   "anchor": [
+    748.0,
+    0.0,
+    -488.8
+   ],
+   "rotation_y": 0.0,
+   "height_m": 256.0,
+   "notes": "12 generic Lujiazui towers, 150-256 m, each with three setbacks, a crown cap and an antenna. Seven of them (IFC_A, IFC_B, HSBC, CMB, Aurora, IFC_C, Citi) carry cool-white LED_Crown_<name> edge lines and a crown ring. Every roof has a red aviation beacon (LED_Aviation_<name>, 1 Hz). The three LED ad screens are LED_Ad_IFC_C / _CMB / _Aurora (60 x 120 m, own 1024 x 576 ads, energy 2.5)."
+  },
+  {
+   "name": "dragon_pillar",
+   "glb": "res://assets/landmarks/dragon_pillar.glb",
+   "wrapper": "res://assets/landmarks/dragon_pillar.tscn",
+   "anchor": [
+    -1299.0,
+    0.0,
+    687.0
+   ],
+   "rotation_y": 0.0,
+   "height_m": 29.4,
+   "notes": "Nine-Dragon Pillar, D 5.0 m column with a 0.12 m displaced relief. The relief ships as base colour + normal (4096 x 8192) + a real ORM map (R = AO, G = roughness, B = metalness) and the glb carries a metallicRoughnessTexture. Flood_Base_1..4 stand on the plinth rim (r 3.1 m, y 0.65 m) and graze the column at 86 deg; LED_Pillar_Uplights are their lens housings and LED_Pillar_Plinth the warm line under the plinth lip."
+  },
+  {
+   "name": "nanpu_bridge",
+   "glb": "res://assets/landmarks/nanpu_bridge.glb",
+   "wrapper": "res://assets/landmarks/nanpu_bridge.tscn",
+   "anchor": [
+    1330.0,
+    0.0,
+    1430.0
+   ],
+   "rotation_y": -2.0203,
+   "height_m": 150.0,
+   "notes": "Nanpu Bridge in bridge-local frame: origin = main-span midpoint, local +Y towards Pudong (map axis 0.901, 0.434). Road Y = 45.5 midspan, 44.0 at the towers, 42.5 at the Puxi deck end. The carriageway comes from the roads unit; only the towers, cables, name sign and deck edge LEDs are here. The legs and the lower crossbeam carry a baked flood wash (LED_Nanpu_WashLow / _WashHigh) because the real floods never reach the 150 m tops; LED_Nanpu_DeckEdge is the 0.5 m blue line on both sides, LED_Nanpu_UnderStrip the orange strip under the deck. Flood_Nanpu_Leg_* = the 8 tower floods, Flood_Nanpu_Under_* the deck soffit."
+  },
+  {
+   "name": "lupu_bridge_far",
+   "glb": "res://assets/landmarks/lupu_bridge_far.glb",
+   "wrapper": "res://assets/landmarks/lupu_bridge_far.tscn",
+   "anchor": [
+    -300.0,
+    25.0,
+    2900.0
+   ],
+   "rotation_y": -1.5708,
+   "height_m": 108.0,
+   "notes": "Lupu Bridge far silhouette (backdrop only), local +Y = map +X. Use the wrapper scene: it turns the fog off for the LED_Lupu_* materials so the rainbow running lights read from the Nanpu deck 2.2 km away. The rainbow texture is a fully saturated hue sweep (S 1, V 1) at E1.4 - at E3.4 the arch clipped to white."
+  },
+  {
+   "name": "waibaidu_bridge",
+   "glb": "res://assets/landmarks/waibaidu_bridge.glb",
+   "wrapper": "res://assets/landmarks/waibaidu_bridge.tscn",
+   "anchor": [
+    -140.0,
+    4.0,
+    -966.0
+   ],
+   "rotation_y": -0.1456,
+   "height_m": 9.144,
+   "notes": "Waibaidu Bridge in bridge-local frame: origin at the creek centre, local +Y along the road (map axis 0.145, -0.989). 2 spans of 52.18 m, truss centres 12.192 m apart, the pier spans the full width under the trusses. The carriageway (11.2 m clear) comes from the roads unit; Waibaidu_ColDeck-colonly is the collision plate and Waibaidu_ColTruss-colonly the truss walls."
+  }
+ ],
+ "lights": [
+  {
+   "asset": "dragon_pillar",
+   "empty": "Flood_Base_",
+   "type": "spot",
+   "color": "#FFC98A",
+   "energy": 50.0,
+   "angle": 12.5,
+   "range": 34.0,
+   "shadow": false,
+   "note": "the four grazing warm uplights on the plinth rim, aimed up the column at 87 deg so the beam rakes the relief"
+  },
+  {
+   "asset": "dragon_pillar",
+   "empty": "Flood_Under_Deck",
+   "type": "spot",
+   "color": "#FFC98A",
+   "energy": 60.0,
+   "angle": 25.0,
+   "range": 30.0,
+   "shadow": false,
+   "note": "deck soffit light under the top deck"
+  },
+  {
+   "asset": "dragon_pillar",
+   "empty": "Flood_Wash_",
+   "type": "spot",
+   "color": "#FFC98A",
+   "energy": 75.0,
+   "angle": 35.0,
+   "range": 30.0,
+   "shadow": false,
+   "note": "the twelve wash lights: four at each of three heights (4, 13, 22 m), 6 m out and aimed horizontally at the column. A vertical beam on a vertical cylinder meets it at 0.05 of the cosine, so four uplights can only reach the bottom third; these light a 8 m band each, so the column reads warm silver from the plinth to the top deck."
+  },
+  {
+   "asset": "oriental_pearl",
+   "empty": "Flood_Base_",
+   "type": "spot",
+   "color": "#FFC98A",
+   "energy": 200.0,
+   "angle": 25.0,
+   "range": 60.0,
+   "shadow": false,
+   "note": "podium floods around the three tube feet"
+  },
+  {
+   "asset": "nanpu_bridge",
+   "empty": "Flood_Nanpu_Leg_",
+   "type": "spot",
+   "color": "#FFCEA6",
+   "energy": 120.0,
+   "angle": 12.5,
+   "range": 110.0,
+   "shadow": false,
+   "note": "4 per tower, 3 m outboard of each leg face at deck level, aimed up the leg (the baked wash carries the tops)"
+  },
+  {
+   "asset": "nanpu_bridge",
+   "empty": "Flood_Nanpu_Under_",
+   "type": "spot",
+   "color": "#FF8A2A",
+   "energy": 60.0,
+   "angle": 25.0,
+   "range": 50.0,
+   "shadow": false,
+   "note": "orange underside wash of the deck"
+  },
+  {
+   "asset": "waibaidu_bridge",
+   "empty": "Flood_Waibaidu_",
+   "type": "spot",
+   "color": "#FFC24D",
+   "energy": 80.0,
+   "angle": 12.5,
+   "range": 40.0,
+   "shadow": false,
+   "note": "4 per truss on the sidewalks, aimed at the steel"
+  }
+ ]
+}

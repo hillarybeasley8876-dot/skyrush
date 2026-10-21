@@ -1,0 +1,91 @@
+{
+  "meta": {
+    "name": "Tesla Roadster (2nd gen, revealed 2026-10-15) - SKYRUSH hero car blockout",
+    "frame": "metres; X = right, Y = forward, Z = up; origin = ground plane, centred between the axles",
+    "symmetry": "all X values are the RIGHT half (x >= 0); mirror to -x",
+    "confidence": "wheelbase from Top Gear via Wikipedia; everything else estimated from Tesla press photos (+-3..5 %)",
+    "sources": ["dl_pt/2026-Tesla-Roadster-official-gallery-02.jpg (side)", "...-22.jpg (top)", "...-23.jpg (rear)", "...-10.jpg (front)", "...reveal-13.jpg (x-ray top)"]
+  },
+  "dims": {
+    "length_body": 4.38,
+    "length_with_wing_deployed": 4.66,
+    "width_body_max": 1.98,
+    "width_front_fenders": 1.87,
+    "height_roof": 1.15,
+    "wheelbase": 2.825,
+    "track_front": 1.56,
+    "track_rear": 1.63,
+    "overhang_front": 0.877,
+    "overhang_rear": 0.677,
+    "ground_clearance_skirt": 0.12,
+    "white_body_lower_edge_z": 0.27
+  },
+  "wheels": {
+    "front": {"centre": [0.78, 1.4125, 0.3425], "tyre_diameter": 0.685, "tyre_width": 0.295, "rim_diameter": 0.508, "size": "295/30 R20", "arch_radius": 0.385},
+    "rear": {"centre": [0.815, -1.4125, 0.367], "tyre_diameter": 0.734, "tyre_width": 0.335, "rim_diameter": 0.533, "size": "335/30 R21", "arch_radius": 0.41}
+  },
+  "side_profile": {
+    "centreline_top": [[2.29, 0.485], [2.17, 0.525], [2.1, 0.545], [1.97, 0.59], [1.85, 0.635], [1.8, 0.645], [1.65, 0.69], [1.61, 0.7], [1.41, 0.77], [1.19, 0.842], [1.02, 0.905], [0.85, 0.962], [0.68, 1.017], [0.51, 1.067], [0.38, 1.1], [0.17, 1.138], [0.0, 1.147], [-0.17, 1.147], [-0.34, 1.14], [-0.46, 1.13], [-0.68, 1.112], [-0.85, 1.093], [-1.02, 1.067], [-1.19, 1.005], [-1.36, 0.952], [-1.53, 0.93], [-1.745, 0.915], [-1.9, 0.9], [-2.04, 0.883], [-2.09, 0.875]],
+    "fender_shoulder_line": [[2.25, 0.475], [2.1, 0.545], [1.97, 0.6], [1.87, 0.655], [1.7, 0.723], [1.53, 0.76], [1.36, 0.78], [1.2, 0.775], [1.05, 0.765], [0.7, 0.755], [0.2, 0.75], [-0.3, 0.79], [-0.8, 0.85], [-1.0, 0.88], [-1.15, 0.9], [-1.41, 0.92], [-1.7, 0.915], [-1.9, 0.9], [-2.09, 0.875]],
+    "dlo_top": [[0.9, 0.91], [0.68, 0.985], [0.54, 1.022], [0.34, 1.056], [0.07, 1.097], [-0.14, 1.097], [-0.41, 1.083], [-0.61, 1.063], [-0.82, 1.035], [-0.97, 1.015]],
+    "dlo_bottom": [[0.9, 0.91], [0.7, 0.845], [0.54, 0.805], [0.34, 0.8], [0.07, 0.828], [-0.14, 0.856], [-0.41, 0.889], [-0.61, 0.917], [-0.82, 0.964], [-0.97, 1.015]],
+    "door_front_cut": [[0.54, 0.98], [0.89, 0.652], [0.805, 0.285]],
+    "door_rear_cut": [[-0.34, 0.98], [-0.17, 0.33]],
+    "rocker": {"white_lower_edge_z": 0.27, "black_sill_bottom_z": 0.12, "y_from": 1.0, "y_to": -0.98, "sill_inset_x": 0.03},
+    "nose_face": {"y": 2.29, "z_bottom": 0.12, "z_top": 0.485, "splitter_tip_y": 2.31},
+    "tail_face": {"y": -2.09, "z_top": 0.875, "black_below_z": 0.59, "diffuser_fin_tip_y": -2.2}
+  },
+  "plan_outline_right": [[0.0, 2.29], [0.3, 2.275], [0.46, 2.245], [0.56, 2.21], [0.67, 2.09], [0.77, 1.93], [0.81, 1.85], [0.89, 1.8], [0.935, 1.72], [0.935, 1.1], [0.92, 1.03], [0.91, 0.7], [0.92, 0.28], [0.915, -0.33], [0.9, -0.95], [0.93, -1.0], [0.985, -1.08], [0.99, -1.41], [0.985, -1.74], [0.97, -1.78], [0.93, -1.84], [0.86, -1.95], [0.8, -2.05], [0.72, -2.09], [0.0, -2.09]],
+  "plan_outline_note": "max extent at any height INCLUDING black arch lips/lower body (covers the tyres); the white upper body is narrower, see plan_white_upper_right",
+  "plan_white_upper_right": [[0.0, 2.29], [0.3, 2.275], [0.46, 2.245], [0.56, 2.21], [0.67, 2.09], [0.77, 1.87], [0.87, 1.61], [0.89, 1.41], [0.9, 1.3], [0.88, 1.1], [0.9, 0.7], [0.92, 0.28], [0.915, -0.33], [0.895, -0.95], [0.9, -1.15], [0.955, -1.36], [0.96, -1.46], [0.88, -1.56], [0.86, -1.66], [0.84, -1.77], [0.835, -1.9], [0.82, -1.97], [0.72, -2.07], [0.0, -2.09]],
+  "canopy_glass_plan_right": [[0.0, 1.61], [0.5, 1.59], [0.63, 1.46], [0.63, 1.1], [0.61, 0.95], [0.51, 0.43], [0.47, 0.0], [0.46, -0.59], [0.435, -1.1], [0.38, -1.3], [0.32, -1.51], [0.25, -1.71], [0.24, -1.745], [0.0, -1.745]],
+  "side_glass_plan": {
+    "x_bottom_edge": 0.8,
+    "x_top_edge": 0.63,
+    "y_front_tip": 0.9,
+    "y_rear_tip": -0.97
+  },
+  "roof": {
+    "t_top_front_y": 0.38,
+    "t_top_rear_y": -0.46,
+    "t_bar_half_width": 0.12,
+    "roof_rail_x": [0.47, 0.62]
+  },
+  "panel_lines": {
+    "hood_side_edge": [[0.6, 2.17], [0.47, 1.61]],
+    "vent_hood_front_y": 1.8,
+    "cowl_y": 1.61,
+    "headlamp_panel_rear_y": 1.97,
+    "wing_front_edge_y": -1.745
+  },
+  "sections": [
+    {"id": "S01", "y": 2.25, "K": [[0, 0.12], [0.38, 0.12], [0.43, 0.16], [0.44, 0.3], [0.44, 0.4], [0.435, 0.45], [0.43, 0.485], [0.43, 0.485], [0.3, 0.49], [0, 0.497]], "bands": "BBBBWWWWW", "well": null, "note": "nose; light bar on the face at z 0.44"},
+    {"id": "S02", "y": 2.1, "K": [[0, 0.12], [0.55, 0.12], [0.64, 0.17], [0.665, 0.3], [0.665, 0.4], [0.665, 0.42], [0.655, 0.5], [0.62, 0.545], [0.59, 0.547], [0, 0.545]], "bands": "BBBBWWWWW", "well": null, "note": "headlamp triangle x 0.56-0.665 z 0.47-0.545"},
+    {"id": "S03", "y": 1.85, "K": [[0, 0.12], [0.62, 0.12], [0.8, 0.18], [0.81, 0.3], [0.81, 0.42], [0.775, 0.6], [0.7, 0.665], [0.7, 0.665], [0.53, 0.655], [0, 0.635]], "bands": "BBBBWWWWW", "well": null, "note": "fender ridge K6 x 0.70, hood edge K8 x 0.53"},
+    {"id": "S04", "y": 1.65, "K": [[0, 0.12], [0.8, 0.12], [0.935, 0.25], [0.935, 0.45], [0.935, 0.646], [0.88, 0.69], [0.78, 0.735], [0.78, 0.735], [0.48, 0.7], [0, 0.69]], "bands": "BBWWWWWWW", "well": "front", "note": "front arch, front half"},
+    {"id": "S05", "y": 1.41, "K": [[0, 0.12], [0.82, 0.12], [0.935, 0.25], [0.935, 0.5], [0.935, 0.728], [0.9, 0.76], [0.84, 0.785], [0.72, 0.775], [0.7, 0.776], [0, 0.77]], "bands": "BBWWWWWWG", "well": "front", "note": "front axle; windshield base region"},
+    {"id": "S06", "y": 1.05, "K": [[0, 0.12], [0.86, 0.12], [0.89, 0.27], [0.92, 0.5], [0.92, 0.7], [0.9, 0.765], [0.7, 0.85], [0.64, 0.875], [0.63, 0.878], [0, 0.886]], "bands": "BBWWWWWWG", "well": null, "note": "A-pillar base"},
+    {"id": "S07", "y": 0.7, "K": [[0, 0.12], [0.86, 0.12], [0.89, 0.27], [0.93, 0.5], [0.93, 0.72], [0.91, 0.755], [0.8, 0.845], [0.66, 0.98], [0.59, 0.996], [0, 1.017]], "bands": "BBWWWWGWG", "well": null, "note": "door; A-pillar between K7 and K8"},
+    {"id": "S08", "y": 0.2, "K": [[0, 0.12], [0.86, 0.12], [0.89, 0.27], [0.93, 0.5], [0.935, 0.73], [0.915, 0.75], [0.8, 0.818], [0.63, 1.08], [0.47, 1.12], [0, 1.14]], "bands": "BBWWWWGWG", "well": null, "note": "T-top glass x 0.12-0.47, black T-bar x < 0.12"},
+    {"id": "S09", "y": -0.3, "K": [[0, 0.12], [0.86, 0.12], [0.89, 0.27], [0.93, 0.5], [0.935, 0.76], [0.91, 0.79], [0.8, 0.873], [0.64, 1.086], [0.47, 1.128], [0, 1.145]], "bands": "BBWWWWGWG", "well": null, "note": "T-top glass x 0.12-0.47, black T-bar x < 0.12"},
+    {"id": "S10", "y": -0.8, "K": [[0, 0.12], [0.85, 0.12], [0.88, 0.27], [0.905, 0.5], [0.905, 0.8], [0.88, 0.85], [0.79, 0.957], [0.7, 1.038], [0.45, 1.09], [0, 1.1]], "bands": "BBWWWWGWG", "well": null, "note": "fixed rear quarter glass"},
+    {"id": "S11", "y": -1.15, "K": [[0, 0.12], [0.86, 0.12], [0.95, 0.27], [0.985, 0.5], [0.985, 0.62], [0.95, 0.7], [0.9, 0.85], [0.74, 0.96], [0.43, 1.012], [0, 1.02]], "bands": "BBWWWWWWG", "well": "rear", "note": "buttress ridge = K7"},
+    {"id": "S12", "y": -1.41, "K": [[0, 0.12], [0.86, 0.12], [0.96, 0.27], [0.99, 0.5], [0.985, 0.62], [0.94, 0.78], [0.89, 0.86], [0.72, 0.935], [0.35, 0.945], [0, 0.95]], "bands": "BBWWWWWWG", "well": "rear", "note": "rear axle; widest station"},
+    {"id": "S13", "y": -1.78, "K": [[0, 0.12], [0.8, 0.12], [0.93, 0.3], [0.97, 0.45], [0.97, 0.6], [0.92, 0.7], [0.87, 0.85], [0.78, 0.905], [0.7, 0.907], [0, 0.912]], "bands": "BBBBWWWWW", "well": "rear", "note": "deck = stowed wing main element x < 0.78"},
+    {"id": "S14", "y": -2.0, "K": [[0, 0.12], [0.62, 0.12], [0.8, 0.3], [0.84, 0.59], [0.845, 0.7], [0.845, 0.82], [0.8, 0.865], [0.8, 0.865], [0.7, 0.875], [0, 0.885]], "bands": "BBBWWWWWW", "well": null, "note": "light bar on rear face z 0.843-0.857"},
+    {"id": "S15", "y": -2.09, "K": [[0, 0.12], [0.55, 0.12], [0.7, 0.3], [0.72, 0.59], [0.72, 0.7], [0.72, 0.82], [0.7, 0.86], [0.7, 0.86], [0.65, 0.87], [0, 0.875]], "bands": "BBBWWWWWW", "well": null, "note": "rear face (flat cap); corners chamfered back to S14"}
+  ],
+  "parts": {
+    "rear_main_nozzles": {"names": ["Nozzle_R1", "Nozzle_R2", "Nozzle_R3", "Nozzle_R4"], "x": [-0.36, -0.12, 0.12, 0.36], "y": -2.085, "z": 0.5, "dir": [0, -1, 0], "bore_d": 0.055, "bezel_od": 0.08, "recess": 0.03, "trim": "Thrust+Rocket"},
+    "perimeter_nozzles": [{"name": "Nozzle_P1", "pos": [-0.57, 1.95, 0.15], "dir": [0, 0, -1], "role": "front-left lift (est.)"}, {"name": "Nozzle_P2", "pos": [0.57, 1.95, 0.15], "dir": [0, 0, -1], "role": "front-right lift (est.)"}, {"name": "Nozzle_P3", "pos": [-0.73, -1.95, 0.15], "dir": [0, 0, -1], "role": "rear-left lift (est.)"}, {"name": "Nozzle_P4", "pos": [0.73, -1.95, 0.15], "dir": [0, 0, -1], "role": "rear-right lift (est.)"}, {"name": "Nozzle_P5", "pos": [-0.68, 2.02, 0.3], "dir": [-1, 0, 0], "role": "front yaw, fires left (unverified location)"}, {"name": "Nozzle_P6", "pos": [0.68, 2.02, 0.3], "dir": [1, 0, 0], "role": "front yaw, fires right (unverified location)"}],
+    "fans": {"names": ["Fan_R1", "Fan_R2", "Fan_R3", "Fan_R4"], "x": [-0.45, -0.15, 0.15, 0.45], "y": -2.05, "z": 0.3, "d": 0.24, "dir": [0, -1, 0]},
+    "light_bar_rear": {"x_half": 0.845, "y": -2.092, "z_centre": 0.85, "height": 0.014},
+    "light_bar_front": {"x_half": 0.7, "follows_nose_face": true, "z_centre": 0.44, "height": 0.012},
+    "headlamps": {"pos": [0.63, 2.12, 0.47], "panel": "triangle ~0.20 m, drops 25 deg to reveal lamp"},
+    "plate": {"centre": [0.0, -2.095, 0.66], "size": [0.305, 0.152], "text": "RDSTR"},
+    "side_marker_amber": {"pos": [0.915, 1.02, 0.655], "size": [0.12, 0.018]},
+    "rear_reflector_red": {"pos": [0.84, -2.08, 0.61], "size": [0.12, 0.012]},
+    "wing": {"main_span_half": 0.78, "deployed_span_half": 0.9, "chord_total": 0.52, "slat_chord": 0.16, "endplate_bottom_z": 0.81, "endplate_cant_deg": 15, "struts_x": 0.44, "poses": {"stowed": {"le": [-1.745, 0.913], "te": [-2.09, 0.877], "pitch_deg": 0}, "low_drag": {"le": [-1.87, 1.03], "te": [-2.37, 1.04], "pitch_deg": 1}, "high_downforce": {"le": [-1.87, 0.97], "te": [-2.37, 1.1], "pitch_deg": 15}, "air_brake": {"le": [-1.95, 0.93], "te": [-2.21, 1.36], "pitch_deg": 60}}}
+  },
+  "sections_keypoints_legend": "K0 bottom centre, K1 floor outer, K2 sill top, K3 lower side, K4 upper side, K5 shoulder crease, K6 beltline, K7 side-glass top, K8 roof-glass edge, K9 top centre; bands[i] = material between K[i] and K[i+1]: B black trim, W Ano White, G gold glass; well = this station is crossed by a wheel well (cut later with a cylinder boolean)"
+}

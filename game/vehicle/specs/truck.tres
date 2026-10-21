@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="CarSpec" format=3]
+
+[ext_resource type="Script" path="res://vehicle/car_spec.gd" id="1_pq3mt"]
+
+[resource]
+script = ExtResource("1_pq3mt")
+id = &"truck"
+display_name = "Box Truck"
+mass = 9000.0
+center_of_mass = Vector3(0, 0.53999996, 0)
+inertia = Vector3(29159.475, 24564.805, 9528.674)
+body_size = Vector3(2.35, 2.6799998, 5.63)
+body_center_y = 1.9599999
+max_health = 150.0
+wheel_mounts = Array[Vector3]([Vector3(-0.92, 0.7934321, -2.75), Vector3(0.92, 0.7934321, -2.75), Vector3(-0.92, 0.7934321, 1.85), Vector3(0.92, 0.7934321, 1.85)])
+wheel_radii = Array[float]([0.45, 0.45, 0.45, 0.45])
+spring_k = 331578.7338942644
+damp_bump = 21789.466670058537
+damp_rebound = 29842.0956568193
+arb_front = 132631.49355770575
+arb_rear = 94736.78111264696
+bumpstop_k = 1421051.7166897045
+susp_max = 284210.3433379409
+top_speed = 30.555555555555554
+accel = 3.5
+brake_accel = 11.0
+mu_front = 1.25
+mu_rear = 1.25
+visual_scene_path = "res://assets/cars/npc/truck.glb"

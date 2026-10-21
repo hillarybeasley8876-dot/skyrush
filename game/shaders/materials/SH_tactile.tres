@@ -1,0 +1,59 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/concrete_stained.gdshader" id="1_p4lj7"]
+[ext_resource type="Texture2D" path="res://assets/textures/TactilePaving003/TactilePaving003_diff.jpg" id="2_lsr51"]
+[ext_resource type="Texture2D" path="res://assets/textures/Leaking004/Leaking004_opacity.jpg" id="3_yriau"]
+[ext_resource type="Texture2D" path="res://assets/textures/TactilePaving003/TactilePaving003_nor_gl.jpg" id="4_42rgm"]
+[ext_resource type="Texture2D" path="res://assets/textures/TactilePaving003/TactilePaving003_rough.jpg" id="5_2rnsh"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_s36fe"]
+seed = 71
+frequency = 0.03
+fractal_octaves = 3
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_m12p7"]
+width = 128
+height = 1024
+noise = SubResource("FastNoiseLite_s36fe")
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_qyct4"]
+seed = 61
+frequency = 0.06
+fractal_octaves = 4
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_xuie2"]
+noise = SubResource("FastNoiseLite_qyct4")
+seamless = true
+bump_strength = 2.0
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_p4lj7")
+shader_parameter/concrete_tint = Color(1, 1, 1, 1)
+shader_parameter/splash_factor = 0.0
+shader_parameter/albedo_texture = ExtResource("2_lsr51")
+shader_parameter/normal_texture = ExtResource("4_42rgm")
+shader_parameter/roughness_texture = ExtResource("5_2rnsh")
+shader_parameter/detail_texture = ExtResource("2_lsr51")
+shader_parameter/drip_texture = ExtResource("3_yriau")
+shader_parameter/detail_mask = SubResource("NoiseTexture2D_m12p7")
+shader_parameter/uv_scale = 0.8333333333333334
+shader_parameter/detail_scale = 3.0
+shader_parameter/detail_amount = 0.35
+shader_parameter/tex_mean = null
+shader_parameter/base_color = Color(0.7882353, 0.7058824, 0.22745098, 1)
+shader_parameter/albedo_mul = 1.0
+shader_parameter/streak_noise = SubResource("NoiseTexture2D_xuie2")
+shader_parameter/streak_amount = 0.15
+shader_parameter/streak_scale = 0.3
+shader_parameter/drip_amount = 0.0
+shader_parameter/drip_lo_m = null
+shader_parameter/drip_hi_m = null
+shader_parameter/splash_height_m = 0.03
+shader_parameter/splash_darken = 0.1
+shader_parameter/wet_roughness = 0.4
+shader_parameter/normal_scale = null
+shader_parameter/detail_mean = null
+shader_parameter/course_height_m = null
+shader_parameter/course_width_m = null
+shader_parameter/course_joint = null

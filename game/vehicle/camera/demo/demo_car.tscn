@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://vehicle/camera/demo/demo_car.gd" id="1_car"]
+
+[node name="DemoCar" type="RigidBody3D"]
+script = ExtResource("1_car")

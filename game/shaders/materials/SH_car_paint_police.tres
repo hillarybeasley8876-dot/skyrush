@@ -1,0 +1,53 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/car_paint.gdshader" id="1_817q5"]
+[ext_resource type="Texture2D" path="res://assets/textures/SurfaceImperfections001/SurfaceImperfections001_opacity.jpg" id="2_hay6d"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_cmsin"]
+seed = 9
+frequency = 0.06
+fractal_octaves = 4
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_elp7n"]
+width = 256
+height = 256
+noise = SubResource("FastNoiseLite_cmsin")
+seamless = true
+as_normal_map = true
+bump_strength = 2.0
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_bp2y7"]
+seed = 5
+frequency = 0.06
+fractal_octaves = 4
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_ng4km"]
+width = 256
+height = 256
+noise = SubResource("FastNoiseLite_bp2y7")
+seamless = true
+as_normal_map = true
+bump_strength = 2.0
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_817q5")
+shader_parameter/base_color = Color(0.9490196, 0.95686275, 0.9607843, 1)
+shader_parameter/metallic_amount = 0.0
+shader_parameter/base_roughness = 0.35
+shader_parameter/flake_strength = 0.0
+shader_parameter/grime_amount = 0.35
+shader_parameter/clearcoat_amount = 1.0
+shader_parameter/grime_height_m = 0.45
+shader_parameter/grime_color = Color(0.18039216, 0.16470589, 0.14901961, 1)
+shader_parameter/clearcoat_roughness_map = ExtResource("2_hay6d")
+shader_parameter/clearcoat_detail_scale = 0.5
+shader_parameter/clearcoat_breakup = 0.06
+shader_parameter/panel_normal_strength = 0.25
+shader_parameter/peel_normal = SubResource("NoiseTexture2D_ng4km")
+shader_parameter/peel_scale = 6.0
+shader_parameter/peel_strength = 0.1
+shader_parameter/flake_normal = SubResource("NoiseTexture2D_elp7n")
+shader_parameter/flake_scale = 60.0
+shader_parameter/clearcoat_rough = 0.06
+shader_parameter/use_livery = false

@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="CarSpec" format=3]
+
+[ext_resource type="Script" path="res://vehicle/car_spec.gd" id="1_acebk"]
+
+[resource]
+script = ExtResource("1_acebk")
+id = &"interceptor"
+display_name = "Interceptor"
+center_of_mass = Vector3(0, 0.432, 0)
+inertia = Vector3(3682.0574, 3616.65, 829.62305)
+body_size = Vector3(1.992667, 1.1265004, 4.6889334)
+body_center_y = 0.6782501861453056
+max_health = 70.0
+wheel_mounts = Array[Vector3]([Vector3(-0.815, 0.7034321, -1.45), Vector3(0.815, 0.7034321, -1.45), Vector3(-0.815, 0.7034321, 1.45), Vector3(0.815, 0.7034321, 1.45)])
+wheel_radii = Array[float]([0.36, 0.36, 0.36, 0.36])
+spring_k = 69999.95493323359
+damp_bump = 4599.99851923458
+damp_rebound = 6299.997971995185
+arb_front = 27999.981973293434
+arb_rear = 19999.987123781026
+bumpstop_k = 299999.80685671535
+susp_max = 59999.96137134307
+top_speed = 80.55555555555556
+accel = 16.0
+brake_accel = 17.0
+mu_front = 1.48
+mu_rear = 1.45
+visual_scene_path = "res://assets/cars/npc/police_interceptor.glb"

@@ -1,0 +1,44 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/soffit_blue.gdshader" id="1_mxan7"]
+[ext_resource type="Texture2D" path="res://assets/textures/concrete/concrete_diff.jpg" id="2_s0b8o"]
+[ext_resource type="Texture2D" path="res://assets/textures/concrete/concrete_ao.jpg" id="3_i271o"]
+[ext_resource type="Texture2D" path="res://assets/textures/concrete/concrete_nor_gl.jpg" id="4_323kc"]
+[ext_resource type="Texture2D" path="res://assets/textures/Leaking004/Leaking004_opacity.jpg" id="5_8uew5"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_s2fhi"]
+seed = 51
+frequency = 0.09
+fractal_octaves = 4
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_takd3"]
+noise = SubResource("FastNoiseLite_s2fhi")
+seamless = true
+bump_strength = 2.0
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_mxan7")
+shader_parameter/wash_color = Color(0.13725491, 0.34117648, 0.9529412, 1)
+shader_parameter/strip_color = Color(0.3529412, 0.23921569, 1, 1)
+shader_parameter/wash_energy = 0.9
+shader_parameter/strip_energy = 4.5
+shader_parameter/wash_falloff = 0.45
+shader_parameter/soffit_width_m = 15.4
+shader_parameter/strip_width_m = 0.05
+shader_parameter/core_whiten = 0.3
+shader_parameter/albedo_texture = ExtResource("2_s0b8o")
+shader_parameter/normal_texture = ExtResource("4_323kc")
+shader_parameter/ao_texture = ExtResource("3_i271o")
+shader_parameter/stain_texture = ExtResource("5_8uew5")
+shader_parameter/tex_mean = null
+shader_parameter/base_color = Color(0.43137255, 0.42352942, 0.40784314, 1)
+shader_parameter/uv_scale = 1.0
+shader_parameter/grime_noise = SubResource("NoiseTexture2D_takd3")
+shader_parameter/grime_amount = 0.4
+shader_parameter/joint_spacing_m = 1.2
+shader_parameter/joint_width_m = 0.07
+shader_parameter/joint_v = 0.25
+shader_parameter/joint_width_v = 0.002
+shader_parameter/rib_light = 0.12
+shader_parameter/stain_amount = 0.7

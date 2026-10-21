@@ -1,0 +1,15 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/landmarks/lupu_bridge_far.glb" id="1_model"]
+[ext_resource type="Script" path="res://assets/landmarks/materials/led_unfog.gd" id="2_unfog"]
+[ext_resource type="Script" path="res://assets/landmarks/materials/aviation_blink.gd" id="3_aviation"]
+
+[node name="LupuBridge" type="Node3D"]
+
+[node name="Model" parent="." instance=ExtResource("1_model")]
+
+[node name="LedUnfog" type="Node" parent="."]
+script = ExtResource("2_unfog")
+
+[node name="Aviation" type="Node" parent="."]
+script = ExtResource("3_aviation")

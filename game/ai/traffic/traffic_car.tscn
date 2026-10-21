@@ -1,0 +1,16 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://ai/traffic/traffic_car.gd" id="1_car"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_car"]
+size = Vector3(1.85, 1.45, 4.6)
+
+[node name="TrafficCar" type="RigidBody3D"]
+collision_layer = 2
+collision_mask = 23
+mass = 1500.0
+script = ExtResource("1_car")
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.725, 0)
+shape = SubResource("BoxShape3D_car")

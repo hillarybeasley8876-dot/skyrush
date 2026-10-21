@@ -1,0 +1,61 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/concrete_stained.gdshader" id="1_4w3ys"]
+[ext_resource type="Texture2D" path="res://assets/textures/concrete_wall_008/concrete_wall_008_diff.jpg" id="2_s5vaw"]
+[ext_resource type="Texture2D" path="res://assets/textures/concrete_wall_008/concrete_wall_008_ao.jpg" id="3_grfg3"]
+[ext_resource type="Texture2D" path="res://assets/textures/Leaking004/Leaking004_opacity.jpg" id="4_7pw83"]
+[ext_resource type="Texture2D" path="res://assets/textures/concrete_wall_008/concrete_wall_008_nor_gl.jpg" id="5_ewsq8"]
+[ext_resource type="Texture2D" path="res://assets/textures/concrete_wall_008/concrete_wall_008_rough.jpg" id="6_6n65v"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_jm11y"]
+seed = 71
+frequency = 0.03
+fractal_octaves = 3
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_etj6f"]
+width = 128
+height = 1024
+noise = SubResource("FastNoiseLite_jm11y")
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_fpqb2"]
+seed = 61
+frequency = 0.06
+fractal_octaves = 4
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_alkry"]
+noise = SubResource("FastNoiseLite_fpqb2")
+seamless = true
+bump_strength = 2.0
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_4w3ys")
+shader_parameter/concrete_tint = Color(1, 1, 1, 1)
+shader_parameter/splash_factor = 1.0
+shader_parameter/albedo_texture = ExtResource("2_s5vaw")
+shader_parameter/normal_texture = ExtResource("5_ewsq8")
+shader_parameter/roughness_texture = ExtResource("6_6n65v")
+shader_parameter/ao_texture = ExtResource("3_grfg3")
+shader_parameter/detail_texture = ExtResource("2_s5vaw")
+shader_parameter/drip_texture = ExtResource("4_7pw83")
+shader_parameter/detail_mask = SubResource("NoiseTexture2D_etj6f")
+shader_parameter/uv_scale = 0.36900369003690037
+shader_parameter/detail_scale = 3.0
+shader_parameter/detail_amount = 0.35
+shader_parameter/tex_mean = null
+shader_parameter/base_color = Color(0.47843137, 0.47058824, 0.45490196, 1)
+shader_parameter/albedo_mul = 1.0
+shader_parameter/streak_noise = SubResource("NoiseTexture2D_alkry")
+shader_parameter/streak_amount = 0.22
+shader_parameter/streak_scale = 0.3
+shader_parameter/drip_amount = 0.25
+shader_parameter/drip_lo_m = 1.8
+shader_parameter/drip_hi_m = 6.0
+shader_parameter/splash_height_m = 0.35
+shader_parameter/splash_darken = 0.3
+shader_parameter/wet_roughness = 0.55
+shader_parameter/normal_scale = null
+shader_parameter/detail_mean = null
+shader_parameter/course_height_m = null
+shader_parameter/course_width_m = null
+shader_parameter/course_joint = null

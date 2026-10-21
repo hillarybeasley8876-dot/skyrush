@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://ai/police/police_car.gd" id="1"]
+[ext_resource type="Script" path="res://vehicle/car_visual.gd" id="2"]
+
+[node name="PoliceCar" type="RigidBody3D"]
+collision_layer = 2
+collision_mask = 7
+script = ExtResource("1")
+team = 2
+
+[node name="Visual" type="Node3D" parent="."]
+script = ExtResource("2")

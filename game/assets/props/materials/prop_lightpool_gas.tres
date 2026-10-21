@@ -1,0 +1,16 @@
+[gd_resource type="StandardMaterial3D" load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/props/_tex/prop_lightpool_gas.png" id="1_pool"]
+
+[resource]
+resource_name = "Prop_LightPoolGas"
+albedo_texture = ExtResource("1_pool")
+albedo_color = Color(0, 0, 0, 1)
+transparency = 1
+blend_mode = 1
+shading_mode = 0
+roughness = 0.9
+emission_enabled = true
+emission_texture = ExtResource("1_pool")
+emission = Color(1, 0.957, 0.91, 1)
+emission_energy_multiplier = 0.7

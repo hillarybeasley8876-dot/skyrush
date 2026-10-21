@@ -1,0 +1,23 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/hologram_billboard.gdshader" id="1_rmddo"]
+
+[sub_resource type="Gradient" id="Gradient_okg63"]
+colors = PackedColorArray(0.043137256, 0.11764706, 0.22745098, 1, 0.09803922, 0.9019608, 1, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_6wbta"]
+gradient = SubResource("Gradient_okg63")
+width = 512
+height = 512
+fill_to = Vector2(1, 1)
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_rmddo")
+shader_parameter/emission_texture = SubResource("GradientTexture2D_6wbta")
+shader_parameter/scan_lines = 220.0
+shader_parameter/scan_speed = 0.6
+shader_parameter/chroma_px = 2.0
+shader_parameter/glitch_rate = 0.08
+shader_parameter/led_grid = Vector2(320, 180)
+shader_parameter/edge_fade = 0.04

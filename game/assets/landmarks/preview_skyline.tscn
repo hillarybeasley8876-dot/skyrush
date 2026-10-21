@@ -1,0 +1,79 @@
+[gd_scene load_steps=18 format=3]
+
+[ext_resource type="Script" path="res://assets/landmarks/materials/preview_skyline.gd" id="0_setup"]
+[ext_resource type="Script" path="res://assets/landmarks/materials/landmark_lights.gd" id="0_lights"]
+[ext_resource type="PackedScene" path="res://assets/landmarks/oriental_pearl.tscn" id="1"]
+[ext_resource type="PackedScene" path="res://assets/landmarks/pearl_ring.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://assets/landmarks/jin_mao.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://assets/landmarks/swfc.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://assets/landmarks/shanghai_tower.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://assets/landmarks/lujiazui_backdrop.tscn" id="6"]
+[ext_resource type="PackedScene" path="res://assets/landmarks/dragon_pillar.tscn" id="7"]
+[ext_resource type="PackedScene" path="res://assets/landmarks/nanpu_bridge.tscn" id="8"]
+[ext_resource type="PackedScene" path="res://assets/landmarks/lupu_bridge_far.tscn" id="9"]
+[ext_resource type="PackedScene" path="res://assets/landmarks/waibaidu_bridge.tscn" id="10"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ground"]
+size = Vector2(8000, 8000)
+
+[sub_resource type="StandardMaterial3D" id="Mat_ground"]
+albedo_color = Color(0.035, 0.036, 0.045, 1)
+roughness = 0.5
+metallic_specular = 0.4
+
+[node name="Skyline" type="Node3D"]
+script = ExtResource("0_setup")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+
+[node name="Moon" type="DirectionalLight3D" parent="."]
+light_color = Color(0.55, 0.66, 1, 1)
+light_energy = 0.35
+shadow_enabled = true
+
+[node name="Ground" type="MeshInstance3D" parent="."]
+mesh = SubResource("PlaneMesh_ground")
+surface_material_override/0 = SubResource("Mat_ground")
+
+[node name="Lights" type="Node" parent="."]
+script = ExtResource("0_lights")
+
+[node name="OrientalPearl" parent="." instance=ExtResource("1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 637.5, 0, -634.9)
+
+[node name="PearlRing" parent="." instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 748, 0, -488.8)
+
+[node name="JinMao" parent="." instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1133, 0, -199.8)
+
+[node name="SWFC" parent="." instance=ExtResource("4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1262.2, 0, -136)
+
+[node name="ShanghaiTower" parent="." instance=ExtResource("5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1122.8, 0, -42.5)
+
+[node name="LujiazuiBackdrop" parent="." instance=ExtResource("6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 748, 0, -488.8)
+
+[node name="DragonPillar" parent="." instance=ExtResource("7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1299, 0, 687)
+
+[node name="NanpuBridge" parent="." instance=ExtResource("8")]
+transform = Transform3D(-0.4331, 0, -0.9013, 0, 1, 0, 0.9013, 0, -0.4331, 1330, 0, 1430)
+
+[node name="LupuBridge" parent="." instance=ExtResource("9")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -300, 25, 2900)
+
+[node name="WaibaiduBridge" parent="." instance=ExtResource("10")]
+transform = Transform3D(0.9894, 0, -0.1451, 0, 1, 0, 0.1451, 0, 0.9894, -140, 4, -966)
+
+[node name="ProbeLujiazui" type="ReflectionProbe" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 900, 120, -430)
+size = Vector3(1000, 700, 1000)
+bake_distance = 900.0
+
+[node name="ProbePillar" type="ReflectionProbe" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1299, 12, 687)
+size = Vector3(12, 32, 12)
+bake_distance = 60.0

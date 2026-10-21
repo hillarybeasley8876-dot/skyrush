@@ -1,0 +1,24 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/glass_tinted.gdshader" id="1_vo6hh"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_yqhrq"]
+seed = 33
+frequency = 0.08
+fractal_octaves = 4
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_ogvfw"]
+noise = SubResource("FastNoiseLite_yqhrq")
+seamless = true
+bump_strength = 2.0
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_vo6hh")
+shader_parameter/tint_color = Color(0.039215688, 0.05490196, 0.07058824, 1)
+shader_parameter/base_alpha = 0.72
+shader_parameter/fresnel_power = 3.0
+shader_parameter/fresnel_opacity = 0.95
+shader_parameter/roughness_value = 0.08
+shader_parameter/grime_amount = 0.25
+shader_parameter/grime_noise = SubResource("NoiseTexture2D_ogvfw")

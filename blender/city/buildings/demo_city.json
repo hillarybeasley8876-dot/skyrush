@@ -1,0 +1,293 @@
+{
+ "version": 1,
+ "name": "buildings_demo",
+ "window": {
+  "x_min": -60,
+  "x_max": 600,
+  "z_min": -60,
+  "z_max": 260
+ },
+ "roads": [
+  {
+   "id": "demo_ew",
+   "name": "示范路",
+   "name_en": "Demo Ave",
+   "kind": "surface",
+   "points": [
+    [
+     -40,
+     0.0,
+     100
+    ],
+    [
+     580,
+     0.0,
+     100
+    ]
+   ],
+   "spline": "linear",
+   "lanes_fwd": 2,
+   "lanes_back": 2,
+   "lane_width": 3.5,
+   "median": 0,
+   "shoulder": 0.5,
+   "sidewalk": 4.0,
+   "speed_kmh": 40,
+   "style": {
+    "parapet": "none",
+    "lamps": "side",
+    "trees": "plane"
+   }
+  }
+ ],
+ "junctions": [],
+ "water": [],
+ "blocks": [
+  {
+   "id": "d_shikumen",
+   "district": "D4",
+   "polygon": [
+    [
+     0,
+     88
+    ],
+    [
+     120,
+     88
+    ],
+    [
+     120,
+     0
+    ],
+    [
+     0,
+     0
+    ]
+   ],
+   "style": "shikumen",
+   "height_m": [
+    8,
+    12
+   ],
+   "setback": 2.0,
+   "seed": 3
+  },
+  {
+   "id": "d_midrise",
+   "district": "D3",
+   "polygon": [
+    [
+     140,
+     88
+    ],
+    [
+     260,
+     88
+    ],
+    [
+     260,
+     0
+    ],
+    [
+     140,
+     0
+    ]
+   ],
+   "style": "midrise",
+   "height_m": [
+    18,
+    36
+   ],
+   "setback": 2.0,
+   "seed": 5
+  },
+  {
+   "id": "d_neon",
+   "district": "D2",
+   "polygon": [
+    [
+     280,
+     88
+    ],
+    [
+     400,
+     88
+    ],
+    [
+     400,
+     0
+    ],
+    [
+     280,
+     0
+    ]
+   ],
+   "style": "neon_street",
+   "height_m": [
+    18,
+    42
+   ],
+   "setback": 1.0,
+   "seed": 7
+  },
+  {
+   "id": "d_resi",
+   "district": "D8",
+   "polygon": [
+    [
+     420,
+     88
+    ],
+    [
+     540,
+     88
+    ],
+    [
+     540,
+     0
+    ],
+    [
+     420,
+     0
+    ]
+   ],
+   "style": "residential_slab",
+   "height_m": [
+    54,
+    90
+   ],
+   "setback": 3.0,
+   "seed": 11
+  },
+  {
+   "id": "d_office",
+   "district": "D7",
+   "polygon": [
+    [
+     0,
+     112
+    ],
+    [
+     120,
+     112
+    ],
+    [
+     120,
+     200
+    ],
+    [
+     0,
+     200
+    ]
+   ],
+   "style": "office_tower",
+   "height_m": [
+    90,
+    200
+   ],
+   "setback": 3.0,
+   "seed": 13
+  },
+  {
+   "id": "d_heritage",
+   "district": "D1",
+   "polygon": [
+    [
+     140,
+     112
+    ],
+    [
+     260,
+     112
+    ],
+    [
+     260,
+     200
+    ],
+    [
+     140,
+     200
+    ]
+   ],
+   "style": "heritage",
+   "height_m": [
+    26,
+    40
+   ],
+   "setback": 1.5,
+   "seed": 17
+  },
+  {
+   "id": "d_industry",
+   "district": "D9",
+   "polygon": [
+    [
+     280,
+     112
+    ],
+    [
+     400,
+     112
+    ],
+    [
+     400,
+     200
+    ],
+    [
+     280,
+     200
+    ]
+   ],
+   "style": "industrial",
+   "height_m": [
+    10,
+    18
+   ],
+   "setback": 4.0,
+   "seed": 19
+  },
+  {
+   "id": "d_park",
+   "district": "D3",
+   "polygon": [
+    [
+     420,
+     112
+    ],
+    [
+     540,
+     112
+    ],
+    [
+     540,
+     200
+    ],
+    [
+     420,
+     200
+    ]
+   ],
+   "style": "park",
+   "height_m": [
+    0,
+    0
+   ],
+   "setback": 2.0,
+   "seed": 23
+  }
+ ],
+ "pois": [],
+ "sky_lanes": [],
+ "routes": [],
+ "spawns": {
+  "player": [
+   40,
+   0,
+   100,
+   90
+  ],
+  "police": [],
+  "traffic_density": 1.0
+ },
+ "notes": "Demo city for the buildings unit: one block per building style."
+}

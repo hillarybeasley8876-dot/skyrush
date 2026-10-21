@@ -1,0 +1,16 @@
+[
+ {"t": 0.3, "press": ["accelerate"]},
+ {"t": 6.0, "press": ["steer_left", "drift"]},
+ {"t": 8.5, "release": ["steer_left", "drift"]},
+ {"t": 8.6, "release": ["accelerate"]},
+ {"t": 8.7, "press": ["accelerate"]},
+ {"t": 10.0, "tap": ["nitro"]},
+ {"t": 13.5, "press": ["steer_right", "drift"]},
+ {"t": 15.5, "release": ["steer_right", "drift"]},
+ {"t": 15.6, "tap": ["mini_boost"]},
+ {"t": 17.0, "tap": ["hop"]},
+ {"t": 19.5, "press": ["hop"]},
+ {"t": 19.9, "release": ["hop"]},
+ {"t": 20.6, "tap": ["roll_left"]},
+ {"t": 24.0, "end": true}
+]

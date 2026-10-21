@@ -1,0 +1,14 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://audio/audio_director.gd" id="1_director"]
+[ext_resource type="Script" path="res://audio/sound_mapper.gd" id="2_mapper"]
+[ext_resource type="Script" path="res://audio/race_mapper.gd" id="3_race"]
+
+[node name="AudioDirector" type="Node"]
+script = ExtResource("1_director")
+
+[node name="SoundMapper" type="Node" parent="."]
+script = ExtResource("2_mapper")
+
+[node name="RaceMapper" type="Node" parent="."]
+script = ExtResource("3_race")

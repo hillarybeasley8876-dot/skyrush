@@ -1,0 +1,20 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://vehicle/camera/chase_camera.gd" id="1_camera"]
+[ext_resource type="Script" path="res://vehicle/camera/camera_overlay.gd" id="2_overlay"]
+[ext_resource type="Script" path="res://vehicle/camera/takedown_cam.gd" id="3_takedown"]
+[ext_resource type="Script" path="res://vehicle/camera/camera_effects.gd" id="4_effects"]
+
+[node name="ChaseCamera" type="Node3D"]
+script = ExtResource("1_camera")
+
+[node name="Camera" type="Camera3D" parent="."]
+
+[node name="Overlay" type="CanvasLayer" parent="."]
+script = ExtResource("2_overlay")
+
+[node name="TakedownRig" type="Node3D" parent="."]
+script = ExtResource("3_takedown")
+
+[node name="Effects" type="Node" parent="."]
+script = ExtResource("4_effects")

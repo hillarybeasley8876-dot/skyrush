@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/landmarks/dragon_pillar.glb" id="1_model"]
+[ext_resource type="Script" path="res://assets/landmarks/materials/led_unfog.gd" id="2_unfog"]
+
+[node name="DragonPillar" type="Node3D"]
+
+[node name="Model" parent="." instance=ExtResource("1_model")]
+
+[node name="LedUnfog" type="Node" parent="."]
+script = ExtResource("2_unfog")

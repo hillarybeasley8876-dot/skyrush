@@ -1,0 +1,103 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://fx/thrusters/demo/thruster_demo.gd" id="1_demo"]
+[ext_resource type="PackedScene" path="res://core/stubs/stub_environment.tscn" id="2_env"]
+[ext_resource type="Material" path="res://shaders/materials/SH_wet_asphalt.tres" id="3_wet"]
+
+[sub_resource type="BoxMesh" id="GroundMesh"]
+size = Vector3(200, 1, 200)
+
+[sub_resource type="BoxShape3D" id="GroundShape"]
+size = Vector3(200, 1, 200)
+
+[sub_resource type="StandardMaterial3D" id="SignAMat"]
+albedo_color = Color(0.1, 0.6, 0.9, 1)
+emission_enabled = true
+emission = Color(0.15, 0.85, 1, 1)
+emission_energy_multiplier = 6.0
+
+[sub_resource type="BoxMesh" id="SignAMesh"]
+size = Vector3(0.25, 3.2, 0.25)
+
+[sub_resource type="StandardMaterial3D" id="SignBMat"]
+albedo_color = Color(0.7, 0.1, 0.4, 1)
+emission_enabled = true
+emission = Color(1, 0.2, 0.7, 1)
+emission_energy_multiplier = 5.0
+
+[sub_resource type="BoxMesh" id="SignBMesh"]
+size = Vector3(0.25, 2.6, 0.25)
+
+[sub_resource type="StandardMaterial3D" id="PoleMat"]
+albedo_color = Color(0.85, 0.87, 0.9, 1)
+emission_enabled = true
+emission = Color(1, 0.95, 0.8, 1)
+emission_energy_multiplier = 2.0
+
+[sub_resource type="CylinderMesh" id="PoleMesh"]
+top_radius = 0.06
+bottom_radius = 0.06
+height = 4.0
+radial_segments = 8
+
+[node name="ThrusterDemo" type="Node3D"]
+script = ExtResource("1_demo")
+
+[node name="Environment" parent="." instance=ExtResource("2_env")]
+
+[node name="Ground" type="StaticBody3D" parent="."]
+collision_layer = 1
+collision_mask = 0
+
+[node name="Mesh" type="MeshInstance3D" parent="Ground"]
+position = Vector3(0, -0.5, 0)
+material_override = ExtResource("3_wet")
+mesh = SubResource("GroundMesh")
+
+[node name="Shape" type="CollisionShape3D" parent="Ground"]
+position = Vector3(0, -0.5, 0)
+shape = SubResource("GroundShape")
+
+[node name="KeyLight" type="OmniLight3D" parent="."]
+position = Vector3(0, 7.5, 4.5)
+light_color = Color(0.93, 0.96, 1, 1)
+light_energy = 4.5
+omni_range = 18.0
+
+[node name="FillCyan" type="OmniLight3D" parent="."]
+position = Vector3(-5.5, 1.1, -4.0)
+light_color = Color(0.35, 0.72, 1, 1)
+light_energy = 2.6
+omni_range = 16.0
+
+[node name="NeonMagenta" type="OmniLight3D" parent="."]
+position = Vector3(15, 5, 11)
+light_color = Color(1, 0.2, 0.7, 1)
+light_energy = 2.0
+omni_range = 14.0
+
+[node name="NeonSignA" type="MeshInstance3D" parent="."]
+position = Vector3(-8, 2.6, -6.8)
+material_override = SubResource("SignAMat")
+mesh = SubResource("SignAMesh")
+
+[node name="NeonSignB" type="MeshInstance3D" parent="."]
+position = Vector3(15, 2.2, 10.9)
+material_override = SubResource("SignBMat")
+mesh = SubResource("SignBMesh")
+
+[node name="ScaleBarLeft" type="MeshInstance3D" parent="."]
+position = Vector3(-10, 2, 0)
+material_override = SubResource("PoleMat")
+mesh = SubResource("PoleMesh")
+
+[node name="ScaleBarRight" type="MeshInstance3D" parent="."]
+position = Vector3(10, 2, 0)
+material_override = SubResource("PoleMat")
+mesh = SubResource("PoleMesh")
+
+[node name="Camera" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 7)
+fov = 55.0
+near = 0.05
+far = 600.0

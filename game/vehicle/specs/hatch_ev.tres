@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="CarSpec" format=3]
+
+[ext_resource type="Script" path="res://vehicle/car_spec.gd" id="1_p7syq"]
+
+[resource]
+script = ExtResource("1_p7syq")
+id = &"hatch_ev"
+display_name = "Compact Hatch"
+mass = 1350.0
+center_of_mass = Vector3(0, 0.39600003, 0)
+inertia = Vector3(1960.1692, 1846.8616, 567.95935)
+body_size = Vector3(1.7720002, 1.3815002, 3.9389317)
+body_center_y = 0.850750133395195
+max_health = 40.0
+wheel_mounts = Array[Vector3]([Vector3(-0.745, 0.6734321, -1.25), Vector3(0.745, 0.6734321, -1.25), Vector3(-0.745, 0.6734321, 1.25), Vector3(0.745, 0.6734321, 1.25)])
+wheel_radii = Array[float]([0.33, 0.33, 0.33, 0.33])
+spring_k = 49736.81008413965
+damp_bump = 3268.4200005087805
+damp_rebound = 4476.314348522895
+arb_front = 19894.72403365586
+arb_rear = 14210.517166897043
+bumpstop_k = 213157.75750345565
+susp_max = 42631.55150069113
+top_speed = 47.22222222222222
+accel = 9.5
+brake_accel = 14.0
+mu_front = 1.35
+mu_rear = 1.32
+visual_scene_path = "res://assets/cars/npc/hatch_ev.glb"

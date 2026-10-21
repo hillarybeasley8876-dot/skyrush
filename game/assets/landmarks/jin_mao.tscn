@@ -1,0 +1,21 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/landmarks/jin_mao.glb" id="1_model"]
+[ext_resource type="Script" path="res://assets/landmarks/materials/apply_facade.gd" id="2_apply"]
+[ext_resource type="Script" path="res://assets/landmarks/materials/led_unfog.gd" id="2_unfog"]
+[ext_resource type="Script" path="res://assets/landmarks/materials/aviation_blink.gd" id="3_aviation"]
+[ext_resource type="Material" path="res://assets/landmarks/materials/lujiazui_facade.tres" id="3_facade"]
+
+[node name="JinMao" type="Node3D"]
+script = ExtResource("2_apply")
+facade_material = ExtResource("3_facade")
+mesh_prefix = "JinMao_Body"
+seeds = PackedFloat32Array(3.7, 11.3, 19.9, 27.1)
+
+[node name="Model" parent="." instance=ExtResource("1_model")]
+
+[node name="LedUnfog" type="Node" parent="."]
+script = ExtResource("2_unfog")
+
+[node name="Aviation" type="Node" parent="."]
+script = ExtResource("3_aviation")

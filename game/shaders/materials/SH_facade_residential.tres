@@ -1,0 +1,44 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/facade_windows.gdshader" id="1_34i55"]
+[ext_resource type="Texture2D" path="res://assets/textures/concrete_wall_008/concrete_wall_008_diff.jpg" id="2_0rbi5"]
+[ext_resource type="Texture2D" path="res://assets/textures/concrete_wall_008/concrete_wall_008_nor_gl.jpg" id="3_cewvg"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_roxf2"]
+seed = 23
+frequency = 0.07
+fractal_octaves = 4
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_2lvsf"]
+noise = SubResource("FastNoiseLite_roxf2")
+seamless = true
+bump_strength = 2.0
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_34i55")
+shader_parameter/wall_color = Color(0.5568628, 0.5294118, 0.4862745, 1)
+shader_parameter/wall_roughness = 0.7
+shader_parameter/glass_color = Color(0.043137256, 0.05490196, 0.07450981, 1)
+shader_parameter/glass_roughness = 0.06
+shader_parameter/floor_h = 2.95
+shader_parameter/bay_w = 3.3
+shader_parameter/window_frac = Vector2(0.55, 0.55)
+shader_parameter/sill_frac = 0.3
+shader_parameter/ground_floors = 1.0
+shader_parameter/lit_ratio = 0.22
+shader_parameter/dark_floor_ratio = 0.05
+shader_parameter/tv_ratio = 0.05
+shader_parameter/light_warm = null
+shader_parameter/light_neutral = null
+shader_parameter/light_cool = null
+shader_parameter/light_tv = null
+shader_parameter/window_energy = 1.0
+shader_parameter/blinds_max = 0.9
+shader_parameter/ground_y = 0.0
+shader_parameter/albedo_texture = ExtResource("2_0rbi5")
+shader_parameter/normal_texture = ExtResource("3_cewvg")
+shader_parameter/wall_uv_scale = 0.37
+shader_parameter/grime_noise = SubResource("NoiseTexture2D_2lvsf")
+shader_parameter/grime_amount = 0.35
+shader_parameter/tex_mean = null

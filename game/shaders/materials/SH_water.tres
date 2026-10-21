@@ -1,0 +1,54 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/water_river.gdshader" id="1_hnhwo"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_clcde"]
+seed = 41
+frequency = 0.06
+fractal_octaves = 4
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_4i4hj"]
+noise = SubResource("FastNoiseLite_clcde")
+seamless = true
+as_normal_map = true
+bump_strength = 2.0
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_vcbtc"]
+seed = 43
+frequency = 0.11
+fractal_octaves = 4
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_0h08j"]
+noise = SubResource("FastNoiseLite_vcbtc")
+seamless = true
+as_normal_map = true
+bump_strength = 2.0
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_7bbfj"]
+seed = 47
+frequency = 0.3
+fractal_octaves = 4
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_6xiv0"]
+width = 256
+height = 256
+noise = SubResource("FastNoiseLite_7bbfj")
+seamless = true
+as_normal_map = true
+bump_strength = 2.0
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_hnhwo")
+shader_parameter/water_color = Color(0.043137256, 0.0627451, 0.08627451, 1)
+shader_parameter/roughness_value = 0.08
+shader_parameter/wave_strength = 0.38
+shader_parameter/normal_a = SubResource("NoiseTexture2D_4i4hj")
+shader_parameter/normal_b = SubResource("NoiseTexture2D_0h08j")
+shader_parameter/tile_m = 6.0
+shader_parameter/flow_a = Vector2(0.1, 0)
+shader_parameter/flow_b = Vector2(0.044, 0.037)
+shader_parameter/ripple_normal = SubResource("NoiseTexture2D_6xiv0")
+shader_parameter/ripple_scale = 2.2
+shader_parameter/ripple_speed = 1.6
+shader_parameter/ripple_strength = 0.5

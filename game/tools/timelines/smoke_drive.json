@@ -1,0 +1,12 @@
+[
+ {"t": 0.5, "press": ["accelerate"]},
+ {"t": 4.0, "tap": ["nitro"]},
+ {"t": 7.0, "press": ["steer_left", "drift"]},
+ {"t": 9.5, "release": ["steer_left", "drift"]},
+ {"t": 9.7, "tap": ["mini_boost"]},
+ {"t": 11.0, "tap": ["hop"]},
+ {"t": 13.0, "press": ["hop"]},
+ {"t": 13.4, "release": ["hop"]},
+ {"t": 14.2, "tap": ["roll_right"]},
+ {"t": 18.0, "end": true}
+]

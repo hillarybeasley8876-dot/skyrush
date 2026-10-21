@@ -1,0 +1,11 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/neon_tube.gdshader" id="1_ntoxu"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_ntoxu")
+shader_parameter/emission_color = Color(1, 0.165, 0.541, 1)
+shader_parameter/emission_energy = 5.0
+shader_parameter/core_whiten = 0.12
+shader_parameter/dropout_rate = 0.015

@@ -1,0 +1,43 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/facade_windows.gdshader" id="1_facade"]
+[ext_resource type="Texture2D" path="res://assets/landmarks/textures/metal_dark_diff.png" id="2_wall"]
+[ext_resource type="Texture2D" path="res://assets/landmarks/textures/metal_dark_nor.png" id="3_walln"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_grime"]
+seed = 41
+frequency = 0.06
+fractal_octaves = 4
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_grime"]
+noise = SubResource("FastNoiseLite_grime")
+seamless = true
+bump_strength = 2.0
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_facade")
+shader_parameter/wall_color = Color(0.18039216, 0.18431373, 0.19607843, 1)
+shader_parameter/wall_roughness = 0.42
+shader_parameter/glass_color = Color(0.043137256, 0.05490196, 0.07450981, 1)
+shader_parameter/glass_roughness = 0.06
+shader_parameter/floor_h = 4.0
+shader_parameter/bay_w = 1.5
+shader_parameter/window_frac = Vector2(0.86, 0.62)
+shader_parameter/sill_frac = 0.22
+shader_parameter/ground_floors = 2.0
+shader_parameter/lit_ratio = 0.42
+shader_parameter/dark_floor_ratio = 0.18
+shader_parameter/tv_ratio = 0.0
+shader_parameter/window_energy = 2.4
+shader_parameter/blinds_max = 0.7
+shader_parameter/ground_y = 0.0
+shader_parameter/albedo_texture = ExtResource("2_wall")
+shader_parameter/normal_texture = ExtResource("3_walln")
+shader_parameter/wall_uv_scale = 0.35
+shader_parameter/grime_noise = SubResource("NoiseTexture2D_grime")
+shader_parameter/grime_amount = 0.35
+shader_parameter/tex_mean = Color(0.542, 0.564, 0.587, 1)
+shader_parameter/light_warm = Color(1, 0.878431, 0.760784, 1)
+shader_parameter/light_neutral = Color(0.956863, 0.945098, 0.917647, 1)
+shader_parameter/light_cool = Color(0.870588, 0.909804, 1, 1)

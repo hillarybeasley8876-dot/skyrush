@@ -1,0 +1,53 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/road_wet.gdshader" id="1_re71q"]
+[ext_resource type="Texture2D" path="res://assets/textures/asphalt_02/asphalt_02_diff.jpg" id="2_yh80r"]
+[ext_resource type="Texture2D" path="res://assets/textures/asphalt_02/asphalt_02_ao.jpg" id="3_n357c"]
+[ext_resource type="Texture2D" path="res://assets/textures/aerial_asphalt_01/aerial_asphalt_01_diff.jpg" id="4_0dstm"]
+[ext_resource type="Texture2D" path="res://assets/textures/asphalt_02/asphalt_02_nor_gl.jpg" id="5_0qpqt"]
+[ext_resource type="Texture2D" path="res://assets/textures/asphalt_02/asphalt_02_rough.jpg" id="6_xw3ja"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_g3dvt"]
+seed = 11
+frequency = 0.012
+fractal_octaves = 4
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_g55lv"]
+noise = SubResource("FastNoiseLite_g3dvt")
+seamless = true
+bump_strength = 2.0
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_u2rag"]
+seed = 3
+frequency = 0.08
+fractal_octaves = 4
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_lmqif"]
+width = 256
+height = 256
+noise = SubResource("FastNoiseLite_u2rag")
+seamless = true
+as_normal_map = true
+bump_strength = 2.0
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_re71q")
+shader_parameter/albedo_texture = ExtResource("2_yh80r")
+shader_parameter/normal_texture = ExtResource("5_0qpqt")
+shader_parameter/roughness_texture = ExtResource("6_xw3ja")
+shader_parameter/ao_texture = ExtResource("3_n357c")
+shader_parameter/tile_m = 3.0
+shader_parameter/macro_tex = ExtResource("4_0dstm")
+shader_parameter/macro_m = 30.0
+shader_parameter/macro_strength = 0.35
+shader_parameter/tint = Color(1, 1, 1, 1)
+shader_parameter/albedo_mul = 0.5
+shader_parameter/wetness_bias = 0.0
+shader_parameter/rain_bias = 0.0
+shader_parameter/detail_strength = 0.5
+shader_parameter/detail_fade_m = 26.0
+shader_parameter/puddle_amount = 0.24
+shader_parameter/puddle_noise = SubResource("NoiseTexture2D_g55lv")
+shader_parameter/puddle_m = 14.0
+shader_parameter/ripple_normal = SubResource("NoiseTexture2D_lmqif")

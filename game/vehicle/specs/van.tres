@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="CarSpec" format=3]
+
+[ext_resource type="Script" path="res://vehicle/car_spec.gd" id="1_46w76"]
+
+[resource]
+script = ExtResource("1_46w76")
+id = &"van"
+display_name = "Delivery Van"
+mass = 2400.0
+center_of_mass = Vector3(0, 0.45, 0)
+inertia = Vector3(3740.02, 3450.04, 1419.5199)
+body_size = Vector3(2, 1.7599999, 3.95)
+body_center_y = 1.2199999392032623
+max_health = 60.0
+wheel_mounts = Array[Vector3]([Vector3(-0.8, 0.71843207, -1.62), Vector3(0.8, 0.71843207, -1.62), Vector3(-0.8, 0.71843207, 1.6), Vector3(0.8, 0.71843207, 1.6)])
+wheel_radii = Array[float]([0.375, 0.375, 0.375, 0.375])
+spring_k = 88420.99570513716
+damp_bump = 5810.524445348943
+damp_rebound = 7957.892175151814
+arb_front = 35368.39828205486
+arb_rear = 25263.14163003919
+bumpstop_k = 378947.12445058784
+susp_max = 75789.42489011757
+top_speed = 45.833333333333336
+accel = 7.5
+brake_accel = 14.0
+mu_front = 1.32
+mu_rear = 1.3
+visual_scene_path = "res://assets/cars/npc/van.glb"

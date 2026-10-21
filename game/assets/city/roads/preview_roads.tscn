@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://assets/city/roads/preview_roads.gd" id="1_preview"]
+[ext_resource type="PackedScene" path="res://world/env/environment.tscn" id="2_env"]
+
+[node name="PreviewRoads" type="Node3D"]
+script = ExtResource("1_preview")
+
+[node name="Environment" parent="." instance=ExtResource("2_env")]

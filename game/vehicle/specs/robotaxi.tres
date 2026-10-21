@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="CarSpec" format=3]
+
+[ext_resource type="Script" path="res://vehicle/car_spec.gd" id="1_var4a"]
+
+[resource]
+script = ExtResource("1_var4a")
+id = &"robotaxi"
+display_name = "Robotaxi"
+mass = 2100.0
+center_of_mass = Vector3(0, 0.42, 0)
+inertia = Vector3(3404.3306, 3259.3743, 966.65784)
+body_size = Vector3(1.9020002, 1.3806355, 4.1889334)
+body_center_y = 0.8353177458047867
+max_health = 60.0
+wheel_mounts = Array[Vector3]([Vector3(-0.8, 0.6934321, -1.4), Vector3(0.8, 0.6934321, -1.4), Vector3(-0.8, 0.6934321, 1.4), Vector3(0.8, 0.6934321, 1.4)])
+wheel_radii = Array[float]([0.35, 0.35, 0.35, 0.35])
+spring_k = 77368.37124199502
+damp_bump = 5084.208889680326
+damp_rebound = 6963.155653257837
+arb_front = 30947.348496798004
+arb_rear = 22105.24892628429
+bumpstop_k = 331578.7338942643
+susp_max = 66315.74677885286
+top_speed = 48.61111111111111
+accel = 8.0
+brake_accel = 15.0
+mu_front = 1.36
+mu_rear = 1.34
+visual_scene_path = "res://assets/cars/npc/robotaxi.glb"

@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="CarSpec" format=3]
+
+[ext_resource type="Script" path="res://vehicle/car_spec.gd" id="1_xis6f"]
+
+[resource]
+script = ExtResource("1_xis6f")
+id = &"bus"
+display_name = "City Bus"
+mass = 12000.0
+center_of_mass = Vector3(0, 0.6, 0)
+inertia = Vector3(150760, 132442.2, 13262.499)
+body_size = Vector3(2.55, 2.6, 12)
+body_center_y = 1.7599999606609344
+max_health = 300.0
+wheel_mounts = Array[Vector3]([Vector3(-1.03, 0.84343207, -3.4), Vector3(1.03, 0.84343207, -3.4), Vector3(-1.03, 0.84343207, 2.6), Vector3(1.03, 0.84343207, 2.6)])
+wheel_radii = Array[float]([0.5, 0.5, 0.5, 0.5])
+spring_k = 442104.9785256858
+damp_bump = 29052.622226744716
+damp_rebound = 39789.46087575907
+arb_front = 176841.9914102743
+arb_rear = 126315.70815019593
+bumpstop_k = 1894735.622252939
+susp_max = 378947.1244505878
+top_speed = 33.333333333333336
+accel = 4.0
+brake_accel = 10.0
+mu_front = 1.2
+mu_rear = 1.2
+visual_scene_path = "res://assets/cars/npc/bus.glb"

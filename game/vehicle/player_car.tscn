@@ -1,0 +1,15 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://vehicle/arcade_car.gd" id="1"]
+[ext_resource type="Script" path="res://vehicle/car_visual.gd" id="2"]
+[ext_resource type="Resource" path="res://vehicle/specs/roadster.tres" id="3"]
+
+[node name="PlayerCar" type="RigidBody3D"]
+collision_layer = 2
+collision_mask = 7
+script = ExtResource("1")
+spec = ExtResource("3")
+player_controlled = true
+
+[node name="Visual" type="Node3D" parent="."]
+script = ExtResource("2")

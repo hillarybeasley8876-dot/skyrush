@@ -1,0 +1,112 @@
+[gd_scene load_steps=20 format=3]
+
+[ext_resource type="Script" path="res://assets/cars/npc/preview_npc.gd" id="0_script"]
+[ext_resource type="PackedScene" path="res://assets/cars/npc/sedan_ev.glb" id="1_sedan"]
+[ext_resource type="PackedScene" path="res://assets/cars/npc/suv_ev.glb" id="2_suv"]
+[ext_resource type="PackedScene" path="res://assets/cars/npc/hatch_ev.glb" id="3_hatch"]
+[ext_resource type="PackedScene" path="res://assets/cars/npc/taxi.glb" id="4_taxi"]
+[ext_resource type="PackedScene" path="res://assets/cars/npc/robotaxi.glb" id="5_robotaxi"]
+[ext_resource type="PackedScene" path="res://assets/cars/npc/police_patrol.glb" id="6_patrol"]
+[ext_resource type="PackedScene" path="res://assets/cars/npc/police_interceptor.glb" id="7_interceptor"]
+[ext_resource type="PackedScene" path="res://assets/cars/npc/police_suv.glb" id="8_policesuv"]
+[ext_resource type="PackedScene" path="res://assets/cars/npc/van.glb" id="9_van"]
+[ext_resource type="PackedScene" path="res://assets/cars/npc/truck.glb" id="10_truck"]
+[ext_resource type="PackedScene" path="res://assets/cars/npc/bus.glb" id="11_bus"]
+[ext_resource type="PackedScene" path="res://assets/cars/npc/police_drone.glb" id="12_drone"]
+
+[sub_resource type="Environment" id="Environment_npc"]
+background_mode = 1
+background_color = Color(0.016, 0.02, 0.032, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.34, 0.4, 0.56, 1)
+ambient_light_energy = 2.0
+tonemap_mode = 2
+tonemap_exposure = 1.0
+glow_enabled = true
+glow_intensity = 0.55
+glow_bloom = 0.03
+glow_hdr_threshold = 1.9
+
+[sub_resource type="StandardMaterial3D" id="Ground_mat"]
+albedo_color = Color(0.075, 0.08, 0.092, 1)
+roughness = 0.38
+metallic = 0.0
+
+[sub_resource type="PlaneMesh" id="Ground_mesh"]
+size = Vector2(140, 90)
+material = SubResource("Ground_mat")
+
+[node name="PreviewNPC" type="Node3D"]
+script = ExtResource("0_script")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_npc")
+
+[node name="Ground" type="MeshInstance3D" parent="."]
+mesh = SubResource("Ground_mesh")
+
+[node name="LampA" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 7, 4.0)
+light_color = Color(0.851, 0.91, 1, 1)
+light_energy = 17.0
+omni_range = 26.0
+
+[node name="LampB" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7, 4.0)
+light_color = Color(0.851, 0.91, 1, 1)
+light_energy = 17.0
+omni_range = 26.0
+
+[node name="LampC" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 7, 4.0)
+light_color = Color(1, 0.706, 0.42, 1)
+light_energy = 15.0
+omni_range = 26.0
+
+[node name="LampD" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 17, 6.0)
+light_color = Color(0.851, 0.91, 1, 1)
+light_energy = 17.0
+omni_range = 30.0
+
+[node name="sedan_ev" parent="." instance=ExtResource("1_sedan")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.5, 0, 0)
+
+[node name="suv_ev" parent="." instance=ExtResource("2_suv")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 0)
+
+[node name="hatch_ev" parent="." instance=ExtResource("3_hatch")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0, 0)
+
+[node name="taxi" parent="." instance=ExtResource("4_taxi")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 0)
+
+[node name="robotaxi" parent="." instance=ExtResource("5_robotaxi")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 0, 0)
+
+[node name="police_patrol" parent="." instance=ExtResource("6_patrol")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0, 0)
+
+[node name="police_interceptor" parent="." instance=ExtResource("7_interceptor")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.5, 0, 17)
+
+[node name="police_suv" parent="." instance=ExtResource("8_policesuv")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, 17)
+
+[node name="van" parent="." instance=ExtResource("9_van")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, 17)
+
+[node name="truck" parent="." instance=ExtResource("10_truck")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 17)
+
+[node name="bus" parent="." instance=ExtResource("11_bus")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, 17)
+
+[node name="police_drone" parent="." instance=ExtResource("12_drone")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19, 0, 17)
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(-1, 0, 0, 0, 0.9962, 0.0872, 0, 0.0861, -0.9962, 3, 2.6, -24)
+current = true
+fov = 46.0
+far = 300.0

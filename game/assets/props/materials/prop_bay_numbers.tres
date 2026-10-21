@@ -1,0 +1,17 @@
+[gd_resource type="StandardMaterial3D" load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/props/_tex/prop_bay_numbers.png" id="1_cut"]
+
+[resource]
+resource_name = "Prop_BayNumbers"
+albedo_texture = ExtResource("1_cut")
+roughness = 0.6
+metallic = 0.0
+transparency = 2
+alpha_scissor_threshold = 0.5
+alpha_antialiasing_mode = 2
+cull_mode = 2
+emission_enabled = true
+emission_texture = ExtResource("1_cut")
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 1.1

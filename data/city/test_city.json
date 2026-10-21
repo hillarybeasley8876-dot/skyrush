@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "name": "test_city",
+  "window": {"x_min": -600, "x_max": 700, "z_min": -320, "z_max": 320},
+  "roads": [
+    {"id": "main_ew", "name": "测试大道", "name_en": "Test Ave", "kind": "surface",
+     "points": [[-500, 0, 0], [-250, 0, 0], [0, 0, 0], [250, 0, 0], [500, 0, 0]], "spline": "catmull",
+     "lanes_fwd": 3, "lanes_back": 3, "lane_width": 3.75, "median": 2.0, "shoulder": 0.5, "sidewalk": 4.0,
+     "speed_kmh": 60, "style": {"parapet": "none", "lamps": "magnolia", "trees": "plane"}},
+    {"id": "cross_ns", "name": "测试路", "name_en": "Test Rd", "kind": "surface",
+     "points": [[0, 0, -300], [0, 0, -100], [0, 0, 0], [0, 0, 100], [0, 0, 300]], "spline": "catmull",
+     "lanes_fwd": 2, "lanes_back": 2, "lane_width": 3.5, "median": 0, "shoulder": 0.5, "sidewalk": 4.0,
+     "speed_kmh": 50, "style": {"parapet": "none", "lamps": "side", "trees": "plane"}},
+    {"id": "south_ew", "name": "南测试路", "name_en": "S Test Rd", "kind": "surface",
+     "points": [[-500, 0, 140], [0, 0, 140], [300, 0, 140], [600, 0, 140]], "spline": "catmull",
+     "lanes_fwd": 2, "lanes_back": 2, "lane_width": 3.5, "median": 0, "shoulder": 0.5, "sidewalk": 4.0,
+     "speed_kmh": 50, "style": {"parapet": "none", "lamps": "side", "trees": "none"}},
+    {"id": "elev_ew", "name": "测试高架", "name_en": "Test Elevated", "kind": "elevated",
+     "points": [[-480, 0, 60], [-440, 0.2, 60], [-260, 9.8, 60], [-220, 10, 60], [0, 10, 60],
+                [220, 10, 60], [260, 9.8, 60], [440, 0.2, 60], [480, 0, 60]], "spline": "catmull",
+     "lanes_fwd": 2, "lanes_back": 2, "lane_width": 3.75, "median": 1.0, "shoulder": 0.5, "sidewalk": 0,
+     "speed_kmh": 80, "pier_spacing": 30, "no_piers": [[470, 490]],
+     "style": {"parapet": "planter", "lamps": "median_double", "soffit_led": "#5A3DFF",
+               "noise_walls": [[300, 420, "left"]]}},
+    {"id": "off_ramp_e", "name": "出口", "name_en": "Exit", "kind": "ramp",
+     "points": [[300, 10, 74], [360, 8.6, 78], [430, 5.0, 100], [480, 1.5, 128], [520, 0, 140]], "spline": "catmull",
+     "lanes_fwd": 1, "lanes_back": 0, "lane_width": 3.75, "median": 0, "shoulder": 0.5, "sidewalk": 0,
+     "speed_kmh": 50, "attach_start": {"road": "elev_ew", "at": 780, "side": "right"},
+     "attach_end": {"road": "south_ew", "at": 1020, "side": "right"},
+     "style": {"parapet": "planter", "lamps": "barrier", "soffit_led": "#5A3DFF"}}
+  ],
+  "junctions": [
+    {"id": "j_center", "x": 0, "z": 0, "roads": ["main_ew", "cross_ns"], "signals": true},
+    {"id": "j_south", "x": 0, "z": 140, "roads": ["cross_ns", "south_ew"], "signals": true}
+  ],
+  "water": [],
+  "blocks": [
+    {"id": "b_nw", "district": "T", "polygon": [[-480, -290], [-480, -25], [-20, -25], [-20, -290]],
+     "style": "office_tower", "height_m": [40, 160], "setback": 3.0, "seed": 1},
+    {"id": "b_ne", "district": "T", "polygon": [[20, -290], [20, -25], [480, -25], [480, -290]],
+     "style": "shikumen", "height_m": [8, 12], "setback": 2.0, "seed": 2},
+    {"id": "b_s", "district": "T", "polygon": [[-480, 165], [-480, 300], [480, 300], [480, 165]],
+     "style": "midrise", "height_m": [18, 60], "setback": 3.0, "seed": 3}
+  ],
+  "pois": [
+    {"id": "charge_test", "kind": "charge", "x": -300, "y": 0, "z": -40, "heading_deg": 90, "size": [40, 20],
+     "label": "申城闪充", "asset": "charging_station"},
+    {"id": "gas_test", "kind": "gas", "x": 300, "y": 0, "z": -45, "heading_deg": 90, "size": [60, 30],
+     "label": "中国石华", "asset": "gas_station"},
+    {"id": "hide_under_deck", "kind": "hiding_spot", "x": 0, "y": 0, "z": 60, "heading_deg": 90, "size": [400, 20]}
+  ],
+  "sky_lanes": [
+    {"id": "test_lane", "label": "测试航道", "points": [[-150, 3, 140], [0, 22, 140], [300, 25, 140], [550, 3, 140]],
+     "pad": {"x": -180, "y": 0, "z": 140, "heading_deg": 90}, "n2_rings_m": [200, 450]}
+  ],
+  "routes": [
+    {"id": "test_loop", "title": "测试环线", "laps": 2, "kind": "race",
+     "checkpoints": [[-400, 0, -5, 90], [0, 0, -5, 90], [400, 0, -5, 90], [0, 10, 64, 270], [-400, 0, 140, 270]],
+     "grid": [-450, 0, -5, 90]}
+  ],
+  "spawns": {"player": [-450, 0, -5, 90], "police": [[400, 0, 135, 270]], "traffic_density": 1.0},
+  "notes": "Development sample for generators; not the real map."
+}

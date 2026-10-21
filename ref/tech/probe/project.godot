@@ -1,0 +1,15 @@
+; Engine configuration file.
+config_version=5
+
+[application]
+config/name="SkyrushProbe"
+config/features=PackedStringArray("4.7", "Forward Plus")
+
+[display]
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+window/vsync/vsync_mode=0
+
+[rendering]
+renderer/rendering_method="forward_plus"
+occlusion_culling/use_occlusion_culling=true

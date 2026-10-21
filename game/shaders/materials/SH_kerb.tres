@@ -1,0 +1,62 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/concrete_stained.gdshader" id="1_ycoy5"]
+[ext_resource type="Texture2D" path="res://assets/textures/granite_bund/granite_bund_diff.jpg" id="2_2q53h"]
+[ext_resource type="Texture2D" path="res://assets/textures/granite_tile_03/granite_tile_03_ao.jpg" id="3_x7r6t"]
+[ext_resource type="Texture2D" path="res://assets/textures/granite_tile_03/granite_tile_03_diff.jpg" id="4_mtwii"]
+[ext_resource type="Texture2D" path="res://assets/textures/Leaking004/Leaking004_opacity.jpg" id="5_dfqhf"]
+[ext_resource type="Texture2D" path="res://assets/textures/granite_tile_03/granite_tile_03_nor_gl.jpg" id="6_q31uy"]
+[ext_resource type="Texture2D" path="res://assets/textures/granite_tile_03/granite_tile_03_rough.jpg" id="7_62ak0"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_11l8p"]
+seed = 71
+frequency = 0.03
+fractal_octaves = 3
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_pitx0"]
+width = 128
+height = 1024
+noise = SubResource("FastNoiseLite_11l8p")
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_vlwe2"]
+seed = 61
+frequency = 0.06
+fractal_octaves = 4
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_vmjdx"]
+noise = SubResource("FastNoiseLite_vlwe2")
+seamless = true
+bump_strength = 2.0
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_ycoy5")
+shader_parameter/concrete_tint = Color(1, 1, 1, 1)
+shader_parameter/splash_factor = 0.6
+shader_parameter/albedo_texture = ExtResource("2_2q53h")
+shader_parameter/normal_texture = ExtResource("6_q31uy")
+shader_parameter/roughness_texture = ExtResource("7_62ak0")
+shader_parameter/ao_texture = ExtResource("3_x7r6t")
+shader_parameter/detail_texture = ExtResource("4_mtwii")
+shader_parameter/drip_texture = ExtResource("5_dfqhf")
+shader_parameter/detail_mask = SubResource("NoiseTexture2D_pitx0")
+shader_parameter/uv_scale = 0.5555555555555556
+shader_parameter/detail_scale = 3.0
+shader_parameter/detail_amount = 0.35
+shader_parameter/tex_mean = null
+shader_parameter/base_color = Color(0.5568628, 0.54901963, 0.5254902, 1)
+shader_parameter/albedo_mul = 1.0
+shader_parameter/streak_noise = SubResource("NoiseTexture2D_vmjdx")
+shader_parameter/streak_amount = 0.18
+shader_parameter/streak_scale = 0.3
+shader_parameter/drip_amount = 0.0
+shader_parameter/drip_lo_m = null
+shader_parameter/drip_hi_m = null
+shader_parameter/splash_height_m = 0.18
+shader_parameter/splash_darken = 0.25
+shader_parameter/wet_roughness = 0.4
+shader_parameter/normal_scale = 0.5
+shader_parameter/detail_mean = null
+shader_parameter/course_height_m = 0.42
+shader_parameter/course_width_m = 1.8
+shader_parameter/course_joint = 0.45

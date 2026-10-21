@@ -1,0 +1,105 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://audio/demo/audio_demo.gd" id="1_demo"]
+[ext_resource type="PackedScene" path="res://audio/audio_director.tscn" id="2_director"]
+
+[node name="AudioDemo" type="Node"]
+script = ExtResource("1_demo")
+
+[node name="AudioDirector" parent="." instance=ExtResource("2_director")]
+
+[node name="Ui" type="CanvasLayer" parent="."]
+
+[node name="Panel" type="ColorRect" parent="Ui"]
+offset_left = 32.0
+offset_top = 24.0
+offset_right = 1100.0
+offset_bottom = 150.0
+color = Color(0.039, 0.059, 0.118, 0.7)
+
+[node name="Meter" type="Label" parent="Ui"]
+offset_left = 48.0
+offset_top = 152.0
+offset_right = 1080.0
+offset_bottom = 186.0
+theme_override_colors/font_color = Color(0.949, 0.965, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "Master"
+
+[node name="PeakLabel" type="Label" parent="Ui"]
+offset_left = 48.0
+offset_top = 196.0
+offset_right = 140.0
+offset_bottom = 224.0
+theme_override_colors/font_color = Color(0.949, 0.965, 1, 1)
+theme_override_font_sizes/font_size = 20
+text = "peak"
+
+[node name="PeakBack" type="ColorRect" parent="Ui"]
+offset_left = 140.0
+offset_top = 200.0
+offset_right = 740.0
+offset_bottom = 220.0
+color = Color(0.078, 0.098, 0.157, 0.9)
+
+[node name="PeakFill" type="ColorRect" parent="Ui"]
+offset_left = 140.0
+offset_top = 200.0
+offset_right = 140.0
+offset_bottom = 220.0
+color = Color(0.098, 0.902, 1, 1)
+
+[node name="RmsLabel" type="Label" parent="Ui"]
+offset_left = 48.0
+offset_top = 230.0
+offset_right = 140.0
+offset_bottom = 258.0
+theme_override_colors/font_color = Color(0.949, 0.965, 1, 1)
+theme_override_font_sizes/font_size = 20
+text = "rms"
+
+[node name="RmsBack" type="ColorRect" parent="Ui"]
+offset_left = 140.0
+offset_top = 234.0
+offset_right = 740.0
+offset_bottom = 254.0
+color = Color(0.078, 0.098, 0.157, 0.9)
+
+[node name="RmsFill" type="ColorRect" parent="Ui"]
+offset_left = 140.0
+offset_top = 234.0
+offset_right = 140.0
+offset_bottom = 254.0
+color = Color(0.098, 0.902, 1, 1)
+
+[node name="BandLabel" type="Label" parent="Ui"]
+offset_left = 48.0
+offset_top = 264.0
+offset_right = 140.0
+offset_bottom = 292.0
+theme_override_colors/font_color = Color(0.949, 0.965, 1, 1)
+theme_override_font_sizes/font_size = 20
+text = "2-4k"
+
+[node name="BandBack" type="ColorRect" parent="Ui"]
+offset_left = 140.0
+offset_top = 268.0
+offset_right = 740.0
+offset_bottom = 288.0
+color = Color(0.078, 0.098, 0.157, 0.9)
+
+[node name="BandFill" type="ColorRect" parent="Ui"]
+offset_left = 140.0
+offset_top = 268.0
+offset_right = 140.0
+offset_bottom = 288.0
+color = Color(0.098, 0.902, 1, 1)
+
+[node name="Label" type="Label" parent="Ui"]
+offset_left = 48.0
+offset_top = 40.0
+offset_right = 1080.0
+offset_bottom = 140.0
+theme_override_colors/font_color = Color(0.098, 0.902, 1, 1)
+theme_override_font_sizes/font_size = 28
+text = "SKYRUSH 音频演示 / audio demo"

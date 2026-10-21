@@ -1,0 +1,49 @@
+[gd_resource type="Resource" script_class="CarSpec" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://vehicle/car_spec.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"roadster"
+display_name = "Roadster"
+mass = 1900.0
+center_of_mass = Vector3(0, 0.42, -0.05)
+inertia = Vector3(3400, 3200, 900)
+body_size = Vector3(1.95, 0.8, 4.38)
+body_center_y = 0.62
+max_health = 100.0
+wheel_mounts = Array[Vector3]([Vector3(-0.78, 0.686, -1.4125), Vector3(0.78, 0.686, -1.4125), Vector3(-0.815, 0.71, 1.4125), Vector3(0.815, 0.71, 1.4125)])
+wheel_radii = Array[float]([0.3425, 0.3425, 0.367, 0.367])
+steered = Array[bool]([true, true, false, false])
+driven = Array[bool]([false, false, true, true])
+spring_k = 70000.0
+damp_bump = 4600.0
+damp_rebound = 6300.0
+arb_front = 28000.0
+arb_rear = 20000.0
+bumpstop_k = 300000.0
+susp_max = 60000.0
+rest_len = 0.41
+travel = 0.2
+top_speed = 69.44
+accel = 14.0
+brake_accel = 16.0
+mu_front = 1.45
+mu_rear = 1.4
+visual_scene_path = "res://assets/cars/roadster/roadster.glb"
+extras = {
+"poses": {
+"air_brake": {
+"angle": 60.0
+},
+"high_downforce": {
+"angle": 15.0
+},
+"low_drag": {
+"angle": 1.0
+},
+"stowed": {
+"angle": 0.0
+}
+}
+}

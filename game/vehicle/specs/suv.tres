@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="CarSpec" format=3]
+
+[ext_resource type="Script" path="res://vehicle/car_spec.gd" id="1_pt22y"]
+
+[resource]
+script = ExtResource("1_pt22y")
+id = &"suv"
+display_name = "Compact SUV"
+mass = 2000.0
+center_of_mass = Vector3(0, 0.45, 0)
+inertia = Vector3(4098.9077, 3844.2397, 981.5407)
+body_size = Vector3(1.9373336, 1.4615002, 4.7389307)
+body_center_y = 0.9307500869035721
+max_health = 60.0
+wheel_mounts = Array[Vector3]([Vector3(-0.8, 0.71843207, -1.425), Vector3(0.8, 0.71843207, -1.425), Vector3(-0.8, 0.71843207, 1.425), Vector3(0.8, 0.71843207, 1.425)])
+wheel_radii = Array[float]([0.375, 0.375, 0.375, 0.375])
+spring_k = 73684.1630876143
+damp_bump = 4842.103704457452
+damp_rebound = 6631.576812626511
+arb_front = 29473.66523504572
+arb_rear = 21052.618025032658
+bumpstop_k = 315789.27037548984
+susp_max = 63157.85407509797
+top_speed = 52.77777777777778
+accel = 9.5
+brake_accel = 15.0
+mu_front = 1.38
+mu_rear = 1.35
+visual_scene_path = "res://assets/cars/npc/suv_ev.glb"

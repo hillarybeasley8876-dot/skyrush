@@ -1,0 +1,359 @@
+{
+ "awning_canvas": {
+  "maps": [
+   "diff",
+   "nor",
+   "orm"
+  ],
+  "px": [
+   1024,
+   1024
+  ],
+  "size_m": 2.0
+ },
+ "brass": {
+  "maps": [
+   "diff",
+   "nor",
+   "orm"
+  ],
+  "px": [
+   1024,
+   1024
+  ],
+  "size_m": 0.5
+ },
+ "brick_grey": {
+  "maps": [
+   "diff",
+   "nor",
+   "orm"
+  ],
+  "px": [
+   2048,
+   2048
+  ],
+  "size_m": [
+   3.0,
+   1.3
+  ]
+ },
+ "brick_red": {
+  "maps": [
+   "diff",
+   "nor",
+   "orm"
+  ],
+  "px": [
+   2048,
+   2048
+  ],
+  "size_m": [
+   3.0,
+   1.3
+  ]
+ },
+ "carvings": {
+  "atlas": true,
+  "maps": [
+   "diff",
+   "nor"
+  ],
+  "px": [
+   1024,
+   1024
+  ],
+  "size_m": 0.0
+ },
+ "cloth": {
+  "atlas": true,
+  "maps": [
+   "diff"
+  ],
+  "px": [
+   512,
+   512
+  ],
+  "size_m": 0.0
+ },
+ "emissive_cyan": {
+  "maps": [
+   "diff"
+  ],
+  "px": [
+   256,
+   256
+  ],
+  "size_m": 1.0
+ },
+ "emissive_magenta": {
+  "maps": [
+   "diff"
+  ],
+  "px": [
+   256,
+   256
+  ],
+  "size_m": 1.0
+ },
+ "emissive_red": {
+  "maps": [
+   "diff"
+  ],
+  "px": [
+   256,
+   256
+  ],
+  "size_m": 1.0
+ },
+ "emissive_warm": {
+  "maps": [
+   "diff"
+  ],
+  "px": [
+   256,
+   256
+  ],
+  "size_m": 1.0
+ },
+ "emissive_white": {
+  "maps": [
+   "diff"
+  ],
+  "px": [
+   256,
+   256
+  ],
+  "size_m": 1.0
+ },
+ "glass_dirty": {
+  "maps": [
+   "diff",
+   "nor",
+   "orm"
+  ],
+  "px": [
+   1024,
+   1024
+  ],
+  "size_m": 2.0
+ },
+ "interiors": {
+  "atlas": true,
+  "maps": [
+   "diff"
+  ],
+  "px": [
+   2048,
+   2048
+  ],
+  "size_m": 0.0
+ },
+ "lawn": {
+  "maps": [
+   "diff",
+   "nor",
+   "orm"
+  ],
+  "px": [
+   1024,
+   1024
+  ],
+  "size_m": 3.0
+ },
+ "leaf_card": {
+  "maps": [
+   "diff",
+   "nor",
+   "orm"
+  ],
+  "px": [
+   1024,
+   1024
+  ],
+  "size_m": 2.0
+ },
+ "metal_corrugated": {
+  "maps": [
+   "diff",
+   "nor",
+   "orm"
+  ],
+  "px": [
+   1024,
+   1024
+  ],
+  "size_m": 2.7
+ },
+ "paving_stone": {
+  "maps": [
+   "diff",
+   "nor",
+   "orm"
+  ],
+  "px": [
+   1024,
+   1024
+  ],
+  "size_m": 3.0
+ },
+ "props": {
+  "atlas": true,
+  "maps": [
+   "diff",
+   "nor",
+   "orm"
+  ],
+  "px": [
+   2048,
+   2048
+  ],
+  "size_m": 0.0
+ },
+ "render_grey": {
+  "maps": [
+   "diff",
+   "nor",
+   "orm"
+  ],
+  "px": [
+   1024,
+   1024
+  ],
+  "size_m": 2.0
+ },
+ "roof_tile": {
+  "maps": [
+   "diff",
+   "nor",
+   "orm"
+  ],
+  "px": [
+   1024,
+   1024
+  ],
+  "size_m": 1.44
+ },
+ "shop_interiors": {
+  "atlas": true,
+  "maps": [
+   "diff"
+  ],
+  "px": [
+   2048,
+   2048
+  ],
+  "size_m": 0.0
+ },
+ "shutter_steel": {
+  "maps": [
+   "diff",
+   "nor",
+   "orm"
+  ],
+  "px": [
+   1024,
+   1024
+  ],
+  "size_m": 1.2
+ },
+ "signs": {
+  "count": 356
+ },
+ "steel_galv": {
+  "maps": [
+   "diff",
+   "nor",
+   "orm"
+  ],
+  "px": [
+   1024,
+   1024
+  ],
+  "size_m": 1.6
+ },
+ "steel_powder": {
+  "maps": [
+   "diff",
+   "nor",
+   "orm"
+  ],
+  "px": [
+   1024,
+   1024
+  ],
+  "size_m": 1.6
+ },
+ "stone_granite": {
+  "maps": [
+   "diff",
+   "nor",
+   "orm"
+  ],
+  "px": [
+   2048,
+   2048
+  ],
+  "size_m": 2.4
+ },
+ "stone_pale": {
+  "maps": [
+   "diff",
+   "nor",
+   "orm"
+  ],
+  "px": [
+   1024,
+   1024
+  ],
+  "size_m": 1.2
+ },
+ "tile_white": {
+  "maps": [
+   "diff",
+   "nor",
+   "orm"
+  ],
+  "px": [
+   2048,
+   2048
+  ],
+  "size_m": 2.0
+ },
+ "windows_far_office": {
+  "atlas": true,
+  "maps": [
+   "diff",
+   "emit"
+  ],
+  "px": [
+   2046,
+   2052
+  ],
+  "size_m": 0.0
+ },
+ "windows_far_resi": {
+  "atlas": true,
+  "maps": [
+   "diff",
+   "emit"
+  ],
+  "px": [
+   1968,
+   2044
+  ],
+  "size_m": 0.0
+ },
+ "wood_lacquer": {
+  "maps": [
+   "diff",
+   "nor",
+   "orm"
+  ],
+  "px": [
+   1024,
+   1024
+  ],
+  "size_m": 1.2
+ }
+}

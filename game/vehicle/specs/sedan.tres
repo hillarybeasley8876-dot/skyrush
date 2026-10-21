@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="CarSpec" format=3]
+
+[ext_resource type="Script" path="res://vehicle/car_spec.gd" id="1_s37gi"]
+
+[resource]
+script = ExtResource("1_s37gi")
+id = &"sedan"
+display_name = "Traffic Sedan"
+mass = 1500.0
+center_of_mass = Vector3(0, 0.41640002, 0)
+inertia = Vector3(3140.273, 2974.171, 666.2026)
+body_size = Vector3(1.9033334, 1.3065001, 4.8389297)
+body_center_y = 0.8082500547170639
+max_health = 40.0
+wheel_mounts = Array[Vector3]([Vector3(-0.795, 0.6904321, -1.49), Vector3(0.795, 0.6904321, -1.49), Vector3(-0.795, 0.6904321, 1.49), Vector3(0.795, 0.6904321, 1.49)])
+wheel_radii = Array[float]([0.347, 0.347, 0.347, 0.347])
+spring_k = 55263.12231571072
+damp_bump = 3631.5777783430894
+damp_rebound = 4973.682609469884
+arb_front = 22105.248926284286
+arb_rear = 15789.463518774492
+bumpstop_k = 236841.95278161738
+susp_max = 47368.39055632347
+top_speed = 50.0
+accel = 9.0
+brake_accel = 14.0
+mu_front = 1.35
+mu_rear = 1.32
+visual_scene_path = "res://assets/cars/npc/sedan_ev.glb"

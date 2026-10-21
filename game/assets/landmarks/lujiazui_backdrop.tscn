@@ -1,0 +1,21 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/landmarks/lujiazui_backdrop.glb" id="1_model"]
+[ext_resource type="Script" path="res://assets/landmarks/materials/apply_facade.gd" id="2_apply"]
+[ext_resource type="Script" path="res://assets/landmarks/materials/led_unfog.gd" id="2_unfog"]
+[ext_resource type="Script" path="res://assets/landmarks/materials/aviation_blink.gd" id="3_aviation"]
+[ext_resource type="Material" path="res://assets/landmarks/materials/lujiazui_facade.tres" id="3_facade"]
+
+[node name="LujiazuiBackdrop" type="Node3D"]
+script = ExtResource("2_apply")
+facade_material = ExtResource("3_facade")
+mesh_prefix = "Tower_"
+seeds = PackedFloat32Array(2.3, 9.7, 17.1, 24.5, 31.9, 39.3, 46.7, 54.1, 61.5, 68.9, 76.3, 83.7)
+
+[node name="Model" parent="." instance=ExtResource("1_model")]
+
+[node name="LedUnfog" type="Node" parent="."]
+script = ExtResource("2_unfog")
+
+[node name="Aviation" type="Node" parent="."]
+script = ExtResource("3_aviation")

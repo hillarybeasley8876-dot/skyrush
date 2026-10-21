@@ -1,0 +1,25 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://assets/cars/roadster/preview_roadster.gd" id="0_script"]
+[ext_resource type="PackedScene" path="res://assets/cars/roadster/roadster.glb" id="1_car"]
+[ext_resource type="PackedScene" path="res://world/env/environment.tscn" id="2_env"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ground"]
+size = Vector2(80, 80)
+
+[sub_resource type="StandardMaterial3D" id="Mat_ground"]
+albedo_color = Color(0.055, 0.058, 0.068, 1)
+roughness = 0.55
+metallic = 0.1
+
+[node name="PreviewRoadster" type="Node3D"]
+script = ExtResource("0_script")
+
+[node name="Environment" parent="." instance=ExtResource("2_env")]
+
+[node name="Roadster" parent="." instance=ExtResource("1_car")]
+
+[node name="Ground" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("PlaneMesh_ground")
+surface_material_override/0 = SubResource("Mat_ground")

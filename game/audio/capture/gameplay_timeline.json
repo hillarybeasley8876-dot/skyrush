@@ -1,0 +1,23 @@
+[
+ {"t": 0.5, "press": ["accelerate"]},
+ {"t": 2.5, "tap": ["nitro"]},
+ {"t": 3.6, "press": ["steer_left", "drift"]},
+ {"t": 6.4, "release": ["steer_left", "drift"]},
+ {"t": 6.8, "tap": ["mini_boost"]},
+ {"t": 8.0, "press": ["steer_right"]},
+ {"t": 9.2, "release": ["steer_right"]},
+ {"t": 9.8, "press": ["hop"]},
+ {"t": 11.0, "release": ["hop"]},
+ {"t": 11.3, "tap": ["roll_right"]},
+ {"t": 12.8, "tap": ["hop"]},
+ {"t": 13.5, "tap": ["roll_right"]},
+ {"t": 14.0, "press": ["accelerate"]},
+ {"t": 19.0, "release": ["accelerate"]},
+ {"t": 19.5, "press": ["brake"]},
+ {"t": 21.5, "release": ["brake"]},
+ {"t": 22.0, "press": ["accelerate"]},
+ {"t": 27.0, "release": ["accelerate"]},
+ {"t": 27.5, "press": ["accelerate"]},
+ {"t": 30.0, "release": ["accelerate"]},
+ {"t": 30.5, "end": true}
+]

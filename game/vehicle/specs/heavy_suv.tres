@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="CarSpec" format=3]
+
+[ext_resource type="Script" path="res://vehicle/car_spec.gd" id="1_0mbp5"]
+
+[resource]
+script = ExtResource("1_0mbp5")
+id = &"heavy_suv"
+display_name = "Heavy SUV"
+mass = 2600.0
+center_of_mass = Vector3(0, 0.49199998, 0)
+inertia = Vector3(6446.3765, 5982.5796, 1577.2344)
+body_size = Vector3(2.1100001, 1.6815002, 5.1889367)
+body_center_y = 1.0907501
+max_health = 140.0
+wheel_mounts = Array[Vector3]([Vector3(-0.845, 0.7534321, -1.525), Vector3(0.845, 0.7534321, -1.525), Vector3(-0.845, 0.7534321, 1.525), Vector3(0.845, 0.7534321, 1.525)])
+wheel_radii = Array[float]([0.41, 0.41, 0.41, 0.41])
+spring_k = 95789.41201389859
+damp_bump = 6294.734815794687
+damp_rebound = 8621.049856414464
+arb_front = 38315.76480555943
+arb_rear = 27368.403432542455
+bumpstop_k = 410526.0514881368
+susp_max = 82105.21029762736
+top_speed = 58.33333333333333
+accel = 10.0
+brake_accel = 18.0
+mu_front = 1.5
+mu_rear = 1.45
+visual_scene_path = "res://assets/cars/npc/police_suv.glb"

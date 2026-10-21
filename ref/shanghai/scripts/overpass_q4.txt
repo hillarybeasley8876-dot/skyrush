@@ -1,0 +1,7 @@
+[out:json][timeout:90];
+(
+  way["highway"]["bridge"](31.2225,121.4605,31.2300,121.4700);
+  way["highway"]["layer"](31.2225,121.4605,31.2300,121.4700);
+  way["highway"]["bridge"](31.2010,121.4930,31.2085,121.5030);
+);
+out tags geom;

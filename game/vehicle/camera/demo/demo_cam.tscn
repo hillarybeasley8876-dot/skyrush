@@ -1,0 +1,17 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://vehicle/camera/demo/demo_cam.gd" id="1_demo"]
+[ext_resource type="PackedScene" path="res://core/sandbox/sandbox.tscn" id="2_sandbox"]
+[ext_resource type="PackedScene" path="res://vehicle/camera/demo/demo_car.tscn" id="3_car"]
+[ext_resource type="PackedScene" path="res://vehicle/camera/chase_camera.tscn" id="4_camera"]
+
+[node name="DemoCam" type="Node3D"]
+script = ExtResource("1_demo")
+
+[node name="Sandbox" parent="." instance=ExtResource("2_sandbox")]
+
+[node name="DemoCar" parent="." instance=ExtResource("3_car")]
+
+[node name="Victim" parent="." instance=ExtResource("3_car")]
+
+[node name="ChaseCamera" parent="." instance=ExtResource("4_camera")]

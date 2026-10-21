@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CarSpec" format=3]
+
+[ext_resource type="Script" path="res://vehicle/car_spec.gd" id="1_gyqpd"]
+
+[resource]
+script = ExtResource("1_gyqpd")
+id = &"patrol"
+display_name = "Patrol EV"
+mass = 1800.0
+center_of_mass = Vector3(0, 0.41640002, 0)
+inertia = Vector3(3768.3274, 3569.0051, 799.4431)
+body_size = Vector3(1.9033334, 1.3065001, 4.8389297)
+body_center_y = 0.8082500547170639
+max_health = 60.0
+wheel_mounts = Array[Vector3]([Vector3(-0.795, 0.6904321, -1.49), Vector3(0.795, 0.6904321, -1.49), Vector3(-0.795, 0.6904321, 1.49), Vector3(0.795, 0.6904321, 1.49)])
+wheel_radii = Array[float]([0.347, 0.347, 0.347, 0.347])
+spring_k = 66315.74677885287
+damp_bump = 4357.893334011707
+damp_rebound = 5968.419131363859
+arb_front = 26526.29871154115
+arb_rear = 18947.356222529394
+bumpstop_k = 284210.34333794087
+susp_max = 56842.06866758817
+top_speed = 63.888888888888886
+accel = 13.0
+mu_rear = 1.42
+visual_scene_path = "res://assets/cars/npc/police_patrol.glb"

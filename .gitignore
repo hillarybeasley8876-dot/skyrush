@@ -1,0 +1,16 @@
+jobs/
+.godot/
+captures/
+tmp/
+__pycache__/
+ref/video/*.mp4
+ref/**/dl*/
+ref/**/scratch/
+ref/**/_scratch/
+ref/tech/probe/out/
+*.blend1
+
+# Third-party reference media stay local (research copies, not redistributable)
+ref/**/*.jpg
+ref/**/*.jpeg
+ref/**/*.webp

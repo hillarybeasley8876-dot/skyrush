@@ -1,0 +1,27 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/road_marking.gdshader" id="1_wd2tu"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_hqump"]
+seed = 21
+frequency = 0.05
+fractal_octaves = 4
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_ao1f0"]
+width = 256
+height = 256
+noise = SubResource("FastNoiseLite_hqump")
+seamless = true
+bump_strength = 2.0
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_wd2tu")
+shader_parameter/paint_color = Color(0.9137255, 0.90588236, 0.8745098, 1)
+shader_parameter/use_mask = false
+shader_parameter/wear_noise = SubResource("NoiseTexture2D_ao1f0")
+shader_parameter/wear = 0.25
+shader_parameter/wetness_bias = 0.0
+shader_parameter/retro_strength = 0.35
+shader_parameter/retro_near_m = 6.0
+shader_parameter/retro_far_m = 70.0
