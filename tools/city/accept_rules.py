@@ -2,7 +2,7 @@
 """accept_rules — the regression gate for map jobs.
 
     python tools/city/accept_rules.py <city.json> --baseline tools/city/rules_baseline.json
-            [--target "rule name"]... [--max-target N] [--write-baseline]
+            [--target "rule name"]... [--max-target N] [--clear REGEX] [--write-baseline]
 
 Runs every rule of validate.py on <city.json> and compares each rule's failing items with the baseline.
 An item is identified by its message with the numbers blanked (so moving a road a metre does not make
@@ -10,7 +10,9 @@ an old failure look new, but a failure on a road that passed before is new).
 
 Exit 0 only when
   * no rule that is NOT a --target has an item the baseline did not have, and
-  * every --target rule has at most --max-target items (default 0).
+  * every --target rule has at most --max-target items (default 0), or, with --clear REGEX, has NO item whose
+    message matches REGEX (the rest of that rule may still fail, but must not gain an item the baseline did
+    not have): this is how a job takes one region's failures out of a rule that fails in several places.
 Prints one line per rule: baseline count, current count, new items, fixed items.
 """
 import json
@@ -24,11 +26,11 @@ sys.path.insert(0, HERE)
 import citylib  # noqa: E402
 import validate  # noqa: E402
 
-NUMBER = re.compile(r"-?\d+(?:\.\d+)?")
+NUMBER = re.compile(r"(?<![\w.])-?\d+(?:\.\d+)?(?![\w])")   # stand-alone numbers only: ids such as st_d7_ns_13 keep their digits
 
 
 def key(message):
-    """A failing item's identity: the message with every number blanked."""
+    """A failing item's identity: the message with every stand-alone number blanked."""
     return NUMBER.sub("#", message).strip()
 
 
@@ -49,7 +51,7 @@ def main(argv):
         print(__doc__)
         return 2
     path = args[0]
-    opts = {"--baseline": None, "--max-target": "0"}
+    opts = {"--baseline": None, "--max-target": "0", "--clear": None}
     targets, write = [], False
     i = 1
     while i < len(args):
@@ -82,7 +84,17 @@ def main(argv):
         new, fixed = sorted(keys - old), sorted(old - keys)
         is_target = any(t.lower() in name.lower() for t in targets)
         verdict = ""
-        if is_target and len(msgs) > limit:
+        if is_target and opts["--clear"]:
+            left = [m for m in msgs if re.search(opts["--clear"], m)]
+            if left:
+                verdict, bad = "  <-- %d item(s) matching --clear remain" % len(left), bad + 1
+                for item in left[:6]:
+                    print("      remaining: %s" % item[:150])
+            elif new:
+                verdict, bad = "  <-- target rule gained NEW items", bad + 1
+                for item in new[:6]:
+                    print("      new: %s" % item[:150])
+        elif is_target and len(msgs) > limit:
             verdict, bad = "  <-- target still failing", bad + 1
         elif not is_target and new:
             verdict, bad = "  <-- REGRESSION", bad + 1

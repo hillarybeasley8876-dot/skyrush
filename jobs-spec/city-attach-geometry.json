@@ -1,0 +1,53 @@
+{
+  "id": "city-attach-geometry",
+  "title": "Fix the ramp attach geometry (Nanpu spiral, Pudong loop, one dragon ramp)",
+  "brief": "briefs/improve/city-attach-geometry.md",
+  "isolation": "worktree",
+  "sparse": [
+    "tools/",
+    "data/",
+    "ref/",
+    "briefs/",
+    "SPEC.md",
+    "ART.md",
+    "CONTRACTS.md",
+    "README.md"
+  ],
+  "owns": [
+    "tools/city/city_roads.py",
+    "tools/city/dragon_ramps.py",
+    "tools/city/selftest_attach_geometry.py"
+  ],
+  "maxRounds": 5,
+  "maxTurns": 250,
+  "timeoutMin": 120,
+  "accept": [
+    {
+      "name": "generate the map",
+      "cmd": "python tools/city/build_city.py --out F:/dev/skyrush-out/tmp/city-attach-geometry/city.json",
+      "timeoutS": 300
+    },
+    {
+      "name": "attach + curvature clean, nothing else worse",
+      "cmd": "python tools/city/accept_rules.py F:/dev/skyrush-out/tmp/city-attach-geometry/city.json --baseline tools/city/rules_baseline.json --target \"ramps attach\" --target \"vertical curvature\"",
+      "must": [
+        "ACCEPT_RULES OK"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "the network did not shrink",
+      "cmd": "python tools/city/check_network_size.py F:/dev/skyrush-out/tmp/city-attach-geometry/city.json",
+      "must": [
+        "NETWORK_SIZE OK"
+      ]
+    },
+    {
+      "name": "the attach mutation self-test still passes",
+      "cmd": "python tools/city/selftest_attach.py F:/dev/skyrush-out/tmp/city-attach-geometry/city.json",
+      "must": [
+        "selftest_attach: 0 case(s) wrong"
+      ]
+    }
+  ]
+}
