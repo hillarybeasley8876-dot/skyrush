@@ -133,7 +133,8 @@ def _side(road, s, target):
     return "left" if cross > 0 else "right"
 
 
-def main():
+def main(out=None):
+    out = out or OUT
     roads = build_main_roads()
     streets, dead_ends = city_grid.build_streets(roads)
     for st in streets:
@@ -166,8 +167,8 @@ def main():
     spawns = city_marks_routes.build_spawns(by_id, pois)
     city = assemble(roads + streets + ramps, junctions, blocks, pois,
                     sky_lanes, routes, spawns, dead_ends)
-    citylib.save_json(OUT, city)
-    report(city, all_roads)
+    citylib.save_json(out, city)
+    report(city, all_roads, out)
     return 0
 
 
@@ -205,14 +206,14 @@ def assemble(roads, junctions, blocks, pois, sky_lanes, routes, spawns,
     return city
 
 
-def report(city, roads):
+def report(city, roads, out=None):
     """Print the map statistics."""
     total = 0.0
     lanes_total = 0.0
     for road in roads:
         total += road.length()
         lanes_total += road.length() * max(1, road.lanes_fwd + road.lanes_back)
-    size = os.path.getsize(OUT)
+    size = os.path.getsize(out or OUT)
     print("roads      : %d" % len(roads))
     print("blocks     : %d" % len(city["blocks"]))
     print("junctions  : %d" % len(city["junctions"]))
@@ -225,4 +226,8 @@ def report(city, roads):
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    target = None
+    if "--out" in sys.argv:
+        target = os.path.abspath(sys.argv[sys.argv.index("--out") + 1])
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+    sys.exit(main(target))

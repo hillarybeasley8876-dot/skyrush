@@ -140,7 +140,7 @@ func _sweep_casts(lanes: Array) -> int:
 
 ## The name of the node a shape hit belongs to (the collider that blocks a lane).
 func _hit_name(hit: Dictionary) -> String:
-	var obj := instance_from_id(int(hit.get("collider", 0)))
+	var obj := instance_from_id(int(hit.get("collider_id", 0)))
 	if obj == null:
 		return "?"
 	return String((obj as Node).name)

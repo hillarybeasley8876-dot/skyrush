@@ -10,6 +10,7 @@ The rules:
 import math
 
 import citylib
+import city_attach
 from city_rules import (_angle_diff, deck_depth,
                         GORE, CLEARANCE, TUNNEL_CLEARANCE, PLAN_TOLERANCE,
                         HEIGHT_TOLERANCE, TANGENT_TOLERANCE)
@@ -244,14 +245,47 @@ def check_clearance(city):
     return fails
 
 
-def check_attaches(city):
-    """The ramps attach to their parents on the centre-line (review r1 A.4).
+def _ends_mid_median(road, parent, cp):
+    """True when a ramp ends on the centre-line of a two-way parent away from the
+    parent's own ends: that is the middle of its median, not a way onto it."""
+    if road["kind"] != "ramp" or (parent.get("lanes_back", 0) or 0) <= 0:
+        return False
+    pts = road_points(parent)
+    station = city_attach.project(pts, (cp[0], cp[2]))[0]
+    length = sum(math.hypot(b[0] - a[0], b[2] - a[2]) for a, b in zip(pts, pts[1:]))
+    return 3.0 < station < length - 3.0
 
-    The plan error is the distance from the ramp's end to the parent's
-    centre-line, the height error the difference to the parent's height there
-    and the tangent error the angle between the two directions.  The tangent
-    rule only applies to the ramps: the end to end links of two surface
-    roads meet at a crossroads, where the angle is the junction's business.
+
+def _edge_merge_error(road, att, parent, cp):
+    """How far a ramp end is from the edge of the carriageway it serves (m).
+
+    city_attach.py is the layout rule: the end sits at the lateral offset
+    direction * (asphalt_half(parent) + asphalt_half(ramp)) from the parent's
+    centre-line, on the side the schema names.  None when the road is no ramp.
+    """
+    if road["kind"] != "ramp":
+        return None
+    _station, lat, _heading, _y = city_attach.project(
+        road_points(parent), (cp[0], cp[2]))
+    direction = 1.0 if att.get("side") == "right" else -1.0
+    expected = direction * (city_attach.asphalt_half(parent)
+                            + city_attach.asphalt_half(road))
+    return abs(lat - expected)
+
+
+def check_attaches(city):
+    """The ramps attach to their parents (review r2 #1 rewrite of r1 A.4).
+
+    An end meets its parent in one of two ways:
+      * end to end: it lies on the parent's centre-line (the plan error is
+        within PLAN_TOLERANCE);
+      * edge merge (ramps only): it lies on the edge of the carriageway it
+        serves, at the lateral offset the roads unit lays out
+        (city_attach.py), on the side the schema names.
+    Either way the height error and, for ramps, the tangent error stay within
+    tolerance.  The tangent rule does not apply to the end to end links of two
+    surface roads: they meet at a crossroads, where the angle is the
+    junction's business.
     """
     fails = []
     by_id = {r["id"]: r for r in city["roads"]}
@@ -271,9 +305,20 @@ def check_attaches(city):
             ct = _direction(road, idx)
             tan_err = min(_angle_diff(_heading(ct), _heading(tan)),
                           _angle_diff(_heading(ct), _heading(tan) + 180.0))
-            if plan_err > PLAN_TOLERANCE + 1e-6:
-                fails.append("%s %s: %.2f m off the parent"
-                             % (road["id"], key, plan_err))
+            if plan_err <= PLAN_TOLERANCE + 1e-6:
+                if _ends_mid_median(road, parent, cp):
+                    fails.append("%s %s: ends on the centre-line of the "
+                                 "two-way parent %s, not on its edge"
+                                 % (road["id"], key, parent["id"]))
+            else:
+                edge_err = _edge_merge_error(road, att, parent, cp)
+                if edge_err is None:
+                    fails.append("%s %s: %.2f m off the parent"
+                                 % (road["id"], key, plan_err))
+                elif edge_err > PLAN_TOLERANCE + 1e-6:
+                    fails.append("%s %s: %.2f m off the parent's carriageway "
+                                 "edge (side %s)"
+                                 % (road["id"], key, edge_err, att.get("side")))
             if height_err > HEIGHT_TOLERANCE + 1e-6:
                 fails.append("%s %s: %.2f m height error"
                              % (road["id"], key, height_err))
