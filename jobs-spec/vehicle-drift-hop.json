@@ -1,0 +1,41 @@
+{
+  "id": "vehicle-drift-hop",
+  "title": "A hop must not be pulled down by the drift assist",
+  "brief": "briefs/improve/vehicle-drift-hop.md",
+  "isolation": "worktree",
+  "owns": [
+    "game/vehicle/modules/",
+    "game/vehicle/tuning/",
+    "game/vehicle/arcade_car.gd",
+    "game/vehicle/tests/test_hop_drift_cases.gd"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 250,
+  "timeoutMin": 150,
+  "accept": [
+    {
+      "name": "vehicle scripts and scenes load clean",
+      "cmd": "python tools/gd.py check --only=res://vehicle/",
+      "must": [
+        "re:CHECK \\d+ files, 0 failed, 0 engine errors"
+      ],
+      "timeoutS": 1200
+    },
+    {
+      "name": "hop in a drift reaches the design apex (lead oracle)",
+      "cmd": "python tools/gd.py test res://vehicle/tests/test_hop_drift_accept.gd",
+      "must": [
+        "RESULT 7 checks, 0 failures"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "the whole vehicle test folder still passes",
+      "cmd": "python tools/run_tests.py --filter res://vehicle/tests/ --jobs 3 --out F:/dev/skyrush-out/tmp/vehicle-drift-hop/tests",
+      "must": [
+        "re:, 0 failed or timed out"
+      ],
+      "timeoutS": 2400
+    }
+  ]
+}
