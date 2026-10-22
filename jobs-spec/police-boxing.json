@@ -1,0 +1,42 @@
+{
+  "id": "police-boxing",
+  "title": "The rolling box must bust a slow player twice as fast",
+  "brief": "briefs/improve/police-boxing.md",
+  "isolation": "worktree",
+  "owns": [
+    "game/ai/police/"
+  ],
+  "readonly": [
+    "game/ai/police/tests/test_box.gd",
+    "game/ai/police/tests/police_test.gd"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 250,
+  "timeoutMin": 150,
+  "accept": [
+    {
+      "name": "police scripts and scenes load clean",
+      "cmd": "python tools/gd.py check --only=res://ai/police/",
+      "must": [
+        "re:CHECK \\d+ files, 0 failed, 0 engine errors"
+      ],
+      "timeoutS": 1200
+    },
+    {
+      "name": "the box busts a slow player twice as fast",
+      "cmd": "python tools/gd.py test res://ai/police/tests/test_box.gd",
+      "must": [
+        "PASS the busted meter fills twice as fast"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "the whole police test folder passes",
+      "cmd": "python tools/run_tests.py --filter res://ai/police/ --jobs 3 --out F:/dev/skyrush-out/tmp/police-boxing/tests",
+      "must": [
+        "re:, 0 failed or timed out"
+      ],
+      "timeoutS": 2400
+    }
+  ]
+}

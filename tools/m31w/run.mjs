@@ -15,7 +15,7 @@
 //   node tools/m31w/run.mjs merge <id> [<id>...]      merge accepted job branches (--no-ff, aborts on conflict)
 //
 // Spec: { id, title, model?, brief, owns:[paths], accept:[{name, cmd, exit?, must?:[..], mustNot?:[..], timeoutS?}],
-//         maxRounds?, maxTurns?, timeoutMin?, isolation?: "worktree", sparse?: [paths] }
+//         maxRounds?, maxTurns?, timeoutMin?, isolation?: "worktree", sparse?: [paths], readonly?: [paths inside owns] }
 //   ("re:" prefix in must/mustNot = regular expression; isolation=worktree gives the job its own sparse git worktree
 //    F:/dev/skyrush-wt/<id> on branch job/<id>, committed by the runner once acceptance passes)
 import { spawn, spawnSync } from 'node:child_process';
@@ -217,7 +217,9 @@ function enforceOwnership(job, baseline, others, dir, round, cwd) {
   const mine = [...job.owns, `status/improve/${job.id}.md`];
   const stray = [];
   for (const p of dirtyFiles(cwd)) {
-    if (baseline.has(p) || underOwn(p, mine) || others.some((o) => underOwn(p, o)) || TOLERATED.some((re) => re.test(p))) continue;
+    // `readonly` paths (the lead's oracle tests) are reverted even inside an owned folder
+    const locked = underOwn(p, job.readonly ?? []);
+    if (!locked && (baseline.has(p) || underOwn(p, mine) || others.some((o) => underOwn(p, o)) || TOLERATED.some((re) => re.test(p)))) continue;
     stray.push(p);
   }
   const q = join(OUT, 'quarantine', job.id, `r${round}`);
