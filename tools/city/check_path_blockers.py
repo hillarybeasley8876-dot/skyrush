@@ -12,6 +12,10 @@ one position per --step metres, heading along the path.  A position where a tria
 This is the offline twin of game/world/tests/probe_path_blockers.gd (which also sees the props of the world).
 With --lanes every lane of lanes.json (optionally only those whose id starts with --prefix) is one path (--step 3 by default),
 and the blocked points are summed per road: the worst roads are printed instead of one line per path.
+--lip M also looks at the road SURFACE colliders: a position is a "lip" when the highest surface triangle under the car's
+footprint (3 x 3 sample points, triangles within 3 m of the path height) is more than M metres (default 0.25) above the path:
+a step the car drives into (e.g. the widened acceleration strip of the parent road lying 1 m above the ramp's deck).
+--max-lips N makes more than N lip positions a failure (default: lips are only printed).
 --min-barrier-area guards against "fixing" the blockers by deleting the barriers: the total surface area of the barrier
 colliders (3D, all triangles) must be at least that many square metres.
 Prints one line per path and "PATH_BLOCKERS OK" or "PATH_BLOCKERS FAIL n blocked points in m paths"; exit 0 when the
@@ -65,6 +69,13 @@ def build_grid(tris):
     return grid
 
 
+def up_facing(t):
+    """True when the front face of the triangle (counter-clockwise seen from above) looks up."""
+    ux, uz = t[1][0] - t[0][0], t[1][2] - t[0][2]
+    vx, vz = t[2][0] - t[0][0], t[2][2] - t[0][2]
+    return vx * uz - vz * ux > 0.0
+
+
 def tri_box_overlap(v0, v1, v2, half):
     """Triangle against an axis aligned box centred at the origin (Akenine-Moeller separating axis test)."""
     hx, hy, hz = half
@@ -93,15 +104,25 @@ def main(argv):
     lift, step, max_bad = float(opt("--lift", "0.30")), float(opt("--step", "1.0")), int(opt("--max-bad", "0"))
     csv_path = opt("--csv", "")
     min_area = float(opt("--min-barrier-area", "0"))
+    lip = float(opt("--lip", "0.25"))
+    max_lips = int(opt("--max-lips", "-1"))
     lanes_path = opt("--lanes", "")
     prefix = opt("--prefix", "")
-    for n in ("--lift", "--step", "--max-bad", "--csv", "--lanes", "--prefix", "--min-barrier-area"):
+    for n in ("--lift", "--step", "--max-bad", "--csv", "--lanes", "--prefix", "--min-barrier-area", "--lip", "--max-lips"):
         if n in argv:
             args.remove(argv[argv.index(n) + 1])
     if lanes_path and "--step" not in argv:
         step = 3.0
     tris = barrier_triangles(args[0])
     grid = build_grid(tris)
+    surf_grid = None
+    if max_lips >= 0 or "--lip" in argv:
+        surf = []
+        for name in sorted(os.listdir(args[0])):
+            if name.startswith("roads_") and name.endswith(".gltf"):
+                surf += cs.load_tile_triangles(os.path.join(args[0], name))
+        surf_grid = cs.build_grid(surf)
+    lips_total = 0
     if lanes_path:
         lane_docs = [{"id": l["id"], "road": l["road"], "points": l["points"]}
                      for l in json.load(open(lanes_path, encoding="utf-8"))["lanes"]
@@ -115,6 +136,7 @@ def main(argv):
         doc = lane_docs[k] if lanes_path else json.load(open(os.path.join(args[1], f), encoding="utf-8"))
         pts = doc["points"]
         dist, next_probe, blocked, first = 0.0, 0.0, 0, ""
+        lips, lip_first = 0, ""
         for a, b in zip(pts, pts[1:]):
             seg = math.dist(a, b)
             if seg < 1e-3:
@@ -140,6 +162,20 @@ def main(argv):
                     if tri_box_overlap(loc[0], loc[1], loc[2], HALF):
                         hit = nm
                         break
+                if surf_grid is not None:
+                    top = None
+                    for lat in (-0.9, 0.0, 0.9):
+                        for lon in (-2.0, 0.0, 2.0):
+                            qx, qz = cx + rx * lat + fx * lon, cz + rz * lat + fz * lon
+                            for tri in surf_grid.get((int(qx // cs.CELL), int(qz // cs.CELL)), ()):
+                                h = cs.height_at(tri, qx, qz)
+                                # a step the wheels run into: 0.25 .. 0.9 m above the lane, facing up (the colliders are one sided:
+                                # a deck overhead is no obstacle, a car below passes through its back face)
+                                if h is not None and lip < h - (cy - lift - HALF[1]) < 0.9 and up_facing(tri):
+                                    top = h if top is None else max(top, h)
+                    if top is not None:
+                        lips += 1
+                        lip_first = lip_first or "%.2f m above the path at %.0f m (%.1f, %.1f, %.1f)" % (top - (cy - lift - HALF[1]), next_probe, cx, cy - lift - HALF[1], cz)
                 if hit:
                     blocked += 1
                     first = first or "%s at %.0f m (%.1f, %.1f, %.1f)" % (hit, next_probe, cx, cy - lift - HALF[1], cz)
@@ -147,11 +183,13 @@ def main(argv):
                 next_probe += step
             dist += seg
         total += blocked
+        lips_total += lips
         if lanes_path:
             if blocked:
                 per_road[doc["road"]] += blocked
             continue
-        print("%s %-44s %3d blocked points%s" % ("ok  " if not blocked else "BAD ", doc.get("id", f), blocked, "" if not first else "  first: " + first))
+        print("%s %-44s %3d blocked points%s%s" % ("ok  " if not blocked else "BAD ", doc.get("id", f), blocked, "" if not first else "  first: " + first,
+                                              "" if not lips else "  LIPS %d, first %s" % (lips, lip_first)))
     if csv_path:
         open(csv_path, "w", encoding="utf-8").write("path,at_m,x,y,z,collider\n" + "\n".join(rows) + "\n")
     if lanes_path:
@@ -165,6 +203,11 @@ def main(argv):
     if min_area and area < min_area:
         print("PATH_BLOCKERS FAIL the barrier colliders shrank to %.0f m2 (at least %.0f m2): the barriers were deleted, not moved" % (area, min_area))
         return 1
+    if surf_grid is not None:
+        print("lips: %d positions with a surface step of more than %.2f m" % (lips_total, lip))
+        if max_lips >= 0 and lips_total > max_lips:
+            print("PATH_BLOCKERS FAIL %d lip positions (at most %d)" % (lips_total, max_lips))
+            return 1
     print("PATH_BLOCKERS %s" % ("OK" if total <= max_bad else "FAIL %d blocked points in %d paths" % (total, len(files))))
     return 0 if total <= max_bad else 1
 
