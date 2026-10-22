@@ -17,6 +17,13 @@ const CURTAIN_HEIGHT := 6.5                     ## m
 const CURTAIN_DROP := 1.9                       ## m above the road
 const TRIGGER_DEPTH := 3.0                      ## m: how deep the trigger box is
 const TRIGGER_HEIGHT := 14.0                    ## m: the gate is high enough for a sky lane
+## The heights that are on the level of the gate: a car that drives on the deck above the
+## gate is inside the trigger box, but on another level, and must not score the checkpoint.
+## The upper limit is 9.0 m: the closest deck on the map is 9.6 m above a gate (the surface
+## road over the Bund tunnel gate at y = -9.6) and a car on that deck has its origin 9.3 m
+## above the gate. A car in the air (a sky lane) counts at any height of the box.
+const GROUND_PASS_HEIGHT := 9.0                 ## m above the gate origin
+const GROUND_PASS_BELOW := 2.0                  ## m below the gate origin
 const LED_ENERGY := 4.5                         ## the energy of the LED strips
 const CURTAIN_ENERGY := 3.5                     ## the energy of the hologram curtain
 const GATE_FADE := 0.35                         ## the alpha of the curtain in the middle
@@ -333,4 +340,15 @@ func _on_body_entered(body: Node3D) -> void:
 	var vehicle := body as VehicleBase
 	if vehicle == null:
 		return
+	# A car that drives on the deck above the gate is inside the box, but on another
+	# level: it must not score the checkpoint. A car in the air (a sky lane) does.
+	if not vehicle.is_airborne() and not _is_on_gate_level(vehicle):
+		return
 	passed.emit(vehicle, index)
+
+
+## True when a grounded car is on the level of the gate (not on a deck above it and
+## not in a tunnel below it).
+func _is_on_gate_level(vehicle: VehicleBase) -> bool:
+	var dy := vehicle.global_position.y - global_position.y
+	return dy <= GROUND_PASS_HEIGHT and dy >= -GROUND_PASS_BELOW
