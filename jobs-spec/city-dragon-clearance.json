@@ -1,0 +1,53 @@
+{
+  "id": "city-dragon-clearance",
+  "title": "Dragon-pillar interchange: ramps pass over and under each other",
+  "brief": "briefs/improve/city-dragon-clearance.md",
+  "isolation": "worktree",
+  "sparse": [
+    "tools/",
+    "data/",
+    "ref/",
+    "briefs/",
+    "SPEC.md",
+    "ART.md",
+    "CONTRACTS.md",
+    "README.md"
+  ],
+  "owns": [
+    "tools/city/dragon.py",
+    "tools/city/dragon_ramps.py",
+    "tools/city/selftest_dragon.py"
+  ],
+  "maxRounds": 5,
+  "maxTurns": 300,
+  "timeoutMin": 150,
+  "accept": [
+    {
+      "name": "generate the map",
+      "cmd": "python tools/city/build_city.py --out F:/dev/skyrush-out/tmp/city-dragon-clearance/city.json",
+      "timeoutS": 300
+    },
+    {
+      "name": "the dragon clearance items are gone, nothing else worse",
+      "cmd": "python tools/city/accept_rules.py F:/dev/skyrush-out/tmp/city-dragon-clearance/city.json --baseline tools/city/rules_baseline.json --target \"deck clearance\" --clear \"ramp_(l3|l4|rt)_|yanan_frontage\"",
+      "must": [
+        "ACCEPT_RULES OK"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "the network did not shrink",
+      "cmd": "python tools/city/check_network_size.py F:/dev/skyrush-out/tmp/city-dragon-clearance/city.json",
+      "must": [
+        "NETWORK_SIZE OK"
+      ]
+    },
+    {
+      "name": "the attach mutation self-test still passes",
+      "cmd": "python tools/city/selftest_attach.py F:/dev/skyrush-out/tmp/city-dragon-clearance/city.json",
+      "must": [
+        "selftest_attach: 0 case(s) wrong"
+      ]
+    }
+  ]
+}
