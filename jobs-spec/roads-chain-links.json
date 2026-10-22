@@ -1,0 +1,72 @@
+{
+  "id": "roads-chain-links",
+  "title": "Link the elevated roads that meet end to end (ns_elevated, inner_ring, Nanpu spiral and bridge)",
+  "brief": "briefs/improve/roads-chain-links.md",
+  "isolation": "worktree",
+  "sparse": [
+    "tools/",
+    "data/",
+    "ref/",
+    "briefs/",
+    "blender/",
+    "game/assets/textures/",
+    "game/assets/city/_tex/",
+    "game/world/data/",
+    "SPEC.md",
+    "ART.md",
+    "CONTRACTS.md",
+    "README.md"
+  ],
+  "owns": [
+    "blender/city/roads/lane_links.py",
+    "blender/city/roads/lanes.py"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 220,
+  "timeoutMin": 100,
+  "accept": [
+    {
+      "name": "lanes-only Blender build",
+      "timeoutS": 600,
+      "cmd": "python tools/gd.py blender run blender/city/roads/build_roads.py -- --city data/city/city.json --lanes-only --data F:/dev/skyrush-out/tmp/roads-chain-links/data",
+      "must": [
+        "DONE in"
+      ]
+    },
+    {
+      "name": "the elevated chain is linked",
+      "cmd": "python tools/city/check_chain_links.py F:/dev/skyrush-out/tmp/roads-chain-links/data/lanes.json --quiet",
+      "must": [
+        "CHAIN_LINKS OK"
+      ]
+    },
+    {
+      "name": "lane links are still drivable",
+      "cmd": "python tools/city/check_lane_links.py F:/dev/skyrush-out/tmp/roads-chain-links/data/lanes.json data/city/city.json --quiet",
+      "must": [
+        "LANE_LINKS OK"
+      ]
+    },
+    {
+      "name": "the ramp attach links are still smooth",
+      "cmd": "python tools/city/check_attach_geometry.py F:/dev/skyrush-out/tmp/roads-chain-links/data/lanes.json data/city/city.json --quiet",
+      "must": [
+        "ATTACH_GEOMETRY OK"
+      ]
+    },
+    {
+      "name": "no regression of the rest of the lane graph",
+      "cmd": "python tools/city/check_lanes_regression.py F:/dev/skyrush-out/tmp/roads-chain-links/data/lanes.json F:/dev/skyrush-out/baselines/lanes_head.json data/city/city.json",
+      "must": [
+        "LANES_REGRESSION OK"
+      ]
+    },
+    {
+      "name": "the checker still works (selftest)",
+      "cmd": "python tools/city/selftest_chain_links.py game/world/data/lanes.json",
+      "must": [
+        "SELFTEST OK"
+      ]
+    }
+  ]
+}
