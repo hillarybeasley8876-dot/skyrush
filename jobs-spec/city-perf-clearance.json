@@ -1,0 +1,50 @@
+{
+  "id": "city-perf-clearance",
+  "title": "Make the deck clearance rule 5x faster with identical results",
+  "brief": "briefs/improve/city-perf-clearance.md",
+  "isolation": "worktree",
+  "sparse": [
+    "tools/",
+    "data/",
+    "ref/",
+    "briefs/",
+    "SPEC.md",
+    "ART.md",
+    "CONTRACTS.md",
+    "README.md"
+  ],
+  "owns": [
+    "tools/city/city_rules_attach.py",
+    "tools/city/city_rules_index.py",
+    "tools/city/selftest_clearance.py"
+  ],
+  "maxRounds": 3,
+  "maxTurns": 220,
+  "timeoutMin": 90,
+  "accept": [
+    {
+      "name": "deck clearance rule runs in under 15 s",
+      "cmd": "python tools/city/one_rule.py data/city/city.json \"deck clearance\" --time --max 0",
+      "must": [
+        "re:\\(([0-9]|1[0-4])\\.[0-9] s\\)"
+      ],
+      "exit": null,
+      "timeoutS": 300
+    },
+    {
+      "name": "its output is identical to the reference",
+      "cmd": "python -c \"import subprocess,sys; out=subprocess.run([sys.executable,'tools/city/one_rule.py','data/city/city.json','deck clearance','--max','1000'],capture_output=True,text=True,encoding='utf-8').stdout; ref=open('tools/city/clearance_reference.txt',encoding='utf-8').read(); print('SAME' if out==ref else 'DIFFERENT'); sys.exit(0 if out==ref else 1)\"",
+      "must": [
+        "SAME"
+      ],
+      "timeoutS": 300
+    },
+    {
+      "name": "attach rule untouched: its mutation self-test still passes",
+      "cmd": "python tools/city/selftest_attach.py data/city/city.json",
+      "must": [
+        "selftest_attach: 0 case(s) wrong"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "id": "city-deadends",
+  "title": "Remove the dead-end streets",
+  "brief": "briefs/improve/city-deadends.md",
+  "isolation": "worktree",
+  "sparse": [
+    "tools/",
+    "data/",
+    "ref/",
+    "briefs/",
+    "SPEC.md",
+    "ART.md",
+    "CONTRACTS.md",
+    "README.md"
+  ],
+  "owns": [
+    "tools/city/city_grid.py",
+    "tools/city/city_snap.py",
+    "tools/city/selftest_deadends.py"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 250,
+  "timeoutMin": 120,
+  "accept": [
+    {
+      "name": "generate the map",
+      "cmd": "python tools/city/build_city.py --out F:/dev/skyrush-out/tmp/city-deadends/city.json",
+      "timeoutS": 300
+    },
+    {
+      "name": "gate: 'no dead ends' clean, nothing else worse",
+      "cmd": "python tools/city/accept_rules.py F:/dev/skyrush-out/tmp/city-deadends/city.json --baseline tools/city/rules_baseline.json --target \"no dead ends\"",
+      "must": [
+        "ACCEPT_RULES OK"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "the network did not shrink",
+      "cmd": "python tools/city/check_network_size.py F:/dev/skyrush-out/tmp/city-deadends/city.json",
+      "must": [
+        "NETWORK_SIZE OK"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "id": "city-skylanes",
+  "title": "Repair the five sky lanes",
+  "brief": "briefs/improve/city-skylanes.md",
+  "isolation": "worktree",
+  "sparse": [
+    "tools/",
+    "data/",
+    "ref/",
+    "briefs/",
+    "SPEC.md",
+    "ART.md",
+    "CONTRACTS.md",
+    "README.md"
+  ],
+  "owns": [
+    "tools/city/city_marks.py",
+    "tools/city/selftest_skylanes.py"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 250,
+  "timeoutMin": 120,
+  "accept": [
+    {
+      "name": "generate the map",
+      "cmd": "python tools/city/build_city.py --out F:/dev/skyrush-out/tmp/city-skylanes/city.json",
+      "timeoutS": 300
+    },
+    {
+      "name": "gate: 'sky lanes' clean, nothing else worse",
+      "cmd": "python tools/city/accept_rules.py F:/dev/skyrush-out/tmp/city-skylanes/city.json --baseline tools/city/rules_baseline.json --target \"sky lanes\"",
+      "must": [
+        "ACCEPT_RULES OK"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "five sky lanes with the right shape",
+      "cmd": "python tools/city/check_skylanes_shape.py F:/dev/skyrush-out/tmp/city-skylanes/city.json",
+      "must": [
+        "SKYLANES_SHAPE OK"
+      ]
+    }
+  ]
+}

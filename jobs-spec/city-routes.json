@@ -1,0 +1,45 @@
+{
+  "id": "city-routes",
+  "title": "Repair the five race routes",
+  "brief": "briefs/improve/city-routes.md",
+  "isolation": "worktree",
+  "sparse": [
+    "tools/",
+    "data/",
+    "ref/",
+    "briefs/",
+    "SPEC.md",
+    "ART.md",
+    "CONTRACTS.md",
+    "README.md"
+  ],
+  "owns": [
+    "tools/city/city_marks_routes.py",
+    "tools/city/selftest_routes.py"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 250,
+  "timeoutMin": 120,
+  "accept": [
+    {
+      "name": "generate the map",
+      "cmd": "python tools/city/build_city.py --out F:/dev/skyrush-out/tmp/city-routes/city.json",
+      "timeoutS": 300
+    },
+    {
+      "name": "gate: 'route checkpoints' clean, nothing else worse",
+      "cmd": "python tools/city/accept_rules.py F:/dev/skyrush-out/tmp/city-routes/city.json --baseline tools/city/rules_baseline.json --target \"route checkpoints\"",
+      "must": [
+        "ACCEPT_RULES OK"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "five routes with the right shape",
+      "cmd": "python tools/city/check_routes_shape.py F:/dev/skyrush-out/tmp/city-routes/city.json",
+      "must": [
+        "ROUTES_SHAPE OK"
+      ]
+    }
+  ]
+}
