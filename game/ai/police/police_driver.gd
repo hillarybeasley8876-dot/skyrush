@@ -30,6 +30,8 @@ const THROTTLE_GAIN := 0.6
 const BRAKE_GAIN := 0.25
 ## The strongest brake a police car uses (it must not be a wall in front of the player).
 const BRAKE_MAX := 0.6
+## The whole brake, for the units that have to follow the player exactly (the box).
+const BRAKE_FULL := 1.0
 ## Below this speed the tyres hold the car at any steer angle (m/s).
 const STEER_MIN_SPEED := 8.0
 ## How much of the top speed a corner takes away (per radian of the heading error).
@@ -84,9 +86,9 @@ static func throttle_for(speed: float, desired: float) -> float:
 
 
 ## The brake for a speed error. The brake is gentle: a police car that brakes hard in front of
-## the player is a wall, not a chase.
-static func brake_for(speed: float, desired: float) -> float:
-	return clampf((speed - desired) * BRAKE_GAIN, 0.0, BRAKE_MAX)
+## the player is a wall, not a chase. `brake_max` is the strongest brake the unit may use.
+static func brake_for(speed: float, desired: float, brake_max: float = BRAKE_MAX) -> float:
+	return clampf((speed - desired) * BRAKE_GAIN, 0.0, brake_max)
 
 
 ## The speed the unit may carry into a corner of `error` radians (arcade approximation: the
@@ -101,9 +103,13 @@ static func corner_limit(error: float, top_speed: float) -> float:
 ## The driving input of a unit: the throttle, the brake and the steer.
 ##
 ## `strike_sign` is the direction of the PIT strike (0 when the unit is not striking).
+##
+## `brake_max` is the strongest brake the unit may use: the police brake gently, so a unit
+## that brakes hard in front of the player is a wall. The units of the box use the whole brake,
+## or the box breaks up when the player slows down.
 static func input_for(forward: Vector3, to_target: Vector3, yaw: float, velocity: Vector3,
 		speed: float, desired: float, top_speed: float, airborne: bool,
-		strike_sign: float) -> Vector3:
+		strike_sign: float, brake_max: float = BRAKE_MAX) -> Vector3:
 	var steer := steer_command(forward, to_target, yaw, velocity)
 	var grip := grip_steer(speed)
 	if strike_sign != 0.0:
@@ -113,7 +119,7 @@ static func input_for(forward: Vector3, to_target: Vector3, yaw: float, velocity
 		steer = clampf(steer, -grip, grip)
 	desired = minf(desired, corner_limit(AISteering.heading_error(forward, to_target), top_speed))
 	var throttle := throttle_for(speed, desired)
-	var brake := brake_for(speed, desired)
+	var brake := brake_for(speed, desired, brake_max)
 	if airborne:
 		# In the air the drive force would only pitch the nose up and dig it into the road.
 		throttle = 0.0
@@ -136,8 +142,9 @@ static func cross_track_steer(lateral: float, speed: float,
 ## direction of the PIT strike (0 when the unit is not striking).
 ##
 ## `bias` is added to the steering (the cross-track term of the head-on unit).
+## `brake_max` is the strongest brake the unit may use.
 static func drive(car: PoliceCar, target: Vector3, desired: float,
-		strike_sign: float, bias: float = 0.0) -> float:
+		strike_sign: float, bias: float = 0.0, brake_max: float = BRAKE_MAX) -> float:
 	if car == null:
 		return 0.0
 	var forward := -car.global_transform.basis.z
@@ -145,7 +152,7 @@ static func drive(car: PoliceCar, target: Vector3, desired: float,
 	var current := speed(car)
 	var airborne := car.telemetry.grounded_wheels == 0
 	var input := input_for(forward, to_target, car.angular_velocity.y, car.linear_velocity,
-			current, desired, top_speed(car, car.ctx, car.kind), airborne, strike_sign)
+			current, desired, top_speed(car, car.ctx, car.kind), airborne, strike_sign, brake_max)
 	var steer := clampf(input.z + bias, -1.0, 1.0)
 	car.set_controls(input.x, input.y, steer, false)
 	return steer

@@ -87,6 +87,9 @@ var full_physics: bool = true
 var hold_back_point: Vector3 = Vector3.ZERO
 ## The speed the hold-back unit keeps (m/s).
 var hold_back_speed: float = 0.0
+## The strongest brake this unit may use (the police brake gently, so a unit that brakes hard
+## in front of the player is a wall; the units of the box use the whole brake).
+var brake_max: float = PoliceDriver.BRAKE_MAX
 ## The velocity cache of the contacts (the speed of the player of the previous tick).
 var contact: PoliceContact = null
 ## The tick clock of the unit (s).
@@ -180,6 +183,7 @@ func reset_for_spawn() -> void:
 	full_physics = true
 	hold_back_point = Vector3.ZERO
 	hold_back_speed = 0.0
+	brake_max = PoliceDriver.BRAKE_MAX
 	steer_bias = 0.0
 	clock = CLOCK_START
 	_follow_speed = 0.0
@@ -291,7 +295,8 @@ func _drive(dt: float) -> void:
 	var strike := 0.0
 	if roles != null:
 		strike = roles.strike_sign()
-	steer_command = PoliceDriver.drive(self, target_point, desired_speed, strike, steer_bias)
+	steer_command = PoliceDriver.drive(self, target_point, desired_speed, strike, steer_bias,
+			brake_max)
 
 
 ## The unit is far away: it drives its target as a ghost, so it does not push the world around.
