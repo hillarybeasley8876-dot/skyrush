@@ -1,0 +1,70 @@
+{
+  "id": "roads-joint-surface",
+  "title": "Give the ramp attach gore a collision surface so cars do not fall at the joints",
+  "brief": "briefs/improve/roads-joint-surface.md",
+  "isolation": "worktree",
+  "sparse": [
+    "tools/",
+    "data/",
+    "ref/",
+    "briefs/",
+    "blender/",
+    "game/assets/textures/",
+    "game/assets/city/_tex/",
+    "game/world/data/",
+    "SPEC.md",
+    "ART.md",
+    "CONTRACTS.md",
+    "README.md"
+  ],
+  "owns": [
+    "blender/city/roads/attaches.py",
+    "blender/city/roads/collision.py"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 250,
+  "timeoutMin": 150,
+  "accept": [
+    {
+      "name": "full Blender road build into the scratch directory",
+      "timeoutS": 1200,
+      "cmd": "python tools/gd.py blender run blender/city/roads/build_roads.py -- --city data/city/city.json --out F:/dev/skyrush-out/tmp/roads-joint-surface/tiles --data F:/dev/skyrush-out/tmp/roads-joint-surface/data",
+      "must": [
+        "DONE in"
+      ]
+    },
+    {
+      "name": "every attach connector lane has a road collider under it",
+      "cmd": "python tools/city/check_surface_coverage.py F:/dev/skyrush-out/tmp/roads-joint-surface/tiles F:/dev/skyrush-out/tmp/roads-joint-surface/data/lanes.json --prefix attach_ --tol 0.4 --max-bad 0 --max-area 2402500",
+      "must": [
+        "SURFACE_COVERAGE bad samples: 0"
+      ]
+    },
+    {
+      "name": "the rest of the lane coverage did not get worse",
+      "cmd": "python tools/city/check_surface_coverage.py F:/dev/skyrush-out/tmp/roads-joint-surface/tiles F:/dev/skyrush-out/tmp/roads-joint-surface/data/lanes.json --tol 0.4 --max-bad 26519 --max-area 2402500",
+      "exit": 0
+    },
+    {
+      "name": "lane links are still drivable",
+      "cmd": "python tools/city/check_lane_links.py F:/dev/skyrush-out/tmp/roads-joint-surface/data/lanes.json data/city/city.json --quiet",
+      "must": [
+        "LANE_LINKS OK"
+      ]
+    },
+    {
+      "name": "attach links are still smooth",
+      "cmd": "python tools/city/check_attach_geometry.py F:/dev/skyrush-out/tmp/roads-joint-surface/data/lanes.json data/city/city.json --quiet",
+      "must": [
+        "ATTACH_GEOMETRY OK"
+      ]
+    },
+    {
+      "name": "the lane graph is unchanged",
+      "cmd": "python tools/city/check_lanes_regression.py F:/dev/skyrush-out/tmp/roads-joint-surface/data/lanes.json F:/dev/skyrush-out/baselines/lanes_head.json data/city/city.json",
+      "must": [
+        "LANES_REGRESSION OK"
+      ]
+    }
+  ]
+}

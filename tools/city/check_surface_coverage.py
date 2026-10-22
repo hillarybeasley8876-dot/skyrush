@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 """check_surface_coverage — does every lane sample have road surface collision under it? (no Godot needed)
 
-    python tools/city/check_surface_coverage.py <tiles dir> <lanes.json> [--tol 0.15] [--csv out.csv] [--top 12]
+    python tools/city/check_surface_coverage.py <tiles dir> <lanes.json> [--tol 0.15] [--csv out.csv] [--top 12] [--prefix attach_] [--max-bad N] [--max-area M2]
 
 Parses the glTF tiles (roads_<tx>_<tz>.gltf + .bin), takes every triangle of the nodes named *surface-colonly*
 (the road surface colliders), and for each lane point (every lane and connector of lanes.json) asks: is there a
 surface triangle whose XZ footprint contains the point and whose height there is within --tol of the lane height?
 This is the same question as the ray sweep of test_drive_collision.gd ("every lane has a road surface under it").
-Prints the number of bad samples in total and per road. Exit 0 when the total is <= --max-bad (default 0).
+With --prefix only the lanes whose id starts with it are checked (attach_ = the connector lanes at the ramp attaches).
+Prints the number of bad samples in total and per road, and the total area of all surface colliders.
+Exit 0 when the total is <= --max-bad (default 0) and, when --max-area is given, the collider area is <= it
+(so a job cannot "cover" the lanes by laying huge slabs).
 """
 import array
 import collections
@@ -86,7 +89,9 @@ def main(argv):
     args = [a for a in argv[1:] if not a.startswith("--")]
     opt = lambda n, d: argv[argv.index(n) + 1] if n in argv else d  # noqa: E731
     tol, top, max_bad = float(opt("--tol", "0.15")), int(opt("--top", "12")), int(opt("--max-bad", "0"))
-    for v in (opt("--tol", ""), opt("--top", ""), opt("--max-bad", ""), opt("--csv", "")):
+    prefix = opt("--prefix", "")
+    max_area = float(opt("--max-area", "0"))
+    for v in (opt("--tol", ""), opt("--top", ""), opt("--max-bad", ""), opt("--csv", ""), prefix, opt("--max-area", "")):
         if v in args:
             args.remove(v)
     tiles_dir, lanes_path = args[0], args[1]
@@ -95,10 +100,13 @@ def main(argv):
         if name.startswith("roads_") and name.endswith(".gltf"):
             tris += load_tile_triangles(os.path.join(tiles_dir, name))
     grid = build_grid(tris)
+    area = sum(0.5 * abs((t[1][0] - t[0][0]) * (t[2][2] - t[0][2]) - (t[2][0] - t[0][0]) * (t[1][2] - t[0][2])) for t in tris)
     lanes = json.load(open(lanes_path, encoding="utf-8"))["lanes"]
     bad, total = collections.Counter(), 0
     rows = []
     for lane in lanes:
+        if prefix and not lane["id"].startswith(prefix):
+            continue
         for p in lane["points"]:
             total += 1
             x, y, z = p[0], p[1], p[2]
@@ -113,9 +121,12 @@ def main(argv):
                 rows.append("%s,%.2f,%.2f,%.2f" % (lane["road"], x, y, z))
     if "--csv" in argv:
         open(opt("--csv", ""), "w", encoding="utf-8").write("road,x,y,z\n" + "\n".join(rows) + "\n")
-    print("triangles %d, lane samples %d" % (len(tris), total))
+    print("triangles %d, lane samples %d, collider area %.0f m2 (XZ)" % (len(tris), total, area))
     print("SURFACE_COVERAGE bad samples: %d (%.2f %%)" % (sum(bad.values()), 100.0 * sum(bad.values()) / max(total, 1)))
     print("worst roads: " + ", ".join("%s:%d" % kv for kv in bad.most_common(top)))
+    if max_area and area > max_area:
+        print("SURFACE_AREA too large: %.0f m2 > %.0f m2" % (area, max_area))
+        return 1
     return 0 if sum(bad.values()) <= max_bad else 1
 
 
