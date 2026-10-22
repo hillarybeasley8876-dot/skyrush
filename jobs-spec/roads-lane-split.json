@@ -46,6 +46,13 @@
       "must": [
         "LANES_REGRESSION OK"
       ]
+    },
+    {
+      "name": "the attach links are smooth enough to drive",
+      "cmd": "python tools/city/check_attach_geometry.py F:/dev/skyrush-out/tmp/roads-lane-split/data/lanes.json data/city/city.json --quiet",
+      "must": [
+        "ATTACH_GEOMETRY OK"
+      ]
     }
   ]
 }
