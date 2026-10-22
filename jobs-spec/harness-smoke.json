@@ -1,0 +1,20 @@
+{
+  "id": "harness-smoke",
+  "title": "Harness self-test",
+  "brief": "briefs/improve/harness-smoke.md",
+  "owns": ["tools/improve_selftest/"],
+  "maxRounds": 3,
+  "maxTurns": 40,
+  "timeoutMin": 15,
+  "accept": [
+    {
+      "name": "hello.txt has exactly the expected content",
+      "cmd": "python -c \"import sys; t=open('tools/improve_selftest/hello.txt',newline='').read(); sys.exit(0 if t.rstrip('\\r\\n')=='hello from worker' and t.count(chr(10))<=1 else 1)\"",
+      "must": []
+    },
+    {
+      "name": "the outside file does not exist",
+      "cmd": "python -c \"import os,sys; sys.exit(1 if os.path.exists('tools/improve_selftest_outside.txt') else 0)\""
+    }
+  ]
+}
