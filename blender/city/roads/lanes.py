@@ -267,6 +267,7 @@ def build_lanes(city):
     _link_cuts(city, segs, links, index)
     lane_links.link_junctions(city, lanes, links)
     lane_links.link_attaches(city, lanes, segs, links)
+    lane_links.link_chains(city, lanes, segs, links)
     lanes.sort(key=lambda l: l["id"])
     by_id = {lane["id"]: lane for lane in lanes}
     for link in links:

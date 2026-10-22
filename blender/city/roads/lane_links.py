@@ -1,10 +1,14 @@
-"""The links of the lane graph: the movements through a junction and the
-attaches of a ramp.
+"""The links of the lane graph: the movements through a junction, the
+attaches of a ramp and the joints of two roads that meet end to end.
 
 Every approach lane gets at least one movement: a middle lane goes straight
 on, with no straight arm it takes the nearer turn, and a one-lane approach may
 take every movement. A merge (two arms that run almost parallel) links the
 lanes of the two roads without a junction box.
+
+Two roads that meet end to end (the end of one is the start of the other, no
+junction between them) are linked as well: the traffic that arrives at such a
+joint carries on into the lanes of the next road.
 """
 import math
 
@@ -15,6 +19,16 @@ from city.roads import lane_paths
 
 CROSS_TOLERANCE = 15.0  # how far a lane end may be from the kerb return
 SAME_WAY = 0.3          # how alike the directions of two lanes have to be
+DIRECT_LINK = 0.5       # two lanes this close may be linked without a connector
+CHAIN_JOINT = 20.0    # the two road ends have to be this close to be one chain
+CHAIN_REACH = 6.0     # how far a lane end may be from the next road's lane start
+CHAIN_HEIGHT = 1.5    # how much the two lanes may differ in height
+CHAIN_HEAD = 40.0     # how alike the directions of the two lanes have to be
+CHAIN_ALIGN = 1.6     # two lanes this close have to be linked to each other
+CHAIN_MAX = 2         # a lane may not have more than two successors
+CHAIN_SPAN = 4.0      # the handle of the curve that joins the two roads
+CHAIN_STEP = 0.5      # how finely a chain curve is sampled
+CHAIN_MIN = 0.3       # two points of a chain curve are at least this far apart
 
 
 def attach_stations(city, road):
@@ -358,6 +372,57 @@ def _connector(first, second):
     return lane_paths.resample(lane_paths.bezier(p0, p1, p2, p3))
 
 
+def _chain_connector(first, second):
+    """The curve that joins the end of one lane to the start of the other.
+
+    The same cubic Bezier as the ramp attach, but sampled every half metre
+    along its length: the two roads of a joint meet at an angle, so the lane
+    that continues the traffic can start a metre BEHIND the lane that
+    arrives, and the curve has to loop back to reach it.  Only a fine
+    sampling keeps the heading of the two lanes at the ends of the curve.
+    """
+    p0 = lane_paths.v3(first["points"][-1])
+    p3 = lane_paths.v3(second["points"][0])
+    d0 = p0 - lane_paths.v3(first["points"][-2])
+    d1 = lane_paths.v3(second["points"][1]) - p3
+    if d0.length < 1e-6 or d1.length < 1e-6:
+        return []
+    d0.normalize()
+    d1.normalize()
+    span = max(CHAIN_SPAN, (p3 - p0).length * 0.5)
+    out = []
+    for p in _chain_curve(p0, p0 + d0 * span, p3 - d1 * span, p3):
+        if not out or (p - out[-1]).length >= CHAIN_MIN:
+            out.append(p)
+    if not out or (out[-1] - p3).length > 1e-4:
+        out.append(p3)     # the curve ends at the start of the next lane
+    return [[round(p.x, 2), round(p.z, 2), round(-p.y, 2)] for p in out]
+
+
+def _chain_curve(p0, p1, p2, p3, count=256):
+    """The cubic Bezier, sampled every half metre along its length."""
+    raw = []
+    for i in range(count + 1):
+        t = i / float(count)
+        u = 1.0 - t
+        raw.append(p0 * (u ** 3) + p1 * (3 * u * u * t)
+                   + p2 * (3 * u * t * t) + p3 * (t ** 3))
+    out = [raw[0]]
+    carry = 0.0
+    for a, b in zip(raw, raw[1:]):
+        seg = (b - a).length
+        d = CHAIN_STEP - carry
+        while d <= seg:
+            out.append(a.lerp(b, d / seg))
+            d += CHAIN_STEP
+        carry = seg - (d - CHAIN_STEP)
+    if (out[-1] - raw[-1]).length > 0.05:
+        out.append(raw[-1])
+    else:
+        out[-1] = raw[-1]     # the curve ends at the point it has to reach
+    return out
+
+
 def _after(segs, seg):
     """The segment after a cut: the one that shares its path index."""
     cut = seg["indices"][-1]
@@ -371,7 +436,7 @@ def _link_attach(first, second, road, lanes, links):
     """Link the end of one lane to the start of the other."""
     a = lane_paths.v3(first["points"][-1])
     b = lane_paths.v3(second["points"][0])
-    if (a - b).length <= 0.5:
+    if (a - b).length <= DIRECT_LINK:
         links.append({"from": first["id"], "to": second["id"], "turn": "straight"})
         return
     # the ramp does not touch its parent: bridge the gap with a connector
@@ -379,14 +444,190 @@ def _link_attach(first, second, road, lanes, links):
     if len(pts) < 2:
         return
     cid = "attach_%s_%s" % (first["id"], second["id"])
-    lanes.append({
-        "id": cid, "road": road.id, "attach": True,
+    lane = _connector_lane(cid, first, road.id, pts, second)
+    lane["attach"] = True
+    lanes.append(lane)
+    links.append({"from": first["id"], "to": cid, "turn": "straight"})
+    links.append({"from": cid, "to": second["id"], "turn": "straight"})
+
+
+def _connector_lane(cid, first, road, pts, second):
+    """The lane that carries the traffic from one lane into the other."""
+    return {
+        "id": cid, "road": road,
         "dir": first["dir"], "index": first["index"],
         "leftmost": first["leftmost"], "rightmost": first["rightmost"],
         "offset": 0.0,
         "width": first["width"], "speed_kmh": first["speed_kmh"],
         "elevated": first["elevated"], "connector": True, "turn": "straight",
         "points": pts, "next": [second["id"]],
-    })
+    }
+
+
+def link_chains(city, lanes, segments, links):
+    """Link the lanes of two roads that meet end to end, with no junction between.
+
+    The elevated chain (ns_elevated -> inner_ring -> nanpu_spiral_upper ->
+    nanpu_bridge) ends in the air without this: the lane builder links the
+    junctions and the ramp attaches only.  Every lane that arrives at such a
+    joint now carries on into the lanes of the next road, and every lane that
+    leaves the joint is fed by the lanes that arrive.
+    """
+    by_road = {}
+    for lane in lanes:
+        by_road.setdefault(lane["road"], []).append(lane)
+    succ = {}
+    fed = set()
+    for link in links:
+        succ.setdefault(link["from"], set()).add(link["to"])
+        fed.add(link["to"])
+    for road, here, parent, there in _chain_joints(city):
+        _chain_joint(by_road, segments, lanes, links, succ, fed,
+                     road, here, parent, there)
+
+
+def _chain_joints(city):
+    """The pairs of road ends that meet without a junction between them.
+
+    A road that is not a ramp names the road it continues in `attach_start` or
+    `attach_end`; the joint is where the two ends meet.  Both roads name the
+    same joint, so it is used once.
+    """
+    out = []
+    seen = set()
+    for road in city.roads:
+        if road.kind == "ramp":
+            continue
+        for at_end, key in ((True, "attach_end"), (False, "attach_start")):
+            att = road.data.get(key)
+            parent = city.by_id.get(att.get("road")) if att else None
+            if parent is None or parent.kind == "ramp":
+                continue    # a ramp is linked by link_attaches
+            point = road.path[-1] if at_end else road.path[0]
+            gap, there = min(((point - parent.path[0]).length, "start"),
+                              ((point - parent.path[-1]).length, "end"),
+                              key=lambda item: item[0])
+            if gap > CHAIN_JOINT:
+                continue
+            here = "end" if at_end else "start"
+            tag = frozenset(((road.id, here), (parent.id, there)))
+            if tag in seen:
+                continue
+            seen.add(tag)
+            out.append((road, here, parent, there))
+    return out
+
+
+def _chain_joint(by_road, segments, lanes, links, succ, fed, a, a_end, b, b_end):
+    """Link the lanes that arrive at a joint to the lanes that leave it.
+
+    Two flows meet at a joint: the traffic that arrives along one road leaves
+    along the other, and the traffic that arrives along the other leaves back.
+    """
+    for src, se, dst, de in ((a, a_end, b, b_end), (b, b_end, a, a_end)):
+        arr = _chain_lanes(by_road, segments, src, se, True)
+        dep = _chain_lanes(by_road, segments, dst, de, False)
+        pairs = [(gap, x, y) for x in arr for y in dep
+                 for gap in [_chain_gap(x, y)] if gap is not None]
+        if not pairs:
+            continue
+        made = _chain_match(arr, dep, pairs, lanes, links, succ, fed)
+        print("CHAIN %s.%s -> %s.%s: %d lanes in, %d out, %d links" % (
+            src.id, se, dst.id, de, len(arr), len(dep), made))
+
+
+def _chain_lanes(by_road, segments, road, end, arrive):
+    """The lanes of a road that arrive at (or leave) one of its ends.
+
+    The lanes of the last segment travel with the path (the "fwd" ones) and
+    against it (the "back" ones), so the last segment holds both the lanes
+    that arrive at the end of the road and the ones that leave it.
+    """
+    seg = _end_segment(segments.get(road.id, []), road, end == "end")
+    if seg is None:
+        return []
+    if end == "end":
+        direction = 1 if arrive else -1
+    else:
+        direction = -1 if arrive else 1
+    return _of(by_road, road, seg, direction)
+
+
+def _chain_gap(a, b):
+    """The plan distance between the end of one lane and the start of the other.
+
+    None when the two lanes do not meet: too far apart, at another height, or
+    against the traffic.
+    """
+    end, start = a["points"][-1], b["points"][0]
+    if abs(end[1] - start[1]) > CHAIN_HEIGHT:
+        return None
+    da, db = _travel(a, 1), _travel(b, 0)
+    if da is None or db is None:
+        return None
+    if da.dot(db) < math.cos(math.radians(CHAIN_HEAD)):
+        return None
+    gap = math.hypot(end[0] - start[0], end[2] - start[2])
+    return gap if gap <= CHAIN_REACH else None
+
+
+def _chain_match(arr, dep, pairs, lanes, links, succ, fed):
+    """Match the lanes that arrive at a joint to the lanes that leave it.
+
+    The lanes that stand side by side (the same lane index) are linked to each
+    other, a lane that arrives without a successor takes the nearest lane that
+    leaves, and a lane that leaves without a feeder is fed by the lane that
+    arrives nearest to it: a road with three lanes merges into the road with
+    two, a road with two splits into the road with three.
+    """
+    made = 0
+    for gap, a, d in sorted(pairs, key=lambda item: item[0]):
+        if gap <= CHAIN_ALIGN:
+            made += _chain_link(a, d, lanes, links, succ, fed)
+    for a in arr:
+        if succ.get(a["id"]):
+            continue
+        best = min((p for p in pairs if p[1] is a), key=lambda p: p[0], default=None)
+        if best is not None:
+            made += _chain_link(a, best[2], lanes, links, succ, fed)
+    for d in dep:
+        if d["id"] in fed:
+            continue
+        best = min((p for p in pairs if p[2] is d), key=lambda p: p[0], default=None)
+        if best is not None:
+            made += _chain_link(best[1], d, lanes, links, succ, fed)
+    return made
+
+
+def _chain_link(first, second, lanes, links, succ, fed):
+    """Link the end of one lane to the start of the other.
+
+    A copy of the ramp attach: the connector is named `chain_...`, so the
+    attach checkers do not mistake it for a ramp.  Returns the number of
+    links that were made.
+    """
+    if second["id"] in succ.get(first["id"], ()):
+        return 0
+    if len(succ.get(first["id"], ())) >= CHAIN_MAX:
+        return 0
+    a = lane_paths.v3(first["points"][-1])
+    b = lane_paths.v3(second["points"][0])
+    if (a - b).length <= DIRECT_LINK:
+        links.append({"from": first["id"], "to": second["id"], "turn": "straight"})
+        succ.setdefault(first["id"], set()).add(second["id"])
+        fed.add(second["id"])
+        return 1
+    # the two roads do not touch: bridge the gap with a connector
+    pts = _chain_connector(first, second)
+    if len(pts) < 2:
+        return 0
+    cid = "chain_%s_%s" % (first["id"], second["id"])
+    lane = _connector_lane(cid, first, first["road"], pts, second)
+    lane["chain"] = True
+    lanes.append(lane)
     links.append({"from": first["id"], "to": cid, "turn": "straight"})
     links.append({"from": cid, "to": second["id"], "turn": "straight"})
+    succ.setdefault(first["id"], set()).add(cid)
+    succ.setdefault(cid, set()).add(second["id"])
+    fed.add(second["id"])
+    return 1
