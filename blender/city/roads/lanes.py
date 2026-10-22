@@ -13,6 +13,7 @@ from city.roads import lane_links, lane_paths, profiles
 
 SAMPLE = 2.0
 CUT_GAP = 8.0     # an attach closer than this to another cut shares that cut
+ATTACH_LEAD = 40.0  # the room a connector needs to shift the traffic sideways
 
 
 def godot(p):
@@ -26,8 +27,7 @@ def segments(city, road):
     Every segment remembers the junction at its start and at its end: the lane
     graph needs to know which crossing a lane arrives at and which one it
     leaves.  A ramp attach cuts the road as well: the parent's lane has to end
-    (or start) exactly where the ramp's lane does, otherwise the traffic
-    cannot leave the viaduct.
+    (or start) near the attach, so the traffic can leave the viaduct.
 
     A segment keeps the number of the stretch of road it comes from: the piece
     that ends the stretch keeps it, the pieces in between are numbered after
@@ -37,7 +37,7 @@ def segments(city, road):
     its movements get new ids.
     """
     holes = _junction_holes(city, road)
-    cuts = _attach_cuts(city, road, holes)
+    cuts, marks = _attach_cuts(city, road, holes)
     stretches = _stretches(road, holes)
     out = []
     spare = len(stretches)
@@ -60,18 +60,18 @@ def segments(city, road):
         inner = list(range(1, len(road.path) - 1))
         out = [{"indices": inner if len(inner) > 1 else list(range(len(road.path))),
                 "start": None, "end": None, "number": 0}]
-    _mark_attaches(city, road, out)
+    _mark_attaches(road, out, marks)
     return out
 
 
-def _mark_attaches(city, road, segs):
+def _mark_attaches(road, segs, marks):
     """Mark the segment of the road that meets every ramp attach.
 
     The marker tells the lane graph which ramp attaches where: the segment
-    that ends at the attach, or the one closest to it when the attach lies in
+    that ends at the mark, or the one closest to it when the attach lies in
     a junction and the road is cut there already.
     """
-    for (pidx, ramp, at_end) in lane_links.attach_stations(city, road):
+    for (pidx, ramp, at_end) in marks:
         best = None
         for seg in segs:
             if not seg["indices"]:
@@ -80,7 +80,10 @@ def _mark_attaches(city, road, segs):
             if last <= pidx and (best is None or last > best[0]):
                 best = (last, seg)
         if best is not None:
-            best[1]["attach"] = (ramp.id, at_end)
+            seg = best[1]
+            # two ramps can share a piece: one leaves the parent there and the
+            # other one joins it
+            seg["attach"] = seg.get("attach", []) + [(ramp.id, at_end)]
 
 
 def _junction_holes(city, road):
@@ -135,20 +138,59 @@ def _pieces(indices, cuts):
 
 
 def _attach_cuts(city, road, holes):
-    """The path indices where a ramp attaches to this road.
+    """The cuts of the road at its ramp attaches: (cut indices, markers).
 
-    An attach that lands on a junction, on the end of the road or too close
-    to another cut reuses that cut: a cut of its own would leave a lane of a
-    few metres.
+    The cut is not at the attach itself: the parent's lane has to end (or
+    start) far enough from it for the connector to shift the traffic over to
+    the ramp, or back, without a sharp turn.  The cut lies ATTACH_LEAD metres
+    away in the direction the traffic of the carriageway the ramp runs along
+    goes: a diverge ends the parent's lane before the station, a merge starts
+    it after it.
+
+    A marker is (path index, ramp, at_end): the piece of the road that ends
+    at that index is the one that meets the ramp.  An attach that lands in a
+    junction or too close to another cut keeps the station itself: the road
+    is cut there already and a cut of its own would leave a short lane.
     """
-    out = []
-    for (pidx, _ramp, _at_end) in lane_links.attach_stations(city, road):
-        if _on_another_cut(road, pidx, holes):
+    cuts = []
+    marks = []
+    for (pidx, ramp, at_end) in lane_links.attach_stations(city, road):
+        if _in_hole(pidx, holes):
+            # a junction cuts the road at the attach: the attach uses that cut
+            marks.append((pidx, ramp, at_end))
             continue
-        if out and abs(road.dist[pidx] - road.dist[out[-1]]) < CUT_GAP:
+        s = road.dist[pidx] + _lead(road, ramp, pidx, at_end)
+        cut = road.index_at(max(0.0, min(road.length, s)))
+        if _on_another_cut(road, cut, holes) or \
+                any(abs(road.dist[cut] - road.dist[other]) < CUT_GAP for other in cuts):
+            marks.append((pidx, ramp, at_end))
             continue
-        out.append(pidx)
-    return out
+        cuts.append(cut)
+        marks.append((cut, ramp, at_end))
+    return sorted(cuts), marks
+
+
+def _in_hole(pidx, holes):
+    """True when the attach lies in a stretch of the road a junction takes."""
+    for (first, last, _jid) in holes:
+        if first <= pidx <= last:
+            return True
+    return False
+
+
+def _lead(road, ramp, pidx, at_end):
+    """How far the cut of the parent lies from the attach, along the traffic.
+
+    The ramp runs along one of the parent's two carriageways: with the
+    parent's path or against it.  The cut has to lie in the direction the
+    traffic of that carriageway goes, so the connector runs with the traffic.
+    """
+    if at_end:
+        travel = ramp.path[-1] - ramp.path[-2]
+    else:
+        travel = ramp.path[1] - ramp.path[0]
+    sense = 1.0 if travel.dot(road.frames[pidx][0]) > 0.0 else -1.0
+    return sense * (ATTACH_LEAD if at_end else -ATTACH_LEAD)
 
 
 def _on_another_cut(road, pidx, holes):

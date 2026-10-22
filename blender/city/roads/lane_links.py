@@ -14,8 +14,6 @@ from city.roads import junctions as jn
 from city.roads import lane_paths
 
 CROSS_TOLERANCE = 15.0  # how far a lane end may be from the kerb return
-ATTACH_TOLERANCE = 25.0  # how far a lane's end may be from an attach point:
-                        # the tolerance the lane link checker measures with
 SAME_WAY = 0.3          # how alike the directions of two lanes have to be
 
 
@@ -256,9 +254,7 @@ def _end_segment(segs, road, at_end):
         if not seg["indices"]:
             continue
         first, last = seg["indices"][0], seg["indices"][-1]
-        if (last if at_end else first) == want:
-            return seg
-        gap = (want - last) if at_end else (first - want)
+        gap = (want - last) if at_end else first
         if best is None or gap < best[0]:
             best = (gap, seg)
     return best[1] if best else None
@@ -285,9 +281,8 @@ def link_attaches(city, lanes, segments, links):
     """Link the lanes of a ramp to the lanes of its parent at the attach.
 
     The segment of the parent that meets the attach carries the marker of the
-    ramp: the lanes of the segment before the cut are the ones the traffic
-    leaves the parent by, the lanes of the segment after the cut the ones it
-    enters the parent by.
+    ramp: the lanes before the cut are the ones the traffic leaves the parent
+    by, the ones after it the ones it enters the parent by.
     """
     by_road = {}
     for lane in lanes:
@@ -295,49 +290,72 @@ def link_attaches(city, lanes, segments, links):
     for road in city.roads:
         segs = segments.get(road.id, [])
         for seg in segs:
-            att = seg.get("attach")
-            if not att:
-                continue
-            ramp = city.by_id.get(att[0])
-            if ramp is None:
-                continue
-            at_end = att[1]
-            # the segment after the cut: the one that shares its path index
-            after = _after(segs, seg)
-            # the parent's lanes that meet the attach: the ones the traffic
-            # leaves the parent by and the ones it enters the parent by
-            leave = _of(by_road, road, seg, 1) + _of(by_road, road, after, -1)
-            entry = _of(by_road, road, after, 1) + _of(by_road, road, seg, -1)
-            # the ramp's lane that meets the attach
-            rseg = _end_segment(segments.get(ramp.id, []), ramp, at_end)
-            ramp_lanes = _of(by_road, ramp, rseg, 1)
-            if at_end:
-                # the ramp joins the parent: the traffic leaves the ramp and
-                # enters the parent
-                parent_side, parent_end, ramp_end = entry, 0, 1
-            else:
-                # the ramp leaves the parent: the traffic leaves the parent
-                # and enters the ramp
-                parent_side, parent_end, ramp_end = leave, 1, 0
-            if not ramp_lanes or not parent_side:
-                continue
-            # the parent's lane of the carriageway that the ramp runs along
-            same = [lane for lane in parent_side
-                    if _same_way(lane, parent_end, ramp_lanes[0], ramp_end)]
-            parent_side = sorted(same or parent_side, key=lambda lane: lane["index"])
-            # the outermost lane of the ramp joins the outermost lane of the
-            # parent, so the traffic does not have to cross the other lanes
-            count = len(parent_side)
-            for i, ramp_lane in enumerate(ramp_lanes[:count]):
-                parent_lane = parent_side[count - len(ramp_lanes) + i]
-                ramp_lane["attach"] = True
-                # the traffic runs from the exit end of one lane to the entry
-                # end of the other, whichever of the two that is
-                if at_end:
-                    first, second = ramp_lane, parent_lane
-                else:
-                    first, second = parent_lane, ramp_lane
-                _link_attach(first, second, ramp, lanes, links)
+            for att in seg.get("attach", []):
+                _link_at(city, by_road, segments, links, lanes, road, segs, seg, att)
+
+
+def _link_at(city, by_road, segments, links, lanes, road, segs, seg, att):
+    """Link the ramp of one attach to the lanes of the parent."""
+    ramp = city.by_id.get(att[0])
+    if ramp is None:
+        return
+    at_end = att[1]
+    after = _after(segs, seg)
+    # the parent's lanes that meet the attach: the ones the traffic leaves the
+    # parent by and the ones it enters the parent by
+    leave = _of(by_road, road, seg, 1) + _of(by_road, road, after, -1)
+    entry = _of(by_road, road, after, 1) + _of(by_road, road, seg, -1)
+    # the ramp's lane that meets the attach
+    rseg = _end_segment(segments.get(ramp.id, []), ramp, at_end)
+    ramp_lanes = _of(by_road, ramp, rseg, 1)
+    if at_end:
+        # the ramp joins the parent: the traffic leaves the ramp and enters
+        # the parent
+        parent_side, parent_end, ramp_end = entry, 0, 1
+    else:
+        # the ramp leaves the parent: the traffic leaves the parent and enters
+        # the ramp
+        parent_side, parent_end, ramp_end = leave, 1, 0
+    if not ramp_lanes or not parent_side:
+        return
+    # the parent's lane of the carriageway that the ramp runs along
+    same = [lane for lane in parent_side
+            if _same_way(lane, parent_end, ramp_lanes[0], ramp_end)]
+    parent_side = sorted(same or parent_side, key=lambda lane: lane["index"])
+    # the outermost lane of the ramp joins the outermost lane of the parent,
+    # so the traffic does not have to cross the other lanes
+    count = len(parent_side)
+    for i, ramp_lane in enumerate(ramp_lanes[:count]):
+        parent_lane = parent_side[count - len(ramp_lanes) + i]
+        ramp_lane["attach"] = True
+        # the traffic runs from the exit end of one lane to the entry end of
+        # the other, whichever of the two that is
+        if at_end:
+            first, second = ramp_lane, parent_lane
+        else:
+            first, second = parent_lane, ramp_lane
+        _link_attach(first, second, ramp, lanes, links)
+
+
+def _connector(first, second):
+    """The curve that joins the end of one lane to the start of the other.
+
+    A cubic Bezier whose end tangents are the headings of the two lanes it
+    joins and whose handles are half the length of the curve: the traffic
+    keeps its direction over the whole connector (a car can follow it).
+    """
+    p0 = lane_paths.v3(first["points"][-1])
+    p3 = lane_paths.v3(second["points"][0])
+    d0 = p0 - lane_paths.v3(first["points"][-2])
+    d1 = lane_paths.v3(second["points"][1]) - p3
+    if d0.length < 1e-6 or d1.length < 1e-6:
+        return []
+    d0.normalize()
+    d1.normalize()
+    span = max(4.0, (p3 - p0).length * 0.5)
+    p1 = p0 + d0 * span
+    p2 = p3 - d1 * span
+    return lane_paths.resample(lane_paths.bezier(p0, p1, p2, p3))
 
 
 def _after(segs, seg):
@@ -357,7 +375,7 @@ def _link_attach(first, second, road, lanes, links):
         links.append({"from": first["id"], "to": second["id"], "turn": "straight"})
         return
     # the ramp does not touch its parent: bridge the gap with a connector
-    pts = lane_paths.connector_points(first, second)
+    pts = _connector(first, second)
     if len(pts) < 2:
         return
     cid = "attach_%s_%s" % (first["id"], second["id"])

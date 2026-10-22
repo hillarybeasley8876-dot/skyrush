@@ -1,3 +1,33 @@
+# ROUND 2 — the lead reviewed your result: connected, but NOT drivable (read this first)
+
+Your cut-and-link passes `check_lane_links.py` (19 of 19 attaches are linked) and `check_lanes_regression.py`. Good work on both. But a link that exists is not a link a car can follow.
+The lead measured the direction change at every joint of the new attach links:
+
+    66 links touch a ramp or an attach connector, 35 of them turn the traffic by more than 45 degrees (worst: 103, 96, 78, 76, 75, 68 degrees):
+    yanan_elevated_6_back2 -> attach_yanan_elevated_6_back2_ramp_l3_wb_sb_0_fwd0   78 deg
+    attach_yanan_elevated_6_back2_ramp_l3_wb_sb_0_fwd0 -> ramp_l3_wb_sb_0_fwd0     76 deg
+    attach_ns_elevated_4_fwd2_ramp_l4_sb_eb_0_fwd0 -> ramp_l4_sb_eb_0_fwd0         96 deg
+
+Why: the ramp lane starts about 6 m BESIDE the parent lane (the ramp attaches to the edge of the carriageway). Your connector bridges that 6 m lateral gap in a few metres, so it is almost a sideways step:
+a traffic car following it must turn 70 to 100 degrees at the joint and drives into the parapet. A car can follow a connector only if the direction of travel changes by at most 30 degrees at every joint.
+
+New requirement (checked by `python tools/city/check_attach_geometry.py <lanes.json> data/city/city.json --quiet`, must print `ATTACH_GEOMETRY OK`): for every lane of every ramp that starts or ends at an attach there must be a path
+parent lane -> [connector] -> ramp lane (diverge) or ramp lane -> [connector] -> parent lane (merge) in which the heading changes by at most 30 degrees at every joint (heading = direction of the last/first 4 m of a lane).
+Today 29 of 30 ramp lanes have no such path.
+
+How to get there (a recipe, you may find a better one):
+- A smooth lateral shift of 6 m with at most 30 degrees of heading change needs about 25 to 40 m of road. So **cut the parent lane further away from the ramp**: for a diverge, end the parent lane about 40 m BEFORE the attach
+  station (the road builder really has a gore and a 150 m taper there, see `attaches.py`, so there is road room); for a merge, start the parent lane about 40 m AFTER the attach station. The parent lane's own through traffic still continues
+  with the straight continuation link across that cut (you already built those).
+- Build the connector as a smooth curve whose end tangents equal the headings of the two lanes it joins (a cubic Hermite / Bezier with tangent handles along each lane's heading, about 0.5 x the length), not a straight bridge.
+  `lane_paths.connector_points(first, second)` is the existing helper: check how it builds the curve and whether it honours the end tangents; extend it or write your own in `lane_links.py`.
+- The checker now accepts a parent lane end up to 60 m from the ramp end point (it used to be 25 m), so the longer connector is allowed. `check_lane_links.py` was updated the same way.
+- Keep everything the checks already guarantee: no slivers (cuts closer than about 8 m share one cut), untouched roads identical, links end to end within 0.5 m for direct links, `LANE_LINKS OK`.
+
+Updated acceptance (all four must pass): the lanes-only build, `check_lane_links.py ... --quiet` -> `LANE_LINKS OK`, `check_lanes_regression.py ...` -> `LANES_REGRESSION OK`, **and** `check_attach_geometry.py ... --quiet` -> `ATTACH_GEOMETRY OK`.
+
+---
+
 # Job: cut the parent lanes at the ramp attaches so that every attach is a drivable link
 
 Blender road builder, lane graph only (about 25 seconds per run, no tiles, no Godot). Read `blender/city/roads/lanes.py` and the attach part of `blender/city/roads/lane_links.py` first.

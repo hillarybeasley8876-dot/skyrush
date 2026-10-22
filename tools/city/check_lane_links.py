@@ -10,14 +10,14 @@ per attach of every ramp:
   * attach_end (the ramp joins its parent): a lane of the RAMP ending next to the attach must reach a lane
     of the PARENT that starts next to it;
 reaching = following links / `next` through at most 3 lanes (junction connectors may sit in between).
-"Next to" = the lane end is within 25 m (the road builder's ATTACH_TOLERANCE) of the ramp's end point.
+"Next to" = the lane end is within 60 m of the ramp's end point (a smooth connector needs 30-60 m of room).
 Also reports ramp lanes marked as a map-edge terminus that are nowhere near the map edge.
 """
 import json
 import math
 import sys
 
-TOL = 25.0
+TOL = 60.0
 DEPTH = 3
 EDGE = 60.0
 
