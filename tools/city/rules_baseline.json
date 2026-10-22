@@ -1,9 +1,7 @@
 {
  "schema fields": [],
  "grades <= 5 % (spiral <= 4 %)": [],
- "vertical curvature <= 0.5 %/10 m": [
-  "nanpu_pudong_loop # % per # m at # m"
- ],
+ "vertical curvature <= 0.5 %/10 m": [],
  "deck clearance >= 5.5 m": [
   "lujiazui_w_rd x yanan_tunnel: # samples, worst # m (need #) at (#, #)",
   "nanpu_pudong_loop x st_d8_ew_15: # samples, worst # m (need #) at (#, #)",
@@ -11,10 +9,8 @@
   "nanpu_spiral_lower x st_d7b_ew_10: # samples, worst # m (need #) at (#, #)",
   "nanpu_spiral_lower x st_d7b_ns_4: # samples, worst # m (need #) at (#, #)",
   "ramp_l3_eb_nb x ramp_rt_eb_sb: # samples, worst # m (need #) at (#, #)",
-  "ramp_l3_wb_sb x ramp_l4_sb_eb: # samples, worst # m (need #) at (#, #)",
   "ramp_l3_wb_sb x ramp_rt_wb_nb: # samples, worst # m (need #) at (#, #)",
   "ramp_l4_nb_wb x yanan_frontage_n: # samples, worst # m (need #) at (#, #)",
-  "ramp_l4_sb_eb x ramp_l3_wb_sb: # samples, worst # m (need #) at (#, #)",
   "ramp_l4_sb_eb x ramp_rt_nb_eb: # samples, worst # m (need #) at (#, #)",
   "ramp_l4_sb_eb x ramp_rt_wb_nb: # samples, worst # m (need #) at (#, #)",
   "ramp_rt_eb_sb x ramp_l3_eb_nb: # samples, worst # m (need #) at (#, #)",
@@ -46,12 +42,7 @@
   "yanan_tunnel x yanan_rd_surface: # samples, worst # m (need #) at (#, #)"
  ],
  "no road in the water": [],
- "ramps attach to their parent": [
-  "nanpu_pudong_loop attach_end: # deg tangent error",
-  "nanpu_spiral_lower attach_end: # deg tangent error",
-  "nanpu_spiral_lower attach_end: ends on the centre-line of the two-way parent nanpu_spiral_upper, not on its edge",
-  "ramp_l3_wb_sb attach_end: # deg tangent error"
- ],
+ "ramps attach to their parent": [],
  "junctions meet their roads": [],
  "key levels (pillar, tunnel)": [],
  "no dead ends": [
@@ -210,19 +201,7 @@
   "route river_loop: cp24 is behind cp23",
   "route river_loop: cp25 is behind cp24"
  ],
- "sky lanes": [
-  "lane bund_riverside: # m over a lot of # m at (#, #)",
-  "lane bund_riverside: the first segment heads # deg, the pad #",
-  "lane bund_riverside: the run-up turns # deg over # m",
-  "lane century_canyon: the first segment heads # deg, the pad #",
-  "lane century_canyon: the lane starts # m from the pad",
-  "lane century_canyon: the run-up turns # deg over # m",
-  "lane dragon_stack: the lane starts # m from the pad",
-  "lane huangpu_jump: # m over a lot of # m at (#, #)",
-  "lane huangpu_jump: only # m of run-up behind the pad",
-  "lane huangpu_jump: the lane starts # m from the pad",
-  "lane huangpu_jump: the run-up turns # deg over # m"
- ],
+ "sky lanes": [],
  "pois": [],
  "the lots cover the land": [
   "the lots cover # % of the land between the roads (# of # cells, # km2 empty)"
