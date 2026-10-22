@@ -1,0 +1,51 @@
+{
+  "id": "roads-lane-split",
+  "title": "Cut parent lanes at ramp attaches so every attach is a drivable link",
+  "brief": "briefs/improve/roads-lane-split.md",
+  "isolation": "worktree",
+  "sparse": [
+    "tools/",
+    "data/",
+    "ref/",
+    "briefs/",
+    "blender/",
+    "game/assets/textures/",
+    "game/assets/city/_tex/",
+    "game/world/data/",
+    "SPEC.md",
+    "ART.md",
+    "CONTRACTS.md",
+    "README.md"
+  ],
+  "owns": [
+    "blender/city/roads/lanes.py",
+    "blender/city/roads/lane_links.py"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 250,
+  "timeoutMin": 120,
+  "accept": [
+    {
+      "name": "lanes-only Blender build",
+      "timeoutS": 600,
+      "cmd": "python tools/gd.py blender run blender/city/roads/build_roads.py -- --city data/city/city.json --lanes-only --data F:/dev/skyrush-out/tmp/roads-lane-split/data",
+      "must": [
+        "DONE in"
+      ]
+    },
+    {
+      "name": "every ramp attach is a drivable link",
+      "cmd": "python tools/city/check_lane_links.py F:/dev/skyrush-out/tmp/roads-lane-split/data/lanes.json data/city/city.json --quiet",
+      "must": [
+        "LANE_LINKS OK"
+      ]
+    },
+    {
+      "name": "no regression of the rest of the lane graph",
+      "cmd": "python tools/city/check_lanes_regression.py F:/dev/skyrush-out/tmp/roads-lane-split/data/lanes.json F:/dev/skyrush-out/baselines/lanes_head.json data/city/city.json",
+      "must": [
+        "LANES_REGRESSION OK"
+      ]
+    }
+  ]
+}
