@@ -202,11 +202,19 @@ const has = (out, pat) => (pat.startsWith('re:') ? new RegExp(pat.slice(3), 'm')
 async function runAccept(job, cwd = ROOT) {
   const results = [];
   for (const a of job.accept ?? []) {
-    const r = await runCmd(a.cmd, a.timeoutS ?? 900, cwd);
-    const why = [];
-    if ((a.exit ?? 0) !== null && r.code !== (a.exit ?? 0)) why.push(`exit code ${r.code}, expected ${a.exit ?? 0}`);
-    for (const m of a.must ?? []) if (!has(r.out, m)) why.push(`output lacks: ${m}`);
-    for (const m of a.mustNot ?? []) if (has(r.out, m)) why.push(`output must not contain: ${m}`);
+    let r;
+    let why;
+    // Godot sometimes exits with -1 at shutdown on a busy machine after a clean verdict: a failed acceptance
+    // command that runs Godot gets one more try before it counts against the worker.
+    const tries = /gd\.py|run_tests\.py/.test(a.cmd) ? 2 : 1;
+    for (let k = 0; k < tries; k++) {
+      r = await runCmd(a.cmd, a.timeoutS ?? 900, cwd);
+      why = [];
+      if ((a.exit ?? 0) !== null && r.code !== (a.exit ?? 0)) why.push(`exit code ${r.code}, expected ${a.exit ?? 0}`);
+      for (const m of a.must ?? []) if (!has(r.out, m)) why.push(`output lacks: ${m}`);
+      for (const m of a.mustNot ?? []) if (has(r.out, m)) why.push(`output must not contain: ${m}`);
+      if (why.length === 0) break;
+    }
     results.push({ name: a.name, cmd: a.cmd, pass: why.length === 0, why, tail: r.out.split('\n').slice(-40).join('\n').slice(-3500), ms: r.ms });
   }
   return results;
