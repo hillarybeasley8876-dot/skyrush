@@ -12,6 +12,7 @@ a hundred metres of pavement with it.
 """
 import math
 
+from city_corridor_index import index_for
 from city_geom import hermite
 
 CORRIDOR_MARGIN = 6.0     # the gap between an arterial and a lattice street
@@ -53,6 +54,29 @@ def _nearest(points, point):
     return best, best_p
 
 
+def _nearest_of(points, point, indices):
+    """The nearest of the given segments of a polyline.
+
+    The same arithmetic as `_nearest`, but only the segments of `indices`
+    are measured.  The indices are in the order of the polyline, so the
+    nearest segment is the same one `_nearest` would have found.
+    """
+    best, best_p = 1e18, points[0]
+    for i in indices:
+        a, b = points[i], points[i + 1]
+        d = _point_seg_distance(point, a, b)
+        if d < best:
+            best = d
+            t = 0.0
+            dx, dz = b[0] - a[0], b[1] - a[1]
+            den = dx * dx + dz * dz
+            if den > 1e-9:
+                t = max(0.0, min(1.0, ((point[0] - a[0]) * dx
+                                        + (point[1] - a[1]) * dz) / den))
+            best_p = (a[0] + t * dx, a[1] + t * dz)
+    return best, best_p
+
+
 def _heading(points, at):
     """The heading of a polyline at one of its points."""
     for a, b in zip(points, points[1:]):
@@ -80,10 +104,21 @@ def _dir(deg):
 
 
 def inside_corridor(point, corridors):
-    """The corridor the point lies in, if any."""
+    """The corridor the point lies in, if any.
+
+    The corridors are searched in order and the first one that holds the
+    point wins.  A corridor that is further away than its own half width
+    is left out, and only the segments of the corridor that are around the
+    point are measured: the answer is the same as the slow search.
+    """
     for entry in corridors:
-        d, near = _nearest(entry["points"], point)
-        if d < entry["half"]:
+        points = entry["points"]
+        half = entry["half"]
+        index = index_for(points)
+        if not index.may_reach(point, half):
+            continue
+        d, near = _nearest_of(points, point, index.candidates(point, half))
+        if d < half:
             return entry, near
     return None, None
 
