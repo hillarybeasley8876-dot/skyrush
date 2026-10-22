@@ -362,3 +362,23 @@ def special_blocks(roads, pois):
                     "style": "plaza", "height_m": [0.0, 0.0], "setback": 0.0,
                     "seed": 16, "notes": "poi:%s" % poi["id"]})
     return out
+
+
+def clip_polygon_by_corridor(poly, points, need):
+    """The pieces of a lot that are left when the corridor of a road is cut out of it.
+
+    poly    the lot, [[x, z], ...]
+    points  the centre-line of the road, [[x, z], ...] (at least 2 points)
+    need    the half width of the corridor (road half width plus clearance), metres
+    Returns a list of polygons (see tools/city/selftest_lots.py for the exact contract).
+    """
+    raise NotImplementedError("clip_polygon_by_corridor: written by the job city-lots-clear")
+
+
+def clear_of_roads(blocks, roads):
+    """Every lot cut back from the roads (the rules 'blocks clear of the roads' and 'blocks clear of the decks').
+
+    Called by build_city.main after all lots exist.  Returns the new list of lots (a lot that a road cuts in two
+    becomes two lots).  For now it returns the lots unchanged: written by the job city-lots-clear.
+    """
+    return blocks

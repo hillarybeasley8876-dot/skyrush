@@ -92,6 +92,8 @@ func _test_music_present() -> void:
 
 ## The load average of the machine (-1.0 if it cannot be read, e.g. on a non-macOS host).
 static func _machine_load() -> float:
+	if OS.get_name() != "macOS":
+		return -1.0   # sysctl only exists on macOS: no process is started elsewhere
 	var output: Array = []
 	OS.execute("sysctl", PackedStringArray(["-n", "vm.loadavg"]), output)
 	if output.is_empty():

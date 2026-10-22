@@ -86,6 +86,8 @@ func _print_modules(modules: Dictionary, frames: int) -> void:
 
 ## The load of the machine (the numbers of a busy machine are read with care).
 func _load() -> float:
+	if OS.get_name() != "macOS":
+		return 0.0   # sysctl only exists on macOS: no process is started elsewhere
 	var out: Array = []
 	OS.execute("/bin/sh", ["-c", "sysctl -n vm.loadavg"], out)
 	if out.is_empty():

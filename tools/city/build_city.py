@@ -162,6 +162,7 @@ def main(out=None):
     blocks += city_landmarks.landmark_blocks(all_roads)
     blocks += city_landmarks.park_blocks(all_roads)
     blocks += specials
+    blocks = city_blocks.clear_of_roads(blocks, all_roads)
     sky_lanes = city_marks.build_sky_lanes(by_id, blocks)
     routes = city_marks_routes.build_routes(by_id, junctions)
     spawns = city_marks_routes.build_spawns(by_id, pois)

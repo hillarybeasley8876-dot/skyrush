@@ -1,0 +1,63 @@
+{
+  "id": "city-lots-clear",
+  "title": "Cut the lots back from the roads so no lot lies on a street",
+  "brief": "briefs/improve/city-lots-clear.md",
+  "isolation": "worktree",
+  "sparse": [
+    "tools/",
+    "data/",
+    "ref/",
+    "briefs/",
+    "SPEC.md",
+    "ART.md",
+    "CONTRACTS.md",
+    "README.md"
+  ],
+  "owns": [
+    "tools/city/city_blocks.py"
+  ],
+  "readonly": [
+    "tools/city/selftest_lots.py",
+    "tools/city/check_lots_kept.py"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 220,
+  "timeoutMin": 100,
+  "accept": [
+    {
+      "name": "the clipper works (selftest)",
+      "cmd": "python tools/city/selftest_lots.py",
+      "must": [
+        "SELFTEST_LOTS OK"
+      ]
+    },
+    {
+      "name": "generate the map",
+      "cmd": "python tools/city/build_city.py --out F:/dev/skyrush-out/tmp/city-lots-clear/city.json",
+      "timeoutS": 300
+    },
+    {
+      "name": "gate: both lot rules clean, nothing else worse",
+      "cmd": "python tools/city/accept_rules.py F:/dev/skyrush-out/tmp/city-lots-clear/city.json --baseline tools/city/rules_baseline.json --target \"blocks clear of the roads\" --target \"blocks clear of the decks\"",
+      "must": [
+        "ACCEPT_RULES OK"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "the lots were cut, not eaten",
+      "cmd": "python tools/city/check_lots_kept.py F:/dev/skyrush-out/tmp/city-lots-clear/city.json F:/dev/skyrush-out/baselines/lots_head.json",
+      "must": [
+        "LOTS_KEPT OK"
+      ]
+    },
+    {
+      "name": "the network and the routes are untouched",
+      "cmd": "python tools/city/check_network_size.py F:/dev/skyrush-out/tmp/city-lots-clear/city.json && python tools/city/check_routes_shape.py F:/dev/skyrush-out/tmp/city-lots-clear/city.json",
+      "must": [
+        "NETWORK_SIZE OK",
+        "ROUTES_SHAPE OK"
+      ]
+    }
+  ]
+}
