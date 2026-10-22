@@ -46,6 +46,19 @@ TIMEOUT = {"light": 300, "heavy": 600, "import": 2400}
 MAX_WAIT = 540  # give up before a caller's 10-minute tool timeout instead of piling up stale waiters
 
 
+def home_dir():
+    """A private HOME on F: whose m/skyrush is a junction to this checkout.
+
+    The Blender and tool scripts say ~/m/skyrush (the macOS dev layout); os.path.expanduser follows
+    USERPROFILE on Windows, so pointing it here makes them work unchanged -- inside a worktree too."""
+    home = ENV_DIR / "homes" / ROOT.name
+    link = home / "m" / "skyrush"
+    if not link.exists():
+        link.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(ROOT)], capture_output=True)
+    return home
+
+
 def child_env():
     env = dict(os.environ)
     for key, sub in (("APPDATA", "appdata"), ("LOCALAPPDATA", "localappdata"), ("TEMP", "tmp"), ("TMP", "tmp")):
@@ -53,6 +66,9 @@ def child_env():
         path.mkdir(parents=True, exist_ok=True)
         env[key] = str(path)
     env["BLENDER_USER_RESOURCES"] = str(ENV_DIR / "blender")
+    home = str(home_dir())
+    env["USERPROFILE"] = home
+    env["HOME"] = home
     return env
 
 

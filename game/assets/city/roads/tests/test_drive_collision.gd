@@ -25,6 +25,10 @@ var _failures := 0
 var _checks := 0
 var _space: PhysicsDirectSpaceState3D
 var _per_road: Dictionary = {}
+var _blockers: Dictionary = {}
+var _blocked_rows: PackedStringArray = []
+var _surf: Dictionary = {}
+var _delta_hist: Dictionary = {}
 
 
 func _ready() -> void:
@@ -41,8 +45,26 @@ func _run() -> void:
 	_check(lanes.size() > 0, "lanes.json holds lanes (%d)" % lanes.size())
 	var ray_bad := _sweep_rays(lanes)
 	_check(ray_bad == 0, "every lane has a road surface under it (%d bad samples)" % ray_bad)
+	print("SURFACE delta bands (surface minus lane): %s" % JSON.stringify(_delta_hist))
+	var surf_roads: Array = _surf.keys()
+	surf_roads.sort_custom(func(x: Variant, y: Variant) -> bool:
+		return int(_surf[x][0]) + int(_surf[x][1]) > int(_surf[y][0]) + int(_surf[y][1]))
+	print("SURFACE worst roads (no surface/wrong height): %s" % ", ".join(PackedStringArray(
+		surf_roads.slice(0, 16).map(func(r: Variant) -> String: return "%s:%d/%d" % [r, _surf[r][0], _surf[r][1]]))))
 	var cast_bad := _sweep_casts(lanes)
 	_check(cast_bad == 0, "no lane is blocked by a parapet or a pier (%d bad)" % cast_bad)
+	var csv_path := OS.get_environment("SKYRUSH_BLOCKED_CSV")
+	if csv_path != "":
+		var out := FileAccess.open(csv_path, FileAccess.WRITE)
+		if out != null:
+			out.store_line("road,x,y,z,blocker")
+			for row in _blocked_rows:
+				out.store_line(row)
+			out.close()
+	var kinds: Array = _blockers.keys()
+	kinds.sort_custom(func(x: Variant, y: Variant) -> bool: return int(_blockers[x]) > int(_blockers[y]))
+	print("BLOCKERS: %s" % ", ".join(PackedStringArray(kinds.slice(0, 20).map(
+		func(k: Variant) -> String: return "%s:%d" % [k, int(_blockers[k])]))))
 	var worst := _worst_roads()
 	print("ROAD counts: %s" % ", ".join(worst))
 	var tunnelled := await _dynamic_shots(lanes)
@@ -90,6 +112,7 @@ func _sweep_rays(lanes: Array) -> int:
 			if hit.is_empty():
 				bad += 1
 				_count(road)
+				_surf_add(road, 0)
 				if bad <= 6:
 					print("NOSURFACE %s at %s" % [road, p])
 			else:
@@ -97,9 +120,34 @@ func _sweep_rays(lanes: Array) -> int:
 				if absf(y - p.y) > RAY_TOLERANCE:
 					bad += 1
 					_count(road)
+					_surf_add(road, 1)
+					var bucket := _delta_bucket(y - p.y)
+					_delta_hist[bucket] = int(_delta_hist.get(bucket, 0)) + 1
 					if bad <= 6:
 						print("OFFHEIGHT %s at %s (surface %.2f)" % [road, p, y])
 	return bad
+
+
+## Per-road tally of surface failures: [no surface, surface at the wrong height].
+func _surf_add(road: String, kind: int) -> void:
+	var rec: Array = _surf.get(road, [0, 0])
+	rec[kind] = int(rec[kind]) + 1
+	_surf[road] = rec
+
+
+## Which band a surface-minus-lane height difference falls in (metres).
+func _delta_bucket(d: float) -> String:
+	if d > 1.0:
+		return "above>1"
+	if d > 0.3:
+		return "above0.3-1"
+	if d > RAY_TOLERANCE:
+		return "above0.15-0.3"
+	if d < -1.0:
+		return "below>1"
+	if d < -0.3:
+		return "below0.3-1"
+	return "below0.15-0.3"
 
 
 func _sweep_casts(lanes: Array) -> int:
@@ -133,6 +181,9 @@ func _sweep_casts(lanes: Array) -> int:
 			if not hits.is_empty():
 				bad += 1
 				_count(road)
+				var key := _blocker_key(hits[0])
+				_blockers[key] = int(_blockers.get(key, 0)) + 1
+				_blocked_rows.append("%s,%.2f,%.2f,%.2f,%s" % [road, a.x, a.y, a.z, key])
 				if bad <= 6:
 					print("BLOCKED %s at %s by %s" % [road, a, _hit_name(hits[0])])
 	return bad
@@ -144,6 +195,22 @@ func _hit_name(hit: Dictionary) -> String:
 	if obj == null:
 		return "?"
 	return String((obj as Node).name)
+
+
+## "Parent/Name" of the blocking collider with the trailing numbers cut, to group like blockers.
+func _blocker_key(hit: Dictionary) -> String:
+	var obj := instance_from_id(int(hit.get("collider_id", 0))) as Node
+	if obj == null:
+		return "?"
+	var parent := obj.get_parent()
+	return "%s/%s" % [_strip_tail(String(parent.name)) if parent != null else "-", _strip_tail(String(obj.name))]
+
+
+func _strip_tail(text: String) -> String:
+	var s := text
+	while s.length() > 1 and ((s[-1] >= "0" and s[-1] <= "9") or s[-1] == "_" or s[-1] == "@"):
+		s = s.left(-1)
+	return s
 
 
 func _dynamic_shots(lanes: Array) -> int:
