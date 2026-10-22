@@ -139,6 +139,21 @@ func _world_ready(delta: float) -> bool:
 			or _world_waited > WORLD_WAIT_MAX:
 		print("DRIVE world ready after %.1f s" % _world_waited)
 		_world_waited = -1.0
+		if _opts.has("spawn") and game != null:
+			_apply_spawn(game)
 		return true
 	return false
+
+
+## --spawn=x,y,z,yaw(deg): the game's own free-roam start puts the car on the default spawn after
+## main.gd applied the option, so the option is applied again here, once the world is built.
+func _apply_spawn(game: Node) -> void:
+	var car: Node3D = game.get(&"player") as Node3D
+	var parts := String(_opts["spawn"]).split(",", false)
+	if car == null or parts.size() < 3:
+		return
+	var yaw := deg_to_rad(float(parts[3])) if parts.size() >= 4 else 0.0
+	var xform := Transform3D(Basis(Vector3.UP, yaw), Vector3(float(parts[0]), float(parts[1]), float(parts[2])))
+	car.call(&"reset_to", xform)
+	print("DRIVE spawn applied at %s" % str(xform.origin))
 
