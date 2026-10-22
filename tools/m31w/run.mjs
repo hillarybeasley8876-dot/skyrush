@@ -410,7 +410,18 @@ async function main() {
     for (const id of rest) {
       const r = spawnSync('git', ['merge', '--no-ff', '-m', `Merge job/${id}\n\nCo-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`, `job/${id}`], { cwd: ROOT, encoding: 'utf8' });
       console.log((r.stdout ?? '') + (r.stderr ?? ''));
-      if (r.status !== 0) { git(['merge', '--abort']); console.log('MERGE FAILED, aborted:', id); process.exitCode = 1; break; }
+      if (r.status !== 0) {
+        // files Godot generates (.uid, .import) conflict when the lead committed them while the job generated its own:
+        // take ours; any other conflict aborts the merge
+        const unmerged = git(['diff', '--name-only', '--diff-filter=U']).split('\n').filter(Boolean);
+        if (unmerged.length > 0 && unmerged.every((f) => /\.(uid|import)$/.test(f))) {
+          for (const f of unmerged) { git(['checkout', '--ours', '--', f]); git(['add', '--', f]); }
+          const c = spawnSync('git', ['commit', '--no-edit'], { cwd: ROOT, encoding: 'utf8' });
+          console.log('auto-resolved generated files (ours):', unmerged.join(', '));
+          if (c.status === 0) continue;
+        }
+        git(['merge', '--abort']); console.log('MERGE FAILED, aborted:', id); process.exitCode = 1; break;
+      }
     }
   } else {
     console.log(readFileSync(import.meta.filename, 'utf8').split('\n').slice(0, 17).join('\n'));
