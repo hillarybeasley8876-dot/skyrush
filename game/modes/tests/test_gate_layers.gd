@@ -34,6 +34,9 @@ func _run() -> void:
 	var deck := await _drive_through(gate, Vector3(0.0, 10.7, 0.0), false)
 	_check(not _counted.has(deck), "a car that drives on a deck 10 m above the gate is NOT counted")
 
+	var ramp := await _drive_through(gate, Vector3(0.0, 8.0, 0.0), false)
+	_check(not _counted.has(ramp), "a car that drives on a ramp 8 m above the gate is NOT counted")
+
 	var high_deck := await _drive_through(gate, Vector3(0.0, 31.0, 0.0), false)
 	_check(not _counted.has(high_deck), "a car that drives 31 m above the gate (the Nanpu bridge) is NOT counted")
 
@@ -53,12 +56,13 @@ func _drive_through(gate: RaceGate, offset: Vector3, airborne: bool) -> VehicleB
 	add_child(car)
 	car.gravity_scale = 0.0
 	car.global_position = GATE_AT + Vector3(0.0, offset.y, 40.0)
-	car.linear_velocity = Vector3.ZERO
-	car.telemetry.airborne = airborne
+	# the stub car works out `telemetry.airborne` itself: above 1.5 m with a vertical speed of 0.5 m/s or more
+	var climb := Vector3(0.0, 2.0, 0.0) if airborne else Vector3.ZERO
+	car.linear_velocity = climb
 	await _frames(3)
 	car.global_position = GATE_AT + offset
+	car.linear_velocity = climb
 	await _frames(4)
-	car.telemetry.airborne = airborne
 	return car
 
 

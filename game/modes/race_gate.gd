@@ -19,10 +19,10 @@ const TRIGGER_DEPTH := 3.0                      ## m: how deep the trigger box i
 const TRIGGER_HEIGHT := 14.0                    ## m: the gate is high enough for a sky lane
 ## The heights that are on the level of the gate: a car that drives on the deck above the
 ## gate is inside the trigger box, but on another level, and must not score the checkpoint.
-## The upper limit is 9.0 m: the closest deck on the map is 9.6 m above a gate (the surface
-## road over the Bund tunnel gate at y = -9.6) and a car on that deck has its origin 9.3 m
-## above the gate. A car in the air (a sky lane) counts at any height of the box.
-const GROUND_PASS_HEIGHT := 9.0                 ## m above the gate origin
+## A grounded car is never more than about a metre above its road, the closest deck on the map
+## is 9.6 m above a gate (the surface road over the Bund tunnel gate at y = -9.6), so 6 m keeps a
+## margin to both sides. A car in the air (a sky lane) counts at any height of the box.
+const GROUND_PASS_HEIGHT := 6.0                 ## m above the gate origin
 const GROUND_PASS_BELOW := 2.0                  ## m below the gate origin
 const LED_ENERGY := 4.5                         ## the energy of the LED strips
 const CURTAIN_ENERGY := 3.5                     ## the energy of the hologram curtain
