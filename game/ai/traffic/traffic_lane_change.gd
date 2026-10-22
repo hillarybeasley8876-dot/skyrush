@@ -27,6 +27,7 @@ const REACT_BRAKE_CHANCE := 0.10 ## a tenth of the cars brake instead
 const REACT_BRAKE_ACCEL := -2.0  ## m/s^2: the extra brake of a startled driver
 const STUCK_LIMIT := 2.5         ## m: the lane error that counts as "stuck"
 const REACT_FORGET_DISTANCE := 70.0 ## m: the player is out of sight at this distance
+const REACT_LEVEL := 4.0         ## m: the player is on another level (a deck above the street)
 const STUCK_TIME := 3.0          ## s: how long a blocked lane change is given before it is given up
 
 ## -1 = the indicator shows left, +1 = right, 0 = off.
@@ -119,11 +120,14 @@ func _react_to_player(ctx: DriveContext, follower: LaneFollower, position: Vecto
 	if player == null or not is_instance_valid(player):
 		return
 	var delta := player.global_position - position
+	if absf(delta.y) > REACT_LEVEL:
+		# The player is on another level (on the deck above the street): the car cannot see
+		# him, so it does not move out of the way and does not brake either.
+		_forget_player()
+		return
 	var distance := delta.length()
 	if distance > REACT_FORGET_DISTANCE:
-		_reacting = false
-		_reaction = 0
-		reaction_brake = 0.0
+		_forget_player()
 		return
 	var tangent := ctx.graph.tangent_at(follower.lane, follower.s)
 	if _reacting:
@@ -142,6 +146,13 @@ func _react_to_player(ctx: DriveContext, follower: LaneFollower, position: Vecto
 		else:
 			_reaction = 3
 		reaction_brake = REACT_BRAKE_ACCEL if _reaction == 2 else 0.0
+
+
+## The player is out of sight: the car forgets the reaction and drives on.
+func _forget_player() -> void:
+	_reacting = false
+	_reaction = 0
+	reaction_brake = 0.0
 
 
 ## The IDM acceleration the car would have in `lane` at `s_on_lane`.

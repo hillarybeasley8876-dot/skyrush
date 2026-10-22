@@ -16,6 +16,7 @@ const HORN_COOLDOWN := 3.0       ## s: how long a car waits before it honks agai
 const HORN_MIN_SPEED := 5.0      ## m/s: the horn is for a car that really drives past
 const PLAYER_HALF_WIDTH := 0.95  ## m: half the width of the player car
 const CHECK_RANGE := 12.0        ## m: only the cars this close to the player are checked
+const LEVEL_GAP := 2.5           ## m: a car is 1.5 m high: the player is on another level above this
 
 ## The number of near misses reported since the traffic started.
 var near_misses: int = 0
@@ -56,9 +57,14 @@ func update(dt: float, player: VehicleBase, cars: Array[TrafficCar]) -> void:
 
 ## The gap between the player and the side of the car (m). A negative value means the player
 ## overlaps the car.
+##
+## A player on another level (on the deck above the street) is not beside the car at all: the
+## gap is INF, so neither the near miss nor the horn can fire.
 func _side_gap(car: TrafficCar, player_position: Vector3) -> float:
 	var local := car.global_transform.affine_inverse() * player_position
 	var half := Vector3(car.car_width * 0.5, 0.75, car.car_length * 0.5)
+	if absf(local.y) > LEVEL_GAP:
+		return INF
 	if absf(local.z) > half.z + 1.0:
 		return INF
 	return absf(local.x) - half.x - PLAYER_HALF_WIDTH
