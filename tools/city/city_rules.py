@@ -240,6 +240,6 @@ def _other_road_at(by_id, road, point):
             continue
         for idx in (0, -1):
             q = other["points"][idx]
-            if math.hypot(q[0] - point[0], q[2] - point[1]) <= 45.0:
+            if math.hypot(q[0] - point[0], q[2] - point[2]) <= 45.0:
                 return other
     return None
