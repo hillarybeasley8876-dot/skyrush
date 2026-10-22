@@ -26,6 +26,8 @@ def parse_args():
     p.add_argument("--data", default=DATA_DIR)
     p.add_argument("--no-textures", action="store_true")
     p.add_argument("--no-data", action="store_true")
+    p.add_argument("--lanes-only", action="store_true",
+                   help="build the lane graph and write only <data>/lanes.json (no tiles, about 10x faster)")
     return p.parse_args(argv)
 
 
@@ -83,6 +85,13 @@ def main():
     tileset = tiles.TileSet()
     records = {"piers": []}
     lane_data = lanes.build_lanes(city)
+    if args.lanes_only:
+        os.makedirs(args.data, exist_ok=True)
+        with open(os.path.join(args.data, "lanes.json"), "w") as fh:
+            json.dump(lane_data, fh, ensure_ascii=False)
+        print("DATA lanes.json (lanes only)")
+        print("DONE in %.1f s" % (time.time() - start))
+        return
     paths = lanes.connector_points(lane_data)
     for road in city.roads:
         build_road(city, road, tileset, records, paths)
