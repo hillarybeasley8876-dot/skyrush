@@ -6,7 +6,7 @@ extends Node3D
 ## helpers: PolicePursuit (the heat, the sight, the evade bar, the busted meter), PoliceOffences
 ## (the four offences of §3.4), PoliceEvents (the bus), PoliceSpawner (where the units come
 ## from), PoliceBlockade (the roadblocks), PoliceAir (the drones), PoliceSquad (the units on the
-## road), PolicePool (the objects) and PoliceWorldSetup (the world).
+## road), PolicePool (the objects), PoliceWorldSetup (the world) and PoliceAftermath (the end).
 ##
 ## The heat follows the table of §3.4 (units 3/5/7/9/12, backup 60/50/45/40/35 s, cooldown
 ## 20/35/50/70/90 s).
@@ -75,6 +75,8 @@ var pool: PolicePool = PolicePool.new()
 var contact: PoliceContact = PoliceContact.new()
 ## The test hooks of the dispatcher.
 var hooks: PoliceTestHooks = PoliceTestHooks.new()
+## The aftermath of a bust or an escape: the end state, then the reset to "none".
+var aftermath: PoliceAftermath = PoliceAftermath.new()
 ## What the dispatcher watches: the lane of the player, the sight, the offences.
 var watch: PoliceWatch = PoliceWatch.new()
 
@@ -168,6 +170,8 @@ func _physics_process(delta: float) -> void:
 		_end_pursuit(&"escaped")
 	if pursuit.update_busted(delta, _player, units):
 		_end_pursuit(&"busted")
+	if aftermath.update(delta, pursuit.state):
+		pursuit.reset()
 	_mark("pursuit", mark)
 	mark = Time.get_ticks_usec()
 	_update_spawning(delta)
@@ -319,12 +323,7 @@ func remove_all_units() -> void:
 ## The world changed: everything leaves the road.
 func _clear_all() -> void:
 	remove_all_units()
-	pursuit.heat = 0
-	pursuit.state = &"none"
-	pursuit.evade = 0.0
-	pursuit.busted = 0.0
-	pursuit.pursuit_time = 0.0
-	pursuit.disabled = 0
+	pursuit.reset()
 	debuff.clear()
 
 
