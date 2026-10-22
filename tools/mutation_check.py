@@ -2,6 +2,7 @@
 """mutation_check — a new test must FAIL on the code as it was before the fix.
 
     python tools/mutation_check.py --test res://ai/traffic/tests/test_layers.gd --files game/ai/traffic/traffic_player_events.gd game/ai/traffic/traffic_lane_change.gd [--base REF] [--expect "text"]
+    python tools/mutation_check.py --test res://ai/traffic/tests/test_layers.gd --files auto     (every source file the job changed)
 
 For every file in --files the version of the job's base commit (REF, default: the merge base of HEAD with improve/openworld)
 is written over the working copy, the test is run (`tools/gd.py test <res path>`), and the working copies are put back
@@ -34,7 +35,7 @@ def main(argv):
             files.append(argv[i])
             i += 1
     if not test or not files:
-        print("MUTATION_CHECK FAIL usage: --test res://... --files a.gd b.gd")
+        print("MUTATION_CHECK FAIL usage: --test res://... --files a.gd b.gd   (or --files auto)")
         return 2
     if base is None:
         res = git("merge-base", "HEAD", "improve/openworld")
@@ -42,6 +43,15 @@ def main(argv):
             print("MUTATION_CHECK FAIL cannot find the merge base: %s" % res.stderr.strip())
             return 2
         base = res.stdout.strip()
+    if files == ["auto"]:
+        # every file the job changed against its base, except tests, status files, briefs, specs and tools
+        changed = git("diff", "--name-only", base).stdout.split()
+        files = [f for f in changed if "/tests/" not in f and not f.startswith(("status/", "briefs/", "jobs-spec/", "tools/", "reviews/"))
+                 and not f.endswith((".uid", ".import"))]
+        if not files:
+            print("MUTATION_CHECK FAIL the job changed no source file against %s" % base[:10])
+            return 1
+        print("mutating: " + " ".join(files))
     saved = {}
     try:
         for name in files:

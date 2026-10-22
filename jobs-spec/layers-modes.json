@@ -1,0 +1,41 @@
+{
+  "id": "layers-modes",
+  "title": "A race gate under a deck must not count the car on the deck above",
+  "brief": "briefs/improve/layers-modes.md",
+  "isolation": "worktree",
+  "owns": [
+    "game/modes/"
+  ],
+  "readonly": [
+    "game/modes/tests/test_gate_layers.gd"
+  ],
+  "maxRounds": 3,
+  "maxTurns": 150,
+  "timeoutMin": 90,
+  "accept": [
+    {
+      "name": "modes scripts and scenes load clean",
+      "cmd": "python tools/gd.py check --only=res://modes/",
+      "must": [
+        "re:CHECK \\d+ files, 0 failed, 0 engine errors"
+      ],
+      "timeoutS": 1200
+    },
+    {
+      "name": "the gate layer test passes",
+      "cmd": "python tools/gd.py test res://modes/tests/test_gate_layers.gd",
+      "must": [
+        "GATE LAYER TESTS OK"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "the whole modes test folder passes",
+      "cmd": "python tools/run_tests.py --filter res://modes/ --jobs 2 --out F:/dev/skyrush-out/tmp/layers-modes/tests",
+      "must": [
+        "re:, 0 failed or timed out"
+      ],
+      "timeoutS": 2400
+    }
+  ]
+}

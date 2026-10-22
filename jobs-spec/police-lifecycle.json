@@ -1,0 +1,63 @@
+{
+  "id": "police-lifecycle",
+  "title": "After a bust or an escape the pursuit resets: patrols return, the HUD clears",
+  "brief": "briefs/improve/police-lifecycle.md",
+  "isolation": "worktree",
+  "owns": [
+    "game/ai/police/",
+    "game/ui/hud/"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 250,
+  "timeoutMin": 150,
+  "accept": [
+    {
+      "name": "police scripts load clean",
+      "cmd": "python tools/gd.py check --only=res://ai/police/",
+      "must": [
+        "re:CHECK \\d+ files, 0 failed, 0 engine errors"
+      ],
+      "timeoutS": 1200
+    },
+    {
+      "name": "hud scripts load clean",
+      "cmd": "python tools/gd.py check --only=res://ui/hud/",
+      "must": [
+        "re:CHECK \\d+ files, 0 failed, 0 engine errors"
+      ],
+      "timeoutS": 1200
+    },
+    {
+      "name": "the pursuit end test passes",
+      "cmd": "python tools/gd.py test res://ai/police/tests/test_pursuit_end.gd",
+      "must": [
+        "PURSUIT END TESTS OK"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "the test fails on the old code",
+      "cmd": "python tools/mutation_check.py --test res://ai/police/tests/test_pursuit_end.gd --files auto",
+      "must": [
+        "MUTATION_CHECK OK"
+      ],
+      "timeoutS": 1500
+    },
+    {
+      "name": "the whole police test folder passes",
+      "cmd": "python tools/run_tests.py --filter res://ai/police/ --jobs 3 --out F:/dev/skyrush-out/tmp/police-lifecycle/tests_police",
+      "must": [
+        "re:, 0 failed or timed out"
+      ],
+      "timeoutS": 3000
+    },
+    {
+      "name": "the whole hud test folder passes",
+      "cmd": "python tools/run_tests.py --filter res://ui/hud/ --jobs 2 --out F:/dev/skyrush-out/tmp/police-lifecycle/tests_hud",
+      "must": [
+        "re:, 0 failed or timed out"
+      ],
+      "timeoutS": 2400
+    }
+  ]
+}
