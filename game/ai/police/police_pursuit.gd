@@ -16,6 +16,10 @@ const BUST_DRAIN := 1.0       ## 1/s: the drain rate
 const BUST_BOX_SPEED := 40.0  ## km/h
 const BUST_BOX_TIME := 2.0     ## s: the box has to hold for this long
 const HIDE_RADIUS := 25.0      ## m: the radius of a hiding spot
+## Two things are on the same level when their heights differ by at most this (the layers of
+## the map: a street at y = 0 runs under the deck at y = 10). A cop under a deck cannot bust
+## the player above it, and a hiding spot under a deck does not hide the player on the deck.
+const LEVEL := 4.0             ## m: the height difference of one level
 ## The bounty of an escaped pursuit (dossier §3.5).
 const BOUNTY_HEAT := 500.0     ## points per heat level
 const BOUNTY_SECOND := 10.0    ## points per second of the pursuit
@@ -154,9 +158,15 @@ func update_state(delta: float, player: VehicleBase) -> bool:
 
 
 ## True when the player is in a hiding spot of the world.
+##
+## A spot only hides the player when she is on its level: a spot under a deck does not hide the
+## player who drives on the deck above it.
 func _update_hiding_spot(player: VehicleBase) -> void:
 	in_hiding_spot = false
+	var height := player.global_position.y
 	for pos in hiding_spots:
+		if absf(height - pos.y) > LEVEL:
+			continue
 		if player.global_position.distance_to(pos) < HIDE_RADIUS:
 			in_hiding_spot = true
 			return
@@ -177,6 +187,9 @@ func update_busted(delta: float, player: VehicleBase, units: Array[PoliceCar]) -
 		if unit.is_wrecked:
 			continue
 		if unit.global_position.distance_to(player.global_position) > BUST_RANGE:
+			continue
+		if absf(unit.global_position.y - player.global_position.y) > LEVEL:
+			# The unit is on another level: a cop under a deck cannot bust the player above.
 			continue
 		close += 1
 		if unit.state == PoliceCar.State.BOX:
