@@ -74,6 +74,11 @@ function prepareWorkdir(job) {
     git(['worktree', 'add', '--no-checkout', '-B', `job/${job.id}`, wt, base]);
     if (job.sparse) git(['sparse-checkout', 'set', '--no-cone', ...job.sparse.map((p) => '/' + p)], wt);
     git(['reset', '--hard', '-q'], wt);
+    // A full game worktree starts with the lead's Godot import cache, so its first `gd.py check` is a no-op, not a 10-minute import.
+    const cache = join(ROOT, 'game', '.godot');
+    if (!job.sparse && existsSync(cache)) {
+      spawnSync('robocopy', [cache, join(wt, 'game', '.godot'), '/E', '/MT:16', '/NFL', '/NDL', '/NJH', '/NJS', '/NP'], { stdio: 'ignore' });
+    }
   }
   return wt;
 }
