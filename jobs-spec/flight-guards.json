@@ -1,0 +1,86 @@
+{
+  "id": "flight-guards",
+  "title": "Sky lane: no pointless roll, a toast for a refused take-off, an obstacle hit API",
+  "brief": "briefs/improve/flight-guards.md",
+  "isolation": "worktree",
+  "owns": [
+    "game/vehicle/modules/car_api.gd",
+    "game/vehicle/modules/car_events.gd",
+    "game/vehicle/modules/car_flight.gd",
+    "game/vehicle/modules/sky_flight.gd",
+    "game/vehicle/modules/thruster.gd",
+    "game/vehicle/tuning/lane_tuning.gd",
+    "game/vehicle/tuning/air_tuning.gd",
+    "game/vehicle/tests/test_flight_guards.gd"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 250,
+  "timeoutMin": 150,
+  "accept": [
+    {
+      "name": "vehicle scripts and scenes load clean",
+      "cmd": "python tools/gd.py check --only=res://vehicle/",
+      "must": [
+        "re:CHECK \\d+ files, 0 failed, 0 engine errors"
+      ],
+      "timeoutS": 1200
+    },
+    {
+      "name": "the flight guard test passes",
+      "cmd": "python tools/gd.py test res://vehicle/tests/test_flight_guards.gd",
+      "must": [
+        "re:RESULT \\d+ checks, 0 failures"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "the test fails on the old code",
+      "cmd": "python tools/mutation_check.py --test res://vehicle/tests/test_flight_guards.gd --files auto",
+      "must": [
+        "MUTATION_CHECK OK"
+      ],
+      "timeoutS": 1500
+    },
+    {
+      "name": "the whole vehicle test folder passes",
+      "cmd": "python tools/run_tests.py --filter res://vehicle/ --jobs 3 --out F:/dev/skyrush-out/tmp/flight-guards/tests",
+      "must": [
+        "re:, 0 failed or timed out"
+      ],
+      "timeoutS": 3600
+    }
+  ],
+  "readonly": [
+    "game/vehicle/tests/feel_helpers.gd",
+    "game/vehicle/tests/feel_report.gd",
+    "game/vehicle/tests/test_ai_api.gd",
+    "game/vehicle/tests/test_air_boosts.gd",
+    "game/vehicle/tests/test_air_pitch.gd",
+    "game/vehicle/tests/test_boost_caps.gd",
+    "game/vehicle/tests/test_boost_events.gd",
+    "game/vehicle/tests/test_brake.gd",
+    "game/vehicle/tests/test_charge.gd",
+    "game/vehicle/tests/test_drift.gd",
+    "game/vehicle/tests/test_heading.gd",
+    "game/vehicle/tests/test_hop.gd",
+    "game/vehicle/tests/test_hop_drift_accept.gd",
+    "game/vehicle/tests/test_hop_drift_cases.gd",
+    "game/vehicle/tests/test_impact.gd",
+    "game/vehicle/tests/test_landing.gd",
+    "game/vehicle/tests/test_launch.gd",
+    "game/vehicle/tests/test_menu_input.gd",
+    "game/vehicle/tests/test_nitro.gd",
+    "game/vehicle/tests/test_respawn.gd",
+    "game/vehicle/tests/test_rewards.gd",
+    "game/vehicle/tests/test_roll.gd",
+    "game/vehicle/tests/test_sky_lane.gd",
+    "game/vehicle/tests/test_specs.gd",
+    "game/vehicle/tests/test_stability.gd",
+    "game/vehicle/tests/test_suspension.gd",
+    "game/vehicle/tests/test_telemetry.gd",
+    "game/vehicle/tests/test_thrusters.gd",
+    "game/vehicle/tests/test_top_speed.gd",
+    "game/vehicle/tests/test_visual.gd",
+    "game/vehicle/tests/vehicle_test.gd"
+  ]
+}
