@@ -151,7 +151,7 @@ def do_import():
                 print("[import] up to date")
                 return 0
         started = time.time()
-        code = run([GODOT, "--headless", "--path", PROJ, "--import"], TIMEOUT["import"])
+        code = run([GODOT] + log_args() + ["--headless", "--path", PROJ, "--import"], TIMEOUT["import"])
         if code == 0:
             STAMP.touch()
             os.utime(STAMP, (started, started))
@@ -167,8 +167,17 @@ def import_quiet():
     return code
 
 
+def log_args():
+    """A log file of its own for every Godot process. The default user://logs/godot.log is rotated at start-up
+    to a name made of the current second: parallel runs that start in the same second collide on it and some
+    exit with -1 AFTER the test printed its verdict."""
+    folder = ENV_DIR / "godot-logs"
+    folder.mkdir(parents=True, exist_ok=True)
+    return ["--log-file", str(folder / ("%d_%d.log" % (os.getpid(), int(time.time() * 1000))))]
+
+
 def godot_args(*tail):
-    return [GODOT, "--path", PROJ] + list(tail)
+    return [GODOT] + log_args() + ["--path", PROJ] + list(tail)
 
 
 def main(argv):

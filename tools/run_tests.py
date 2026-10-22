@@ -32,15 +32,27 @@ def discover(filt):
     return out
 
 
-def run_one(res, out_dir, timeout):
-    name = res.replace("res://", "").replace("/", "__").replace(".gd", "")
-    t0 = time.time()
+CRASH_AT_EXIT = (4294967295, -1)   # Godot exits with -1 at shutdown on a busy machine, after the verdict was printed
+
+
+def run_once(res, timeout):
     try:
         proc = subprocess.run([sys.executable, str(ROOT / "tools" / "gd.py"), "test", res], capture_output=True,
                               text=True, encoding="utf-8", errors="replace", timeout=timeout + 600)
-        text, code = (proc.stdout or "") + (proc.stderr or ""), proc.returncode
+        return (proc.stdout or "") + (proc.stderr or ""), proc.returncode
     except subprocess.TimeoutExpired as exc:
-        text, code = (exc.stdout or b"").decode("utf-8", "replace") if isinstance(exc.stdout, bytes) else (exc.stdout or ""), 124
+        return (exc.stdout or b"").decode("utf-8", "replace") if isinstance(exc.stdout, bytes) else (exc.stdout or ""), 124
+
+
+def run_one(res, out_dir, timeout):
+    name = res.replace("res://", "").replace("/", "__").replace(".gd", "")
+    t0 = time.time()
+    text, code = run_once(res, timeout)
+    retries = 0
+    # a clean verdict followed by a crash at exit is a flake, not a failure: look again (twice at most)
+    while code in CRASH_AT_EXIT and retries < 2 and not any(l.startswith("FAIL") for l in text.splitlines()):
+        retries += 1
+        text, code = run_once(res, timeout)
     secs = time.time() - t0
     (out_dir / (name + ".log")).write_text(text, encoding="utf-8")
     checks = failures = 0
@@ -48,7 +60,7 @@ def run_one(res, out_dir, timeout):
     if m:
         checks, failures = int(m.group(1)), int(m.group(2))
     fails = [l.strip() for l in text.splitlines() if l.startswith(("FAIL", "SCRIPT ERROR", "ERROR:"))][:5]
-    return res, {"exit": code, "checks": checks, "failures": failures, "secs": round(secs, 1), "first_fails": fails,
+    return res, {"exit": code, "checks": checks, "failures": failures, "secs": round(secs, 1), "first_fails": fails, "retries": retries,
                  "passed_lines": sum(1 for l in text.splitlines() if l.startswith("PASS"))}
 
 
