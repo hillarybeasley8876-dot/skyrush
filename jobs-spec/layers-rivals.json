@@ -1,0 +1,53 @@
+{
+  "id": "layers-rivals",
+  "title": "Rivals must not avoid, follow or slipstream cars on another level",
+  "brief": "briefs/improve/layers-rivals.md",
+  "isolation": "worktree",
+  "owns": [
+    "game/ai/rivals/"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 250,
+  "timeoutMin": 150,
+  "accept": [
+    {
+      "name": "rivals scripts and scenes load clean",
+      "cmd": "python tools/gd.py check --only=res://ai/rivals/",
+      "must": [
+        "re:CHECK \\d+ files, 0 failed, 0 engine errors"
+      ],
+      "timeoutS": 1200
+    },
+    {
+      "name": "the rival layer test passes",
+      "cmd": "python tools/gd.py test res://ai/rivals/tests/test_layers.gd",
+      "must": [
+        "RIVAL LAYER TESTS OK"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "the test fails on the old code",
+      "cmd": "python tools/mutation_check.py --test res://ai/rivals/tests/test_layers.gd --files auto",
+      "must": [
+        "MUTATION_CHECK OK"
+      ],
+      "timeoutS": 1500
+    },
+    {
+      "name": "the rivals test folder does not get worse",
+      "cmd": "python tools/run_tests.py --filter res://ai/rivals/ --jobs 3 --out F:/dev/skyrush-out/tmp/layers-rivals/tests --allow-fail test_performance,test_race_flow,test_real_route,test_rival_driving",
+      "must": [
+        "RUN_TESTS_RATCHET OK"
+      ],
+      "timeoutS": 3000
+    }
+  ],
+  "readonly": [
+    "game/ai/rivals/tests/test_performance.gd",
+    "game/ai/rivals/tests/test_race_flow.gd",
+    "game/ai/rivals/tests/test_real_route.gd",
+    "game/ai/rivals/tests/test_rival_driving.gd",
+    "game/ai/rivals/tests/test_rubber_band.gd"
+  ]
+}
