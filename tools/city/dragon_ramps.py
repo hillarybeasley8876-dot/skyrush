@@ -34,6 +34,8 @@ MOVES = [
     ("ramp_rt_nb_eb", "ns_elevated", -1, +360.0, "yanan_elevated", +1, +700.0, None, 2),
 ]
 
+LEAD_IN = 30.0                    # the straight merge into the main line
+
 NAMES = {
     "ramp_l3_eb_nb": "延安高架左转匝道 EB>NB",
     "ramp_l3_wb_sb": "延安高架左转匝道 WB>SB",
@@ -147,8 +149,14 @@ def _left_plan(frame, spec, ramp_half):
     m0 = leg_mag(p0, h0, m, mid)
     m1 = leg_mag(m, mid, p2, h1)
     a = hermite(p0, scale(dir_of(h0), m0), m, scale(dir_of(mid), m1))
-    b = hermite(m, scale(dir_of(mid), m1), p2, scale(dir_of(h1), m1))
-    return a + b[1:], mid
+    # the last stretch runs straight along the main line's direction, so the
+    # ramp joins it without a kink: a plain Hermite is still turning at its
+    # end, and the rule measures the direction over the last metres.
+    d = dir_of(h1)
+    p1 = (p2[0] - d[0] * LEAD_IN, p2[1] - d[1] * LEAD_IN)
+    b = hermite(m, scale(dir_of(mid), m1), p1, scale(dir_of(h1), m1))
+    c = _line_points(p1, p2, 4)
+    return a + b[1:] + c[1:], mid
 
 
 def _right_plan(frame, spec, ramp_half, radius=None):
