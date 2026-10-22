@@ -2,6 +2,8 @@ extends SceneTree
 ## Scripted play-through for feel reviews, E2E tests and trailer capture (core-owned).
 ##   tools/godot.sh drive --timeline=res://path/timeline.json [--scene=res://main.tscn]
 ##        [--shots=1.5,4,8] [--outdir=...] [--out=name] [--log=telemetry csv path] + game options
+## --follow=<abs path or res://>.json makes the car drive a path by itself (pure pursuit steering, speed control) and ends the
+## run when the end of the path is reached: {"points": [[x,y,z], ...], "speed_kmh": 70, "end_radius": 8}. Use with --spawn.
 ## Timeline JSON: [{"t": 0.0, "press": ["accelerate"]}, {"t": 2.5, "release": ["accelerate"]},
 ##                 {"t": 3.0, "tap": ["hop"]}, {"t": 9.0, "end": true}]
 ## "tap" presses for 3 frames. Prints "DRIVE t=.. speed=.. n2=.." every 0.5 s and writes a telemetry
@@ -22,6 +24,11 @@ var _shots: PackedFloat64Array = []
 var _log: FileAccess
 var _next_print: float = 0.0
 var _world_waited: float = 0.0
+var _follow: PackedVector3Array = PackedVector3Array()
+var _follow_speed: float = 70.0
+var _follow_end: float = 8.0
+var _follow_i: int = 0
+var _follow_done_at: float = -1.0
 const WORLD_WAIT_MAX := 120.0
 
 
@@ -34,6 +41,8 @@ func _initialize() -> void:
 			var eq := arg.find("=")
 			_opts[arg.substr(2, eq - 2) if eq > 0 else arg.substr(2)] = arg.substr(eq + 1) if eq > 0 else "true"
 	_events = _load_timeline(String(_opts.get("timeline", "")))
+	if _opts.has("follow"):
+		_load_follow(String(_opts["follow"]))
 	for s in String(_opts.get("shots", "")).split(",", false):
 		_shots.append(float(s))
 	if _opts.has("log"):
@@ -62,6 +71,11 @@ func _process(delta: float) -> bool:
 	if not _world_ready(delta):
 		return false
 	_t += delta
+	if not _follow.is_empty():
+		_follow_step()
+		if _follow_done_at >= 0.0 and _t >= _follow_done_at:
+			_finish()
+			return true
 	while _next < _events.size() and float((_events[_next] as Dictionary)["t"]) <= _t:
 		_apply(_events[_next] as Dictionary)
 		_next += 1
@@ -157,3 +171,63 @@ func _apply_spawn(game: Node) -> void:
 	car.call(&"reset_to", xform)
 	print("DRIVE spawn applied at %s" % str(xform.origin))
 
+
+
+func _load_follow(path: String) -> void:
+	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if not data is Dictionary:
+		push_error("drive: --follow is not a path file: " + path)
+		return
+	for p: Variant in (data as Dictionary).get("points", []):
+		var a: Array = p as Array
+		_follow.append(Vector3(float(a[0]), float(a[1]), float(a[2])))
+	_follow_speed = float((data as Dictionary).get("speed_kmh", 70.0))
+	_follow_end = float((data as Dictionary).get("end_radius", 8.0))
+	print("DRIVE follow: %d points, %.0f km/h, end radius %.1f m" % [_follow.size(), _follow_speed, _follow_end])
+
+
+## One control step of the path follower: pure pursuit steering, proportional throttle and brake.
+func _follow_step() -> void:
+	var game := root.get_node_or_null(^"Game")
+	var car: Node3D = game.get(&"player") as Node3D if game != null else null
+	if car == null or _follow.size() < 2:
+		return
+	var pos := car.global_position
+	var best := _follow_i
+	var best_d := INF
+	for i in range(_follow_i, mini(_follow_i + 60, _follow.size())):
+		var d := Vector2(pos.x - _follow[i].x, pos.z - _follow[i].z).length()
+		if d < best_d:
+			best_d = d
+			best = i
+	_follow_i = best
+	var speed_kmh := float((car.get(&"telemetry") as Object).get(&"speed_kmh"))
+	var look := clampf(speed_kmh / 3.6 * 0.7, 6.0, 35.0)
+	var acc := 0.0
+	var j := _follow_i
+	while j < _follow.size() - 1 and acc < look:
+		acc += Vector2(_follow[j + 1].x - _follow[j].x, _follow[j + 1].z - _follow[j].z).length()
+		j += 1
+	var to := _follow[j] - pos
+	to.y = 0.0
+	var fwd := -car.global_transform.basis.z
+	fwd.y = 0.0
+	var steer := 0.0
+	if to.length() > 0.5 and fwd.length() > 0.1:
+		steer = clampf(-fwd.signed_angle_to(to, Vector3.UP) / 0.5, -1.0, 1.0)
+	_press(&"steer_left", maxf(-steer, 0.0))
+	_press(&"steer_right", maxf(steer, 0.0))
+	var over := speed_kmh - _follow_speed
+	_press(&"accelerate", 1.0 if over < -3.0 else (0.35 if over < 3.0 else 0.0))
+	_press(&"brake", clampf((over - 6.0) / 25.0, 0.0, 1.0))
+	var end := _follow[_follow.size() - 1]
+	if _follow_done_at < 0.0 and Vector2(pos.x - end.x, pos.z - end.z).length() <= _follow_end:
+		_follow_done_at = _t + 0.6
+		print("DRIVE follow reached the end at t=%.1f (path point %d of %d)" % [_t, _follow_i, _follow.size()])
+
+
+func _press(action: StringName, strength: float) -> void:
+	if strength <= 0.001:
+		Input.action_release(action)
+	else:
+		Input.action_press(action, strength)
