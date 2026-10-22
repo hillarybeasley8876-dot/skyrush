@@ -191,7 +191,10 @@ func update_busted(delta: float, player: VehicleBase, units: Array[PoliceCar]) -
 	var rate := 0.0
 	if player.get_speed_kmh() < BUST_SPEED:
 		rate = BUST_FILL
-	elif box_time >= BUST_BOX_TIME:
+	elif boxing and player.get_speed_kmh() < BUST_BOX_SPEED \
+			and box_time >= BUST_BOX_TIME:
+		# The box holds a slow player: the meter fills twice as fast. A player who is faster
+		# than 40 km/h is not in the box, whatever the box held a moment ago.
 		rate = BUST_FILL * 2.0
 	if close < 1 or rate <= 0.0:
 		busted = maxf(busted - delta * BUST_DRAIN, 0.0)

@@ -72,12 +72,16 @@ const BOX_FRONT_AHEAD := 9.0
 ## long baseline, or the unit hunts around the line of the player.
 const BOX_MERGE_AIM := 12.0
 ## The unit starts to merge when it is that far in front of the player (m).
-const BOX_MERGE_START := 4.0
+##
+## The merge happens on the way to the gap the unit holds, not in the middle of the squeeze: a
+## unit that merges onto the line of the player a few metres in front of him swings across him
+## and the box hits the player with its own front unit.
+const BOX_MERGE_START := 5.5
 ## The lateral offset the front unit uses while it overtakes (m).
 ##
 ## The front unit passes outside the side units, so the three cars of the box do not fight for
 ## the same lane.
-const BOX_OVERTAKE_OFFSET := 4.6
+const BOX_OVERTAKE_OFFSET := 3.5
 ## How far ahead of the player the front unit aims while it overtakes (m).
 ##
 ## The run-up has to be long: the police cars can only pull 7 m/s^2 to the side, so the unit
@@ -87,7 +91,13 @@ const BOX_OVERTAKE_AHEAD := 25.0
 const BOX_ENTER_DISTANCE := 22.0
 ## The lateral offset of the side units (m) and how far behind they drive (m).
 const BOX_SIDE_OFFSET := 2.4
-const BOX_BACK := 0.0
+const BOX_BACK := 1.0
+## How far the target of a side unit stays in front of the unit (m).
+##
+## The slot of a side unit is beside the player, so a unit that is in front of the slot would
+## drive at a target behind it and turn around. The target therefore stays ahead of the unit:
+## the unit keeps driving forward and lets the player catch him up.
+const BOX_TARGET_CLEARANCE := 1.0
 ## The extra speed the front unit uses while it overtakes (m/s).
 const BOX_CATCH_UP := 8.0
 ## The distance behind the player where the front unit slows down to move out of his lane (m).
@@ -219,19 +229,59 @@ static func box_target(player: VehicleBase, front: bool, side: float, rel: Vecto
 			return player.global_position + player.get_forward() * BOX_OVERTAKE_AHEAD + lane
 		# The merge: the unit comes back to the line of the player and holds the gap.
 		return player.global_position + player.get_forward() * (BOX_FRONT_AHEAD + BOX_MERGE_AIM)
-	return player.global_transform * Vector3(side * BOX_SIDE_OFFSET, 0.0, BOX_BACK)
+	# The slot of a side unit: beside the player. The target never falls behind the unit, so a
+	# unit that overshot the player keeps driving forward instead of turning around.
+	var slot := minf(BOX_BACK, rel.z - BOX_TARGET_CLEARANCE)
+	return player.global_transform * Vector3(side * BOX_SIDE_OFFSET, 0.0, slot)
+
+
+## How far the front unit has merged back onto the line of the player (0..1).
+##
+## The merge starts when the unit is `BOX_MERGE_START` metres in front of the player and is
+## done when it holds the gap of the box (`BOX_FRONT_AHEAD`).
+static func merge_progress(rel_z: float) -> float:
+	var span := BOX_FRONT_AHEAD - BOX_MERGE_START
+	if span <= 0.0:
+		return 1.0
+	# rel_z is positive behind the player, so the distance in front of him is -rel_z.
+	return clampf((-rel_z - BOX_MERGE_START) / span, 0.0, 1.0)
+
+
+## The cross-track steering of the front unit of the box (the steering command).
+##
+## The unit merges back onto the line of the player. The pure pursuit alone swings across the
+## line and the box hits the player with its own front unit: the cross-track term (the
+## distance to the line) pulls the unit back onto it.
+##
+## The units of the box drive in the same direction as the player, so the sign is the other way
+## round than for a unit that comes the other way: an error to the right is a steer to the left.
+##
+## `rel` is the unit in the frame of the player (x = right, z = behind).
+static func box_line_steer(rel: Vector3, speed: float) -> float:
+	return -PoliceDriver.cross_track_steer(rel.x, speed)
 
 
 ## The speed of the box: the front unit overtakes first, then it holds nine metres ahead; the
 ## side units close on their slot and then keep the speed of the player.
-static func box_speed(player: VehicleBase, front: bool, side: float, rel: Vector3,
+##
+## The speed of a side unit follows the error to its slot along the road: a unit behind the
+## slot catches up, a unit in front of the slot slows down and lets the player catch him up.
+## The error is signed: a unit that overshot the player must not speed up, or it drives away
+## from the box.
+static func box_speed(player: VehicleBase, front: bool, _side: float, rel: Vector3,
 		top_speed: float) -> float:
 	var player_speed := player.get_speed_kmh() / 3.6
 	if not front:
-		var gap := Vector2(rel.x - side * BOX_SIDE_OFFSET, rel.z - BOX_BACK).length()
-		if gap <= BOX_SLOT_REACHED:
-			return player_speed
-		return player_speed + clampf(gap * BOX_SIDE_GAIN, 0.0, BOX_SIDE_CATCH_UP_MAX)
+		var error := rel.z - BOX_BACK
+		if error > BOX_SLOT_REACHED:
+			# Behind the slot: close in.
+			return player_speed + clampf(error * BOX_SIDE_GAIN, 0.0, BOX_SIDE_CATCH_UP_MAX)
+		if error < 0.0:
+			# In front of the slot: slow down and let the player catch him up. There is no
+			# deadband here: a unit in front of the slot has to come back into it.
+			return maxf(player_speed + clampf(error * BOX_SIDE_GAIN, -BOX_SIDE_CATCH_UP_MAX, 0.0), 0.0)
+		# The unit is in its slot: it keeps the speed of the player.
+		return player_speed
 	# The front unit catches up first, then it moves out of the lane of the player slowly (it can
 	# only pull 7 m/s^2 to the side) and passes him.
 	if rel.z > BOX_CATCH_UP_DISTANCE:

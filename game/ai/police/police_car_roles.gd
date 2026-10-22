@@ -80,6 +80,13 @@ func enter_state(new_state: PoliceCar.State) -> void:
 		return
 	car.state = new_state
 	car.state_time = 0.0
+	# The cross-track term of the steering belongs to the state that uses it (the box and the
+	# head-on unit); a unit that changes its state must not keep the term of the old one.
+	car.steer_bias = 0.0
+	# The units of the box use the whole brake: they have to follow a player who brakes hard,
+	# or the box breaks up when the player slows down. The other roles brake gently.
+	car.brake_max = PoliceDriver.BRAKE_FULL if new_state == PoliceCar.State.BOX \
+			else PoliceDriver.BRAKE_MAX
 	if new_state == PoliceCar.State.PIT:
 		_pit_side = _choose_pit_side()
 
@@ -226,6 +233,10 @@ func _tick_box(dt: float) -> void:
 	# The three units of the box drive in a formation: the car in front of them is part of
 	# the formation, so it does not make them wait.
 	car.apply_following(dt, wanted, false, true)
+	if front and PoliceTactics.merge_progress(rel.z) > 0.0:
+		# The front unit merges back onto the line of the player: the cross-track term holds
+		# it on the line, the pure pursuit alone swings across the player.
+		car.steer_bias = PoliceTactics.box_line_steer(rel, PoliceDriver.speed(car))
 	if car.state_time > PoliceTactics.BOX_BREAK_TIME:
 		enter_state(PoliceCar.State.PURSUE)
 
