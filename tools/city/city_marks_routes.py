@@ -277,8 +277,11 @@ def _nudge_clear(road, s, direction):
     clear and inside the map window."""
     import build_city
     win = build_city.WINDOW
-    for step in (2.0, 4.0, 8.0, 14.0, 22.0, 32.0, 45.0):
+    # the station itself first (step 0): a mark that is already clear and inside the window stays where it is
+    for step in (0.0, 2.0, 4.0, 8.0, 14.0, 22.0, 32.0, 45.0):
         for sign in (-1.0, 1.0):
+            if step == 0.0 and sign > 0.0:
+                continue
             t = s + sign * step
             if not 0.0 <= t <= road.length():
                 continue
