@@ -99,6 +99,10 @@ func apply(state: PhysicsDirectBodyState3D, dt: float) -> void:
 	for w in wheels:
 		if w.contact:
 			grounded += 1
+	# The share of the wheels that touch the ground. Everything that works through the wheels
+	# (the motor, the brake, the downforce, the drift yaw and the drift assist) is scaled with
+	# it: a car that leaves the ground does not get the ground forces any more.
+	var ground_share: float = float(grounded) / float(maxi(wheels.size(), 1))
 	# 2. the suspension and the anti roll bars
 	_apply_suspension(state, basis, up)
 	_apply_anti_roll(state, basis, up)
@@ -138,7 +142,7 @@ func apply(state: PhysicsDirectBodyState3D, dt: float) -> void:
 		var flat_v: Vector3 = velocity - up * velocity.dot(up)
 		state.apply_force(flat_v * (engine_damp * spec.mass), com_offset)
 	# 5. the drift assists
-	_apply_drift(state, basis, up, speed, dt)
+	_apply_drift(state, basis, up, speed, ground_share, dt)
 	# The wall glance assist: the car is pulled along the wall for a moment.
 	if impact.glancing:
 		state.apply_torque(up * impact.glance_torque)
@@ -149,7 +153,6 @@ func apply(state: PhysicsDirectBodyState3D, dt: float) -> void:
 	# 7. downforce, upright torque, yaw damping
 	# The downforce is the downforce of the fan car: it needs the ground under it, so it is
 	# scaled with the share of the wheels that touch the ground (a hop is not pulled down).
-	var ground_share: float = float(grounded) / float(maxi(wheels.size(), 1))
 	state.apply_force(-up * BodyTuning.DOWNFORCE_K * speed * speed * ground_share, com_offset)
 	_apply_upright(state, up)
 	# 8. the thrusters and the air control
@@ -246,8 +249,12 @@ func _apply_tyres(state: PhysicsDirectBodyState3D, basis: Basis, up: Vector3, ri
 ## The drift: yaw torque, lateral assist and the speed loss. The recover shares the path: the
 ## yaw torque and the lateral assist straighten the car, so the nose is straight before the
 ## 小喷 window opens (dossier 4.6, the RECOVER row).
+## The drift works through the wheels: the yaw torque and the assist are scaled with the share
+## of the wheels that touch the ground, so they stop as soon as the car leaves the ground (a
+## hop, a crest or a ramp is not pulled down by the drift). The yaw in the air belongs to
+## car_air._apply_air_control.
 func _apply_drift(state: PhysicsDirectBodyState3D, basis: Basis, up: Vector3, speed: float,
-		dt: float) -> void:
+		ground_share: float, dt: float) -> void:
 	var fwd: Vector3 = -basis.z
 	drift.update(dt, drive.steer_value(), drift_held, forward_speed, speed, grounded,
 			state.angular_velocity.y, lateral_speed, forward_speed)
@@ -256,16 +263,23 @@ func _apply_drift(state: PhysicsDirectBodyState3D, basis: Basis, up: Vector3, sp
 		drift.yaw_kick = 0.0
 	var drifting: bool = drift.state == &"drift"
 	if drifting or drift.state == &"recover":
-		state.apply_torque(up * drift.yaw_torque)
+		state.apply_torque(up * drift.yaw_torque * ground_share)
 		var com: Vector3 = state.transform.basis * spec.center_of_mass
 		var velocity: Vector3 = state.linear_velocity
 		if drift.assist_accel > 0.0 and velocity.length() > DriftTuning.DRIFT_ASSIST_MIN_SPEED:
 			# The velocity steering: perpendicular to the velocity, towards the nose. It turns
-			# the velocity onto the nose without taking energy out of the car.
-			var v_dir: Vector3 = velocity / velocity.length()
-			var to_nose: Vector3 = fwd - v_dir * fwd.dot(v_dir)
-			if to_nose.length() > TyreTuning.MIN_VECTOR:
-				state.apply_force(to_nose.normalized() * spec.mass * drift.assist_accel, com)
+			# the velocity onto the nose without taking energy out of the car. The assist is
+			# built in the ground plane (the flat velocity and the flat nose), so it never has
+			# a component along the up axis: it can never pull a hopping car down.
+			var v_flat: Vector3 = velocity - up * velocity.dot(up)
+			var f_flat: Vector3 = fwd - up * fwd.dot(up)
+			if v_flat.length() > TyreTuning.MIN_VECTOR and f_flat.length() > TyreTuning.MIN_VECTOR:
+				var v_dir: Vector3 = v_flat.normalized()
+				var f_dir: Vector3 = f_flat.normalized()
+				var to_nose: Vector3 = f_dir - v_dir * f_dir.dot(v_dir)
+				if to_nose.length() > TyreTuning.MIN_VECTOR:
+					var assist: float = drift.assist_accel * ground_share
+					state.apply_force(to_nose.normalized() * spec.mass * assist, com)
 		if drifting and velocity.length() > DriftTuning.DRIFT_ASSIST_MIN_SPEED:
 			state.apply_force(-velocity.normalized() * spec.mass * drift.loss_accel, com)
 
