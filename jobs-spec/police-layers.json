@@ -1,0 +1,85 @@
+{
+  "id": "police-layers",
+  "title": "A cop under a deck does not bust the player above; a hiding spot under a deck does not hide a player on the deck",
+  "brief": "briefs/improve/police-layers.md",
+  "isolation": "worktree",
+  "owns": [
+    "game/ai/police/",
+    "game/ui/hud/hud_pursuit.gd"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 250,
+  "timeoutMin": 150,
+  "accept": [
+    {
+      "name": "police scripts load clean",
+      "cmd": "python tools/gd.py check --only=res://ai/police/",
+      "must": [
+        "re:CHECK \\d+ files, 0 failed, 0 engine errors"
+      ],
+      "timeoutS": 1200
+    },
+    {
+      "name": "hud scripts load clean",
+      "cmd": "python tools/gd.py check --only=res://ui/hud/",
+      "must": [
+        "re:CHECK \\d+ files, 0 failed, 0 engine errors"
+      ],
+      "timeoutS": 1200
+    },
+    {
+      "name": "the police layer test passes",
+      "cmd": "python tools/gd.py test res://ai/police/tests/test_layers.gd",
+      "must": [
+        "POLICE LAYER TESTS OK"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "the test fails on the old code",
+      "cmd": "python tools/mutation_check.py --test res://ai/police/tests/test_layers.gd --files auto",
+      "must": [
+        "MUTATION_CHECK OK"
+      ],
+      "timeoutS": 1500
+    },
+    {
+      "name": "the police test folder does not get worse",
+      "cmd": "python tools/run_tests.py --filter res://ai/police/ --jobs 3 --out F:/dev/skyrush-out/tmp/police-layers/tests --allow-fail test_perf",
+      "must": [
+        "RUN_TESTS_RATCHET OK"
+      ],
+      "timeoutS": 3000
+    },
+    {
+      "name": "the hud test folder does not get worse",
+      "cmd": "python tools/run_tests.py --filter res://ui/hud/ --jobs 2 --out F:/dev/skyrush-out/tmp/police-layers/tests_hud --allow-fail test_hud_perf",
+      "must": [
+        "RUN_TESTS_RATCHET OK"
+      ],
+      "timeoutS": 2400
+    }
+  ],
+  "readonly": [
+    "game/ai/police/tests/police_error_log.gd",
+    "game/ai/police/tests/police_test.gd",
+    "game/ai/police/tests/test_box.gd",
+    "game/ai/police/tests/test_box_rules.gd",
+    "game/ai/police/tests/test_brake_probe.gd",
+    "game/ai/police/tests/test_bust_crowd.gd",
+    "game/ai/police/tests/test_busted.gd",
+    "game/ai/police/tests/test_drone.gd",
+    "game/ai/police/tests/test_head_on.gd",
+    "game/ai/police/tests/test_heat.gd",
+    "game/ai/police/tests/test_hold_back.gd",
+    "game/ai/police/tests/test_offences.gd",
+    "game/ai/police/tests/test_offences_contact.gd",
+    "game/ai/police/tests/test_perf.gd",
+    "game/ai/police/tests/test_pit.gd",
+    "game/ai/police/tests/test_pool.gd",
+    "game/ai/police/tests/test_pursuit_end.gd",
+    "game/ai/police/tests/test_roadblock.gd",
+    "game/ai/police/tests/test_spikes.gd",
+    "game/ai/police/tests/test_toll.gd"
+  ]
+}
