@@ -122,6 +122,10 @@ func _consider(node: Node3D, car: ArcadeCar, ctx: RivalContext, line: RivalLine,
 	var vehicle := node as VehicleBase
 	if vehicle == null:
 		return
+	# Only the cars on the level of the rival are in its way: a car on the street under the
+	# deck the rival drives on is not a car in front of it.
+	if not RivalContext.on_my_level(car, node):
+		return
 	var rel := _relation(node, car, ctx, line, offset, lane_offset)
 	if rel.x < MIN_AHEAD:
 		return
@@ -227,6 +231,10 @@ func _avoid_offset(car: ArcadeCar, ctx: RivalContext, offset: float, line: Rival
 	var right_block := INF
 	for node in ctx.near_of(car):
 		if not is_instance_valid(node):
+			continue
+		# Only the cars on the level of the rival take its space: a car on the street under
+		# the deck it drives on does not make it swerve.
+		if not RivalContext.on_my_level(car, node):
 			continue
 		var rel := node.global_position - car.global_position
 		# The cheap test first: the square of the distance rejects most of the cars.

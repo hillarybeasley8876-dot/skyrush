@@ -5,6 +5,8 @@ extends RefCounted
 ## The brain never looks for other cars itself: the director collects the traffic, the rivals
 ## and the player once per tick, so six rivals do not scan the scene six times.
 
+const LEVEL := 4.0   ## m: the height difference under which two cars are on the same level
+
 ## The player car (may be null in a headless test).
 var player: VehicleBase = null
 ## The player's position on the racing line (unwrapped, in metres).
@@ -48,3 +50,16 @@ func travelled_of(node: Node3D) -> float:
 	if node == null:
 		return 0.0
 	return float(travelled.get(node.get_instance_id(), 0.0))
+
+
+## True when two heights are on the same level.
+##
+## The map is not flat: the Yan'an street runs under the Yan'an deck, 10 m apart in height,
+## and a car on the street below is not a car in front of a rival that drives on the deck.
+static func same_level(y: float, other_y: float) -> bool:
+	return absf(y - other_y) <= LEVEL
+
+
+## True when two cars drive on the same level.
+static func on_my_level(a: Node3D, b: Node3D) -> bool:
+	return same_level(a.global_position.y, b.global_position.y)
