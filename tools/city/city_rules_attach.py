@@ -11,6 +11,7 @@ import math
 
 import citylib
 import city_attach
+import city_rules_index
 from city_rules import (_angle_diff, deck_depth,
                         GORE, CLEARANCE, TUNNEL_CLEARANCE, PLAN_TOLERANCE,
                         HEIGHT_TOLERANCE, TANGENT_TOLERANCE)
@@ -19,11 +20,6 @@ from city_rules import (_angle_diff, deck_depth,
 def road_points(road):
     """The centre-line of a road as a list of (x, y, z)."""
     return [tuple(p) for p in road["points"]]
-
-
-def plan(road):
-    """The centre-line of a road as a list of (x, z)."""
-    return [(p[0], p[2]) for p in road["points"]]
 
 
 def _height_at(road, x, z):
@@ -59,17 +55,6 @@ def _heading(tan):
     return math.degrees(math.atan2(dx, -dz)) % 360.0
 
 
-def _within(city, radius, skip=()):
-    """The roads whose centre-line comes within `radius` of a point."""
-    index = city.setdefault("_index", None)
-    if index is None:
-        index = citylib.PolyIndex()
-        for road in city["roads"]:
-            index.add(road["id"], plan(road))
-        city["_index"] = index
-    return index
-
-
 # ---------------------------------------------------------------- rules
 
 
@@ -79,6 +64,12 @@ def _junction_at(city, x, z, radius=40.0, roads=None):
 
     With `roads` the junction must list all of them.
     """
+    if roads and len(roads) == 2:
+        key = (roads[0], roads[1]) if roads[0] < roads[1] else (roads[1], roads[0])
+        for j in city_rules_index.junction_pairs(city).get(key, ()):
+            if math.hypot(j["x"] - x, j["z"] - z) <= radius:
+                return j
+        return None
     for j in city["junctions"]:
         if math.hypot(j["x"] - x, j["z"] - z) > radius:
             continue
@@ -88,17 +79,18 @@ def _junction_at(city, x, z, radius=40.0, roads=None):
     return None
 
 
-def _attach_gore(road, other, point):
+def _attach_gore(city, road, other, point):
     """True when the point is inside the attach gore of the pair."""
+    anchors = city_rules_index.attach_anchors(city, _point_at)
     for owner in (road, other):
+        got = anchors.get(owner["id"], {})
         for key in ("attach_start", "attach_end"):
             att = owner.get(key)
             if not att:
                 continue
             if att["road"] not in (road["id"], other["id"]):
                 continue
-            parent = road if att["road"] == road["id"] else other
-            anchor, _tan = _point_at(parent, att["at"])
+            anchor = got.get(key)
             if anchor and math.hypot(point[0] - anchor[0],
                                      point[2] - anchor[1]) <= GORE:
                 return True
@@ -137,7 +129,7 @@ def _gore(road, other, station):
     return False
 
 
-def _exempt(city, road, other, point, road_w, other_w):
+def _exempt(city, road, other, point, road_w, other_w, road_y, other_y):
     """The exemptions of the clearance rule: the attach gore and the
     junctions of the surface network.
 
@@ -145,8 +137,11 @@ def _exempt(city, road, other, point, road_w, other_w):
     junction *is* the intersection, so the at-grade overlap is allowed
     wherever the two roads have a junction.  A deck over a street is only
     allowed at the junction itself.
+
+    `road_y` and `other_y` are the heights of the two roads at the point
+    (the old `_height_at`).
     """
-    if _attach_gore(road, other, point):
+    if _attach_gore(city, road, other, point):
         return True
     if road["kind"] == "surface" and other["kind"] == "surface":
         return _junction_exempt(city, road, other, point, road_w, other_w)
@@ -154,18 +149,16 @@ def _exempt(city, road, other, point, road_w, other_w):
                              (road["id"], other["id"]))
     if junction:
         # a deck that is still at grade crosses the street at grade
-        if abs(_height_at(road, point[0], point[2])) < 1.0 or \
-                abs(_height_at(other, point[0], point[2])) < 1.0:
+        if abs(road_y) < 1.0 or abs(other_y) < 1.0:
             return True
     return False
 
 
 def _junction_pair(city, road_id, other_id):
     """The junctions that list both roads."""
-    for j in city["junctions"]:
-        if road_id in j["roads"] and other_id in j["roads"]:
-            return j
-    return None
+    key = (road_id, other_id) if road_id < other_id else (other_id, road_id)
+    found = city_rules_index.junction_pairs(city).get(key)
+    return found[0] if found else None
 
 
 def _junction_exempt(city, road, other, point, road_w, other_w):
@@ -188,41 +181,50 @@ def check_clearance(city):
     of the structure above; two roads at the same level may only overlap
     at a junction.  The failures are listed one line per road pair, with
     the number of samples, the worst value and the place.
+
+    The neighbours of a sample come from the point grid of
+    `city_rules_index`, which gives the same roads, the same heights and
+    the same order as the old point list, but without walking the point
+    list of every neighbour for every sample.
     """
     fails = []
-    by_id = {r["id"]: r for r in city["roads"]}
-    index = _within(city, 0)
+    roads = city["roads"]
+    widths = [citylib.road_width(r) for r in roads]
+    depths = [deck_depth(r) for r in roads]
+    tunnels = [r["kind"] == "tunnel" for r in roads]
+    grid = city_rules_index.PointGrid(roads, widths)
     seen = set()
     pairs = {}
-    for road in city["roads"]:
-        width = citylib.road_width(road)
+    for ri, road in enumerate(roads):
+        width = widths[ri]
         pts = citylib.road_points(road, 2.0)
         cum = citylib.cumulative(pts)
         road["_length"] = cum[-1]
+        hw = width * 0.5
         for i, p in enumerate(pts):
-            for name, _idx, q in index.within((p[0], p[2]), width * 0.5 + 40.0):
-                if name == road["id"]:
+            near, own_y = grid.near(p[0], p[2], hw, hw + 40.0, ri)
+            if own_y is None:
+                own_y = _height_at(road, p[0], p[2])
+            for oi, oy in near:
+                if oi == ri:
                     continue
-                other = by_id[name]
-                other_w = citylib.road_width(other)
-                if math.hypot(p[0] - q[0], p[2] - q[1]) > width * 0.5 + other_w * 0.5:
-                    continue
-                oy = _height_at(other, p[0], p[2])
                 gap = p[1] - oy
                 if abs(gap) < 1.0:
                     # two roads at the same level: an at-grade crossing
                     need = 0.0
                 else:
-                    upper = road if gap > 0 else other
-                    if road["kind"] == "tunnel" or other["kind"] == "tunnel":
+                    upper = ri if gap > 0 else oi
+                    if tunnels[ri] or tunnels[oi]:
                         need = TUNNEL_CLEARANCE
                     else:
-                        need = CLEARANCE + deck_depth(upper)
+                        need = CLEARANCE + depths[upper]
                 if abs(gap) >= need - 0.05:
                     continue
+                other = roads[oi]
                 if _gore(road, other, cum[i]):
                     continue
-                if _exempt(city, road, other, p, width, other_w):
+                if _exempt(city, road, other, p, width, widths[oi],
+                           own_y, oy):
                     continue
                 key = (road["id"], other["id"], round(p[0] / 20.0),
                        round(p[2] / 20.0))
