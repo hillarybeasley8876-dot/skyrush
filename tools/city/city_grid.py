@@ -13,7 +13,12 @@ except at the map window edge (those are listed in the `dead_ends` note).
 import math
 import os
 
+import city_blocks
 import city_corridor
+import city_junctions
+import city_landmarks
+import city_marks
+import city_rules
 import city_snap
 import citylib
 from city_road import Road
@@ -26,6 +31,8 @@ _LAYOUT = citylib.load_json(os.path.join(
 _LAYOUT_RIVER = _LAYOUT["river"]
 
 WINDOW = {"x_min": -2200.0, "x_max": 1800.0, "z_min": -1200.0, "z_max": 1800.0}
+
+REPAIR_ROUNDS = 4         # how often the repair pass looks for dead ends
 
 # the named Puxi streets: (id, position, name, name_en)
 NS_NAMED = [
@@ -297,7 +304,119 @@ def build_streets(main_roads):
     streets, dead_ends = _snap_ends(streets, main_roads)
     for st in streets:
         st.build()
+    dead_ends = _repair_ends(streets, main_roads, add)
+    for st in streets:
+        st.build()
     return streets, dead_ends
+
+
+def _repair_ends(streets, main_roads, add):
+    """Every road end the rule calls a dead end gets a road to meet.
+
+    The lattice is cut by the district borders and by the corridors of
+    the arterials, so a street often stops where the neighbouring
+    district has no street of its own.  Such an end is joined to the
+    nearest road by a short link, or extended along its own line to the
+    next road, or - when it is only a short stub - cut back to the
+    last junction it had.  A main road is never moved: it gets a link.
+
+    The link comes first: it adds a street, while the extension moves
+    a street that is already there, and the landmark lots stand clear
+    of the roads, so moving one of them moves the lots as well.
+    """
+    attached = _attached_ends(main_roads + streets)
+    main_ids = set(road.id for road in main_roads)
+    number = _link_number(streets)
+    for _ in range(REPAIR_ROUNDS):
+        net = city_snap.Net(main_roads + streets)
+        junctions = city_junctions.build_junctions(net.roads)
+        broken = _broken_ends(net, junctions, attached)
+        if not broken:
+            return []
+        lots = _landmark_lots(net.roads)
+        off_limits = city_snap.route_roads(net.roads, junctions)
+        fixed = 0
+        for road, end in broken:
+            number += 1
+            name = "link_%d" % number
+            if city_snap.fix_end(net, road, end, junctions, add, name,
+                                 road.id not in main_ids, lots, off_limits):
+                fixed += 1
+                if len(road.plan) < 2:
+                    # the stub carried nothing: the street is dropped
+                    streets.remove(road)
+        if not fixed:
+            break
+    net = city_snap.Net(main_roads + streets)
+    junctions = city_junctions.build_junctions(net.roads)
+    out = []
+    for road, end in _broken_ends(net, junctions, attached):
+        point = net.end_point(road, end)
+        out.append((road.id, round(point[0], 1), round(point[1], 1)))
+    return out
+
+
+def _link_number(streets):
+    """The first free number of a link street."""
+    used = [int(st.id[len("st_link_"):]) for st in streets
+            if st.id.startswith("st_link_") and st.id[len("st_link_"):].isdigit()]
+    return max(used) if used else 0
+
+
+def _landmark_lots(roads):
+    """The lots of the map that a street may not cut.
+
+    The landmarks and the parks stand where the dossier puts them, and
+    the frontage of the Bund, the pedestrian street and the green
+    strips of Century Avenue run along their roads.  A new street has
+    to miss them all.
+    """
+    surface = [road for road in roads if road.kind == "surface"]
+    pois = city_marks.build_pois({road.id: road for road in surface})
+    lots = city_landmarks.landmark_blocks(surface)
+    lots += city_landmarks.park_blocks(surface)
+    lots += city_blocks.special_blocks(surface, pois)
+    return [block["polygon"] for block in lots]
+
+
+def _attached_ends(roads):
+    """The road ends that the assembly attaches to a parent road.
+
+    The assembly (build_city) sets the attaches after the streets are
+    built, so the repair pass asks it which ends it will take.  The
+    import is late on purpose: build_city imports this module.
+    """
+    import build_city
+    known = set(road.id for road in roads)
+    out = {}
+    for child_id, child_key, parent_id, parent_key, _target in \
+            build_city.CONNECTIONS:
+        if child_key and child_id in known:
+            out[(child_id, 0 if child_key == "attach_start" else 1)] = parent_id
+        if parent_key and parent_id in known:
+            out[(parent_id, 0 if parent_key == "attach_start" else 1)] = child_id
+    return out
+
+
+def _broken_ends(net, junctions, attached):
+    """The road ends the rule calls a dead end."""
+    roads = []
+    for road in net.roads:
+        data = road.to_dict()
+        for key, end in (("attach_start", 0), ("attach_end", 1)):
+            parent = attached.get((road.id, end))
+            if parent:
+                data[key] = {"road": parent, "at": 0.0, "side": "right"}
+        roads.append(data)
+    city = {"roads": roads, "junctions": junctions, "window": WINDOW}
+    out = []
+    for message in city_rules.check_dead_ends(city):
+        words = message.split()
+        road = net.by_id.get(words[0])
+        if road is None:
+            continue
+        out.append((road, 0 if words[1] == "start" else 1))
+    return out
 
 
 def _snap_ends(streets, main_roads, reach=400.0):
@@ -347,14 +466,12 @@ def _snap_ends(streets, main_roads, reach=400.0):
     for st, end in still:
         point = (st.plan[end][0], st.plan[end][1])
         dead.append((st.id, round(point[0], 1), round(point[1], 1)))
-    streets = streets + links
+    streets.extend(links)
     # a street that collapsed into a stub carries nothing
-    keep = []
-    for st in streets:
+    for st in list(streets):
         if math.dist(st.plan[0], st.plan[-1]) < 25.0:
-            continue
-        keep.append(st)
-    return keep, dead
+            streets.remove(st)
+    return streets, dead
 
 
 def _linked(point, links):
