@@ -42,9 +42,9 @@ L5 = 31.0
 
 AXIS_PASS = 4.2        # the left turns graze the pillar axis this close
 AXIS_CLEAR = 51.0      # the right turns stay at least this far from it
-RIGHT_R = 120.0        # the radius of the right-turn arcs
+RIGHT_R = 180.0        # the radius of the right-turn arcs
 RAMP_GRADE = 0.0495     # the design grade of the ramps (the brief allows 5 %)
-FLAT_HALF = 40.0       # the level stretch around the axis, each way
+FLAT_HALF = 20.0       # the level stretch around the axis, each way
 RAMP_LANE_W = 3.75
 RAMP_SHOULDER = 1.5
 HERMITE_STEPS = 24     # samples per Hermite piece

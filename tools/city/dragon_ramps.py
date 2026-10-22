@@ -23,15 +23,21 @@ from dragon import (AXIS_PASS, FLAT_HALF, HERMITE_STEPS, L3, L4, PILLAR,
 # layout follows the main lines when they move.
 #
 #   id              from            dir  offset   to             dir  offset  level  lanes
+#
+# The right-turn ramps leave the main line far enough away that their long
+# straight legs do not run under the left-turn ramps' carriageway edges: a
+# right turn that leaves the Yan'an elevated 300 m before the pillar runs
+# right past the point where the L3 left-turn ramp joins it, and the two decks
+# would be 4 m apart over 200 m.
 MOVES = [
     ("ramp_l3_eb_nb", "yanan_elevated", +1, -300.0, "ns_elevated", -1, -380.0, L3, 1),
     ("ramp_l3_wb_sb", "yanan_elevated", -1, +320.0, "ns_elevated", +1, +440.0, L3, 1),
-    ("ramp_l4_nb_wb", "ns_elevated", -1, +200.0, "yanan_elevated", -1, -600.0, L4, 1),
+    ("ramp_l4_nb_wb", "ns_elevated", -1, +200.0, "yanan_elevated", -1, -450.0, L4, 1),
     ("ramp_l4_sb_eb", "ns_elevated", +1, -180.0, "yanan_elevated", +1, +480.0, L4, 1),
-    ("ramp_rt_eb_sb", "yanan_elevated", +1, -480.0, "ns_elevated", +1, +120.0, None, 2),
-    ("ramp_rt_sb_wb", "ns_elevated", +1, -340.0, "yanan_elevated", -1, -280.0, None, 2),
+    ("ramp_rt_eb_sb", "yanan_elevated", +1, -200.0, "ns_elevated", +1, +700.0, None, 2),
+    ("ramp_rt_sb_wb", "ns_elevated", +1, -340.0, "yanan_elevated", -1, -200.0, None, 2),
     ("ramp_rt_wb_nb", "yanan_elevated", -1, +440.0, "ns_elevated", -1, -880.0, None, 2),
-    ("ramp_rt_nb_eb", "ns_elevated", -1, +360.0, "yanan_elevated", +1, +700.0, None, 2),
+    ("ramp_rt_nb_eb", "ns_elevated", -1, +360.0, "yanan_elevated", +1, +300.0, None, 2),
 ]
 
 LEAD_IN = 30.0                    # the straight merge into the main line
