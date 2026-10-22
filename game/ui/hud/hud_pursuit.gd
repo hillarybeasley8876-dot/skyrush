@@ -12,6 +12,9 @@ const HEAT_UNITS: Array[int] = [3, 5, 7, 9, 12]
 const HEAT_COOLDOWN: Array[float] = [20.0, 35.0, 50.0, 70.0, 90.0]
 ## A police unit this close fills the busted meter (dossier §3.2).
 const BUSTED_RANGE := 12.0
+## Two things are on the same level when their heights differ by at most this: a unit under a
+## deck cannot bust the player on the deck above it (the same rule as the police module).
+const BUSTED_LEVEL: float = PolicePursuit.LEVEL
 ## Below this speed the busted meter fills (dossier §3.2).
 const BUSTED_SPEED := 15.0
 ## The busted meter fills at a third per second (dossier §3.2).
@@ -45,6 +48,9 @@ func update(t: CarTelemetry, heat: int, state: StringName, police: PackedVector3
 	units = police.size()
 	var close := 0
 	for p in police:
+		if absf(p.y - player_pos.y) > BUSTED_LEVEL:
+			# The unit is on another level: no warning for a cop under a deck.
+			continue
 		if player_pos.distance_to(p) <= BUSTED_RANGE:
 			close += 1
 	if t.airborne or t.flying:
