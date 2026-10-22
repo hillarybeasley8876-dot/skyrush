@@ -171,7 +171,12 @@ func _slipstream(car: ArcadeCar, ctx: RivalContext, offset: float) -> float:
 
 
 ## True when the node stands in the wake of the car.
+##
+## The wake of a car on another level is no wake: a car on the street under the deck the
+## rival drives on does not give it a slipstream.
 func _in_wake(node: Node3D, pos: Vector3, tangent: Vector3, right: Vector3) -> bool:
+	if not RivalContext.same_level(pos.y, node.global_position.y):
+		return false
 	var rel := node.global_position - pos
 	var ahead := rel.dot(tangent)
 	if ahead <= 0.0 or ahead > SLIPSTREAM_DISTANCE:
