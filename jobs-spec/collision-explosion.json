@@ -1,0 +1,70 @@
+{
+  "id": "collision-explosion",
+  "title": "A car-to-car collision must be a collision, not an explosion",
+  "brief": "briefs/improve/collision-explosion.md",
+  "isolation": "worktree",
+  "owns": [
+    "game/vehicle/",
+    "game/ai/traffic/",
+    "game/damage/"
+  ],
+  "readonly": [
+    "game/vehicle/camera/",
+    "game/vehicle/tests/test_hop_drift_accept.gd",
+    "game/ai/traffic/tests/test_player_hits_traffic.gd"
+  ],
+  "maxRounds": 5,
+  "maxTurns": 300,
+  "timeoutMin": 180,
+  "accept": [
+    {
+      "name": "create the log folder",
+      "cmd": "python -c \"import os; os.makedirs('F:/dev/skyrush-out/tmp/collision-explosion', exist_ok=True)\""
+    },
+    {
+      "name": "scripted drive into the junction traffic",
+      "timeoutS": 900,
+      "cmd": "python tools/gd.py drive --timeline=res://tools/timelines/straight_run.json --spawn=3.3,0.6,-8.0,-133.0 --skip-menu --log=F:/dev/skyrush-out/tmp/collision-explosion/run.csv",
+      "exit": null
+    },
+    {
+      "name": "the drive is physically sane and really collides",
+      "cmd": "python tools/check_drive_csv.py F:/dev/skyrush-out/tmp/collision-explosion/run.csv --expect-impact",
+      "must": [
+        "DRIVE_SANE OK"
+      ]
+    },
+    {
+      "name": "controlled player-vs-traffic collision still fine",
+      "cmd": "python tools/gd.py test res://ai/traffic/tests/test_player_hits_traffic.gd",
+      "must": [
+        "RESULT 6 checks, 0 failures"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "owned scripts and scenes load clean",
+      "cmd": "python tools/gd.py check --only=res://vehicle/,res://ai/traffic/,res://damage/",
+      "must": [
+        "re:CHECK \\d+ files, 0 failed, 0 engine errors"
+      ],
+      "timeoutS": 1500
+    },
+    {
+      "name": "damage tests pass",
+      "cmd": "python tools/run_tests.py --filter res://damage/ --jobs 3 --out F:/dev/skyrush-out/tmp/collision-explosion/tests_damage",
+      "must": [
+        "re:, 0 failed or timed out"
+      ],
+      "timeoutS": 2400
+    },
+    {
+      "name": "vehicle tests pass",
+      "cmd": "python tools/run_tests.py --filter res://vehicle/tests/ --jobs 3 --out F:/dev/skyrush-out/tmp/collision-explosion/tests_vehicle",
+      "must": [
+        "re:, 0 failed or timed out"
+      ],
+      "timeoutS": 2400
+    }
+  ]
+}

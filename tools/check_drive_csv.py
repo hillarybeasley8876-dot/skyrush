@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """check_drive_csv — is a scripted drive physically sane? (reads the telemetry csv of `gd.py drive --log=...`)
 
-    python tools/check_drive_csv.py <run.csv> [--max-speed 340] [--max-jump-kmh 80] [--max-step-m 10] [--min-health 20]
+    python tools/check_drive_csv.py <run.csv> [--max-speed 340] [--max-jump-kmh 80] [--max-step-m 10] [--min-health 20] [--expect-impact]
 
 Columns: t,x,y,z,speed_kmh,drift_state,n2,airborne,flying,boost_kind,health. Fails when
   * any speed is above --max-speed km/h (the game's hard cap is 330),
@@ -9,6 +9,8 @@ Columns: t,x,y,z,speed_kmh,drift_state,n2,airborne,flying,boost_kind,health. Fai
     a nitro boost rises gradually; +700 km/h in 0.13 s is a solver explosion),
   * the position moves more than --max-step-m between two consecutive rows (a teleport; rows are ~0.05 s apart),
   * the health ever falls below --min-health (one 65 km/h bump must not kill the car).
+With --expect-impact the drive must also contain a real impact: at least one row where the speed falls by
+  more than 15 km/h (otherwise the scenario tested nothing).
 Prints the worst values either way and ends with DRIVE_SANE OK or DRIVE_SANE FAIL.
 """
 import csv
@@ -51,6 +53,8 @@ def main(argv):
         prev = (t, x, y, z, v)
     if worst_speed > max_speed:
         bad.append("top speed %.0f km/h is above %.0f" % (worst_speed, max_speed))
+    if "--expect-impact" in argv and drops == 0:
+        bad.append("no impact happened: no row loses more than 15 km/h, the scenario did not test anything")
     if health_min < min_health:
         bad.append("health falls to %.0f (limit %.0f)" % (health_min, min_health))
     print("rows %d, top speed %.0f km/h, biggest speed rise %.0f km/h, biggest step %.1f m, lowest health %.0f, slowdowns %d" % (
