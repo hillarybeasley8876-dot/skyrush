@@ -192,6 +192,12 @@ func request_launch() -> bool:
 	return api.request_launch(self)
 
 
+## An obstacle of a sky lane hit the car (dossier 5.6): 15 HP and 30 % of the speed, never a wreck.
+## Only counts while the car flies in a lane, once per second. True when the hit counted.
+func flight_hit() -> bool:
+	return api.flight_hit(self)
+
+
 ## The N2 left in the tank.
 func get_n2() -> float:
 	return api.get_n2()
