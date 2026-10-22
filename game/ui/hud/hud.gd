@@ -306,6 +306,9 @@ func _update_minimap(t: CarTelemetry) -> void:
 
 func _update_pursuit(t: CarTelemetry, delta: float) -> void:
 	if events.heat <= 0 and events.pursuit_state == &"none":
+		# The pursuit is over (the state came from the bus): the panel goes away with it.
+		# While the state is "busted" / "escaped" the panel stays, and the dim with it.
+		pursuit_panel.visible = false
 		return
 	var player := Game.player
 	var player_pos := player.global_position if player != null else Vector3.ZERO
