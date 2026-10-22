@@ -10,10 +10,14 @@
 //   node tools/m31w/run.mjs accept <spec.json>        run the acceptance commands only (lead use)
 //   node tools/m31w/run.mjs status [id]               one line per job
 //   node tools/m31w/run.mjs progress <id> [-n 20]     the worker's last tool calls
-//   node tools/m31w/run.mjs reset <spec.json>         discard everything under the job's owned paths (lead use)
+//   node tools/m31w/run.mjs reset <spec.json>         discard the job (worktree jobs: remove worktree + branch)
+//   node tools/m31w/run.mjs diff <id>                 stat of job/<id> against the current branch
+//   node tools/m31w/run.mjs merge <id> [<id>...]      merge accepted job branches (--no-ff, aborts on conflict)
 //
 // Spec: { id, title, model?, brief, owns:[paths], accept:[{name, cmd, exit?, must?:[..], mustNot?:[..], timeoutS?}],
-//         maxRounds?, maxTurns?, timeoutMin? }   ("re:" prefix in must/mustNot = regular expression)
+//         maxRounds?, maxTurns?, timeoutMin?, isolation?: "worktree", sparse?: [paths] }
+//   ("re:" prefix in must/mustNot = regular expression; isolation=worktree gives the job its own sparse git worktree
+//    F:/dev/skyrush-wt/<id> on branch job/<id>, committed by the runner once acceptance passes)
 import { spawn, spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, appendFileSync, rmSync, copyFileSync, readdirSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
@@ -23,6 +27,7 @@ import { randomUUID } from 'node:crypto';
 const ROOT = resolve(import.meta.dirname, '..', '..');
 const OUT = resolve(process.env.SKYRUSH_OUT ?? join(ROOT, '..', 'skyrush-out'));
 const ENVDIR = resolve(process.env.SKYRUSH_ENV ?? join(ROOT, '..', '_env'));
+const WT = resolve(process.env.SKYRUSH_WT ?? join(ROOT, '..', 'skyrush-wt'));
 const JOBS = join(OUT, 'jobs');
 const CLAUDE = process.env.SKYRUSH_CLAUDE ?? join(process.env.APPDATA ?? join(homedir(), 'AppData', 'Roaming'), 'npm', 'node_modules', '@anthropic-ai', 'claude-code', 'bin', 'claude.exe');
 const DEFAULT_MODEL = process.env.SKYRUSH_M31_MODEL ?? 'MiniMax-M3.1-Flash';
@@ -43,13 +48,13 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const posix = (p) => p.replace(/\\/g, '/');
 const stamp = () => new Date().toISOString().slice(11, 19);
 
-function git(args) {
-  const r = spawnSync('git', ['-c', 'core.quotepath=false', ...args], { cwd: ROOT, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
+function git(args, cwd = ROOT) {
+  const r = spawnSync('git', ['-c', 'core.quotepath=false', ...args], { cwd, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
   return r.stdout ?? '';
 }
 
-function dirtyFiles() {
-  const parts = git(['status', '--porcelain=v1', '-z', '--untracked-files=all']).split('\0').filter(Boolean);
+function dirtyFiles(cwd = ROOT) {
+  const parts = git(['status', '--porcelain=v1', '-z', '--untracked-files=all'], cwd).split('\0').filter(Boolean);
   const out = [];
   for (let i = 0; i < parts.length; i++) {
     const code = parts[i].slice(0, 2);
@@ -57,6 +62,27 @@ function dirtyFiles() {
     if (code[0] === 'R' || code[0] === 'C') i++;
   }
   return out;
+}
+
+// An isolated job gets its own (optionally sparse) git worktree + branch job/<id>: parallel jobs never see each other's edits.
+function prepareWorkdir(job) {
+  if (job.isolation !== 'worktree') return ROOT;
+  const wt = join(WT, job.id);
+  if (!existsSync(wt)) {
+    mkdirSync(WT, { recursive: true });
+    const base = git(['rev-parse', '--abbrev-ref', 'HEAD']).trim();
+    git(['worktree', 'add', '--no-checkout', '-B', `job/${job.id}`, wt, base]);
+    if (job.sparse) git(['sparse-checkout', 'set', '--no-cone', ...job.sparse.map((p) => '/' + p)], wt);
+    git(['reset', '--hard', '-q'], wt);
+  }
+  return wt;
+}
+
+function commitJob(job, cwd) {
+  if (cwd === ROOT) return '';
+  git(['add', '-A'], cwd);
+  git(['commit', '-q', '-m', `job ${job.id}: ${job.title}\n\nCo-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`], cwd);
+  return git(['rev-parse', '--short', 'HEAD'], cwd).trim();
 }
 
 const underOwn = (path, owns) => owns.some((o) => (o.endsWith('/') ? path.startsWith(o) : path === o));
@@ -95,12 +121,12 @@ function killTree(pid) {
 }
 
 // ---- one claude process: stream-json in the log, resolves with the result event ----
-function runClaude(job, st, prompt, dir) {
+function runClaude(job, st, prompt, dir, cwd) {
   const model = job.model ?? DEFAULT_MODEL;
   const args = ['-p', '--model', model, '--permission-mode', 'bypassPermissions', '--output-format', 'stream-json', '--verbose',
     '--max-turns', String(job.maxTurns ?? 250), st.sessionStarted ? '--resume' : '--session-id', st.sessionId, '--disallowedTools', ...DENY];
   return new Promise((done) => {
-    const proc = spawn(CLAUDE, args, { cwd: ROOT, env: workerEnv(job), windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
+    const proc = spawn(CLAUDE, args, { cwd, env: workerEnv(job), windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
     const logPath = join(dir, 'log.jsonl');
     let buf = '';
     let result = null;
@@ -154,10 +180,10 @@ function classify(r) {
 }
 
 // ---- acceptance: the runner executes the commands, the worker's own claims count for nothing ----
-function runCmd(cmd, timeoutS) {
+function runCmd(cmd, timeoutS, cwd) {
   return new Promise((done) => {
     const t0 = Date.now();
-    const proc = spawn(cmd, { cwd: ROOT, shell: true, windowsHide: true, env: { ...process.env, TEMP: join(ENVDIR, 'tmp'), TMP: join(ENVDIR, 'tmp') } });
+    const proc = spawn(cmd, { cwd, shell: true, windowsHide: true, env: { ...process.env, TEMP: join(ENVDIR, 'tmp'), TMP: join(ENVDIR, 'tmp') } });
     let out = '';
     const timer = setTimeout(() => { out += `\n[acceptance] TIMEOUT after ${timeoutS}s\n`; killTree(proc.pid); }, timeoutS * 1000);
     proc.stdout.on('data', (c) => { out += c.toString('utf8'); });
@@ -168,10 +194,10 @@ function runCmd(cmd, timeoutS) {
 
 const has = (out, pat) => (pat.startsWith('re:') ? new RegExp(pat.slice(3), 'm').test(out) : out.includes(pat));
 
-async function runAccept(job) {
+async function runAccept(job, cwd = ROOT) {
   const results = [];
   for (const a of job.accept ?? []) {
-    const r = await runCmd(a.cmd, a.timeoutS ?? 900);
+    const r = await runCmd(a.cmd, a.timeoutS ?? 900, cwd);
     const why = [];
     if ((a.exit ?? 0) !== null && r.code !== (a.exit ?? 0)) why.push(`exit code ${r.code}, expected ${a.exit ?? 0}`);
     for (const m of a.must ?? []) if (!has(r.out, m)) why.push(`output lacks: ${m}`);
@@ -182,22 +208,22 @@ async function runAccept(job) {
 }
 
 // ---- ownership: edits outside the job's paths are quarantined and reverted ----
-function enforceOwnership(job, baseline, others, dir, round) {
+function enforceOwnership(job, baseline, others, dir, round, cwd) {
   const mine = [...job.owns, `status/improve/${job.id}.md`];
   const stray = [];
-  for (const p of dirtyFiles()) {
+  for (const p of dirtyFiles(cwd)) {
     if (baseline.has(p) || underOwn(p, mine) || others.some((o) => underOwn(p, o)) || TOLERATED.some((re) => re.test(p))) continue;
     stray.push(p);
   }
   const q = join(OUT, 'quarantine', job.id, `r${round}`);
   for (const p of stray) {
-    const abs = join(ROOT, p);
+    const abs = join(cwd, p);
     if (existsSync(abs)) {
       mkdirSync(dirname(join(q, p)), { recursive: true });
       copyFileSync(abs, join(q, p));
     }
-    const tracked = git(['ls-files', '--', p]).trim() !== '';
-    if (tracked) git(['checkout', '--', p]);
+    const tracked = git(['ls-files', '--', p], cwd).trim() !== '';
+    if (tracked) git(['checkout', '--', p], cwd);
     else rmSync(abs, { force: true });
   }
   return stray;
@@ -235,7 +261,9 @@ const saveState = (dir, st) => writeFileSync(stPath(dir), JSON.stringify(st, nul
 async function runJob(job, others) {
   const dir = join(JOBS, job.id);
   mkdirSync(dir, { recursive: true });
+  const cwd = prepareWorkdir(job);
   const st = loadState(dir) ?? { id: job.id, title: job.title, status: 'new', rounds: 0, sessionId: randomUUID(), sessionStarted: false, history: [] };
+  st.cwd = cwd;
   const maxRounds = job.maxRounds ?? 4;
   let prompt = null;
   let acc = [];
@@ -248,10 +276,10 @@ async function runJob(job, others) {
     prompt = prompt ?? (st.sessionStarted ? `The lead resumes this job. Re-read your status file and the brief, check what is on disk, and continue until the acceptance commands pass.` : firstPrompt(job));
     writeFileSync(join(dir, `prompt-${st.rounds}.md`), prompt);
     saveState(dir, st);
-    const baseline = new Set(dirtyFiles());
+    const baseline = new Set(dirtyFiles(cwd));
     let r;
     for (let attempt = 0; attempt <= BACKOFF_S.length; attempt++) {
-      r = await runClaude(job, st, prompt, dir);
+      r = await runClaude(job, st, prompt, dir, cwd);
       ended = classify(r);
       if (ended.kind === 'ok' || ended.kind === 'max_turns' || ended.kind === 'timeout') break;
       if (ended.kind === 'outage') { st.status = 'outage'; st.error = ended.msg; saveState(dir, st); return st; }
@@ -261,14 +289,14 @@ async function runJob(job, others) {
     }
     const requested = job.model ?? DEFAULT_MODEL;
     const wrong = Object.entries(r.seen.models).filter(([m]) => m !== requested);
-    const stray = enforceOwnership(job, baseline, others(), dir, st.rounds);
-    acc = await runAccept(job);
+    const stray = enforceOwnership(job, baseline, others(), dir, st.rounds, cwd);
+    acc = await runAccept(job, cwd);
     const pass = acc.every((a) => a.pass) && stray.length === 0;
     st.history.push({ round: st.rounds, end: ended.kind, tools: r.seen.tools, models: r.seen.models, wrongModel: wrong.length > 0, stray, acc: acc.map((a) => ({ name: a.name, pass: a.pass, why: a.why })) });
     console.log(`[${stamp()}] ${job.id} round ${st.rounds}: end=${ended.kind} tools=${r.seen.tools} stray=${stray.length} accept=${acc.filter((a) => a.pass).length}/${acc.length}${wrong.length ? ` WRONG MODEL ${JSON.stringify(r.seen.models)}` : ''}`);
     if (wrong.length) { st.status = 'wrong_model'; saveState(dir, st); return st; }
     st.lastText = r.lastText;
-    if (pass) { st.status = 'accepted_mechanical'; break; }
+    if (pass) { st.status = 'accepted_mechanical'; st.commit = commitJob(job, cwd); break; }
     st.status = 'failed_round';
     prompt = feedbackPrompt(job, st.rounds, acc, stray, ended);
     saveState(dir, st);
@@ -287,10 +315,10 @@ async function runMany(specs, parallel) {
   const launch = () => {
     for (let i = 0; i < queue.length && active.length < parallel; i++) {
       const job = queue[i];
-      if (active.some((a) => overlaps(a.job.owns, job.owns))) continue;
+      if (active.some((a) => overlaps(a.job.owns, job.owns) && a.job.isolation !== 'worktree' && job.isolation !== 'worktree')) continue;
       queue.splice(i--, 1);
       const entry = { job };
-      entry.p = runJob(job, () => active.filter((a) => a !== entry).map((a) => a.job.owns)).then((st) => ({ entry, st }));
+      entry.p = runJob(job, () => active.filter((a) => a !== entry && a.job.isolation !== 'worktree' && job.isolation !== 'worktree').map((a) => a.job.owns)).then((st) => ({ entry, st }));
       active.push(entry);
     }
   };
@@ -335,7 +363,9 @@ async function main() {
     console.log('\n' + finished.map((s) => `${s.status.padEnd(20)} ${s.id} (${s.rounds} rounds)`).join('\n'));
     process.exitCode = finished.every((s) => s.status === 'accepted_mechanical') ? 0 : 1;
   } else if (cmd === 'accept') {
-    const acc = await runAccept(loadSpec(files[0]));
+    const spec = loadSpec(files[0]);
+    const wt = spec.isolation === 'worktree' && existsSync(join(WT, spec.id)) ? join(WT, spec.id) : ROOT;
+    const acc = await runAccept(spec, wt);
     acc.forEach((a) => console.log(`${a.pass ? 'PASS' : 'FAIL'}  ${a.name}${a.why.length ? '  -> ' + a.why.join('; ') : ''}`));
     process.exitCode = acc.every((a) => a.pass) ? 0 : 1;
   } else if (cmd === 'status') {
@@ -347,10 +377,26 @@ async function main() {
     progress(rest[0], +flag('-n', 20));
   } else if (cmd === 'reset') {
     const job = loadSpec(files[0]);
-    const paths = [...job.owns, `status/improve/${job.id}.md`];
-    git(['checkout', '--', ...paths]);
-    git(['clean', '-fdq', '--', ...paths]);
-    console.log('reset', paths.join(', '));
+    if (job.isolation === 'worktree') {
+      git(['worktree', 'remove', '--force', join(WT, job.id)]);
+      git(['branch', '-D', `job/${job.id}`]);
+      rmSync(join(JOBS, job.id), { recursive: true, force: true });
+      console.log('removed worktree, branch and state of', job.id);
+    } else {
+      const paths = [...job.owns, `status/improve/${job.id}.md`];
+      git(['checkout', '--', ...paths]);
+      git(['clean', '-fdq', '--', ...paths]);
+      console.log('reset', paths.join(', '));
+    }
+  } else if (cmd === 'diff') {
+    const base = git(['rev-parse', '--abbrev-ref', 'HEAD']).trim();
+    console.log(git(['diff', '--stat', `${base}...job/${rest[0]}`]));
+  } else if (cmd === 'merge') {
+    for (const id of rest) {
+      const r = spawnSync('git', ['merge', '--no-ff', '-m', `Merge job/${id}\n\nCo-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`, `job/${id}`], { cwd: ROOT, encoding: 'utf8' });
+      console.log((r.stdout ?? '') + (r.stderr ?? ''));
+      if (r.status !== 0) { git(['merge', '--abort']); console.log('MERGE FAILED, aborted:', id); process.exitCode = 1; break; }
+    }
   } else {
     console.log(readFileSync(import.meta.filename, 'utf8').split('\n').slice(0, 17).join('\n'));
   }

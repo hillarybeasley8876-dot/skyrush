@@ -1,0 +1,24 @@
+{
+  "id": "city-perf-corridor",
+  "title": "Speed up the city generator corridor tests 5x without changing the output",
+  "brief": "briefs/improve/city-perf-corridor.md",
+  "isolation": "worktree",
+  "sparse": ["tools/", "data/", "ref/", "briefs/", "SPEC.md", "ART.md", "CONTRACTS.md", "README.md"],
+  "owns": ["tools/city/city_corridor.py", "tools/city/city_corridor_index.py", "tools/city/selftest_corridor.py"],
+  "maxRounds": 3,
+  "maxTurns": 220,
+  "timeoutMin": 90,
+  "accept": [
+    {
+      "name": "generator finishes within 90 s",
+      "cmd": "python -c \"import subprocess,sys,time,os; os.makedirs('F:/dev/skyrush-out/tmp/city-perf-corridor',exist_ok=True); t=time.time(); r=subprocess.run([sys.executable,'tools/city/build_city.py','--out','F:/dev/skyrush-out/tmp/city-perf-corridor/city.json']); print('SECONDS',int(time.time()-t)); sys.exit(r.returncode)\"",
+      "must": ["re:^SECONDS ([0-9]|[1-8][0-9]|90)$"],
+      "timeoutS": 700
+    },
+    {
+      "name": "output is byte-identical to the baseline",
+      "cmd": "python -c \"import hashlib,sys; h=hashlib.sha256(open('F:/dev/skyrush-out/tmp/city-perf-corridor/city.json','rb').read()).hexdigest(); print('SHA',h); sys.exit(0 if h=='5f53361303dc4160c012ddb28d4dcdd55462195551a2f99adb806f81fe149fc0' else 1)\"",
+      "must": ["SHA 5f53361303dc4160c012ddb28d4dcdd55462195551a2f99adb806f81fe149fc0"]
+    }
+  ]
+}
