@@ -159,7 +159,7 @@ func update_state(delta: float, player: VehicleBase) -> bool:
 
 ## True when the player is in a hiding spot of the world.
 ##
-## A spot only hides the player when she is on its level: a spot under a deck does not hide the
+## A spot only hides the player who is on its level: a spot under a deck does not hide the
 ## player who drives on the deck above it.
 func _update_hiding_spot(player: VehicleBase) -> void:
 	in_hiding_spot = false
