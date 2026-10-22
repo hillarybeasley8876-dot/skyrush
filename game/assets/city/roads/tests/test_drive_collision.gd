@@ -27,6 +27,7 @@ var _space: PhysicsDirectSpaceState3D
 var _per_road: Dictionary = {}
 var _blockers: Dictionary = {}
 var _blocked_rows: PackedStringArray = []
+var _surface_rows: PackedStringArray = []
 var _surf: Dictionary = {}
 var _delta_hist: Dictionary = {}
 
@@ -53,6 +54,14 @@ func _run() -> void:
 		surf_roads.slice(0, 16).map(func(r: Variant) -> String: return "%s:%d/%d" % [r, _surf[r][0], _surf[r][1]]))))
 	var cast_bad := _sweep_casts(lanes)
 	_check(cast_bad == 0, "no lane is blocked by a parapet or a pier (%d bad)" % cast_bad)
+	var surf_path := OS.get_environment("SKYRUSH_SURFACE_CSV")
+	if surf_path != "":
+		var sout := FileAccess.open(surf_path, FileAccess.WRITE)
+		if sout != null:
+			sout.store_line("road,x,y,z,kind")
+			for row in _surface_rows:
+				sout.store_line(row)
+			sout.close()
 	var csv_path := OS.get_environment("SKYRUSH_BLOCKED_CSV")
 	if csv_path != "":
 		var out := FileAccess.open(csv_path, FileAccess.WRITE)
@@ -90,11 +99,15 @@ func _build_collision() -> void:
 		paths.append(TILE_DIR + file)
 	for key in gltf.keys():
 		paths.append(String(gltf[key]))
+	var loaded := 0
 	for path in paths:
 		var packed := load(path) as PackedScene
 		if packed == null:
+			print("TILE FAILED TO LOAD %s" % path)
 			continue
 		add_child(packed.instantiate())
+		loaded += 1
+	print("TILES loaded %d of %d" % [loaded, paths.size()])
 
 
 func _sweep_rays(lanes: Array) -> int:
@@ -113,6 +126,7 @@ func _sweep_rays(lanes: Array) -> int:
 				bad += 1
 				_count(road)
 				_surf_add(road, 0)
+				_surface_rows.append("%s,%.2f,%.2f,%.2f,nosurface" % [road, p.x, p.y, p.z])
 				if bad <= 6:
 					print("NOSURFACE %s at %s" % [road, p])
 			else:
@@ -121,6 +135,7 @@ func _sweep_rays(lanes: Array) -> int:
 					bad += 1
 					_count(road)
 					_surf_add(road, 1)
+					_surface_rows.append("%s,%.2f,%.2f,%.2f,offheight %.2f" % [road, p.x, p.y, p.z, y - p.y])
 					var bucket := _delta_bucket(y - p.y)
 					_delta_hist[bucket] = int(_delta_hist.get(bucket, 0)) + 1
 					if bad <= 6:
