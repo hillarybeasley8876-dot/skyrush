@@ -14,7 +14,28 @@ from city.roads import junctions as jn
 from city.roads import lane_paths
 
 CROSS_TOLERANCE = 15.0  # how far a lane end may be from the kerb return
-ATTACH_TOLERANCE = 25.0  # how far a lane's end may be from an attach point
+SAME_WAY = 0.3          # how alike the directions of two lanes have to be
+
+
+def attach_stations(city, road):
+    """The ramps that attach to this road: [(parent path index, ramp, at_end)].
+
+    The ramp's end lies beside the parent, not on it: the index is the
+    parent's own path sample closest to it.  The cut of the parent and the
+    link of the ramp both use it, so the two agree on where the attach is.
+    """
+    out = []
+    for ramp in city.roads:
+        if ramp.kind != "ramp":
+            continue
+        for at_end, key in ((True, "attach_end"), (False, "attach_start")):
+            att = ramp.data.get(key)
+            if not att or att.get("road") != road.id:
+                continue
+            idx = len(ramp.path) - 1 if at_end else 0
+            _dist, pidx = road.nearest(ramp.path[idx])
+            out.append((pidx, ramp, at_end))
+    return sorted(out, key=lambda item: item[0])
 
 
 def travels_along(lane, arm):
@@ -214,127 +235,158 @@ def _add_movement(lanes, links, seen_ids, junction, src, dst, kind, centre, fan)
     links.append({"from": cid, "to": dst["id"], "turn": kind})
 
 
-def lane_at(lanes, road, path_index, segments):
-    """The lanes of `road` that end at the given path sample, and where.
+def _of(by_road, road, seg, direction):
+    """The lanes of a road in one segment and one direction."""
+    if seg is None:
+        return []
+    number = seg.get("number")
+    out = [lane for lane in by_road.get(road.id, [])
+           if lane["road"] == road.id and not lane.get("connector")
+           and lane["segment"] == number and lane["dir"] == direction]
+    return sorted(out, key=lambda lane: lane["index"])
 
-    A back carriageway runs against the path order, so the lane that meets a
-    sample is the back lane's FIRST point, not its last. The candidates are
-    returned as (lane, end) with end 0 for the first point and 1 for the last.
-    """
-    best_seg = None
-    best_gap = None
-    for si, seg in enumerate(segments.get(road.id, [])):
+
+def _end_segment(segs, road, at_end):
+    """The segment of a road that holds the end of its path."""
+    want = len(road.path) - 1 if at_end else 0
+    best = None
+    for seg in segs:
         if not seg["indices"]:
             continue
         first, last = seg["indices"][0], seg["indices"][-1]
-        if first <= path_index <= last:
-            best_seg = si
-            break
-        gap = min(abs(path_index - first), abs(path_index - last))
-        if best_gap is None or gap < best_gap:
-            best_gap = gap
-            best_seg = si
-    if best_seg is None:
-        return []
-    out = []
-    for lane in lanes:
-        if lane["road"] != road.id or lane.get("connector"):
-            continue
-        if lane["segment"] != best_seg:
-            continue
-        pts = lane["points"]
-        if len(pts) < 2:
-            continue
-        out.append((lane, 0))
-        out.append((lane, 1))
-    return out
+        gap = (want - last) if at_end else first
+        if best is None or gap < best[0]:
+            best = (gap, seg)
+    return best[1] if best else None
 
 
-def _attach_pair(parent_cands, ramp_cands):
-    """The (parent lane, parent end, ramp lane, ramp end) that can carry traffic.
+def _same_way(a, a_end, b, b_end):
+    """True when the two lanes are travelled the same way where they meet."""
+    da = _travel(a, a_end)
+    db = _travel(b, b_end)
+    return da is not None and db is not None and da.dot(db) > SAME_WAY
 
-    A lane's traffic always enters at its first point and leaves at its last,
-    so the two lanes of an attach must meet end to end: one lane's exit end
-    and the other one's entry end.
-    """
-    best = None
-    for (src, src_end) in parent_cands:
-        for (dst, dst_end) in ramp_cands:
-            if src_end == dst_end:
-                continue      # two exits (or two entries) cannot be joined
-            d = math.dist(src["points"][src_end], dst["points"][dst_end])
-            if best is None or d < best[0]:
-                best = (d, src, src_end, dst, dst_end)
-    return best
+
+def _travel(lane, end):
+    """The direction the lane is travelled in at its given end (Blender XY)."""
+    pts = lane["points"]
+    if len(pts) < 2:
+        return None
+    a, b = (pts[-2], pts[-1]) if end == 1 else (pts[0], pts[1])
+    v = Vector((float(b[0]) - float(a[0]), -(float(b[2]) - float(a[2])), 0.0))
+    return v.normalized() if v.length > 1e-6 else None
 
 
 def link_attaches(city, lanes, segments, links):
-    """Link a ramp's lane to the parent's lane at the attach."""
+    """Link the lanes of a ramp to the lanes of its parent at the attach.
+
+    The segment of the parent that meets the attach carries the marker of the
+    ramp: the lanes before the cut are the ones the traffic leaves the parent
+    by, the ones after it the ones it enters the parent by.
+    """
     by_road = {}
     for lane in lanes:
         by_road.setdefault(lane["road"], []).append(lane)
     for road in city.roads:
-        if road.kind != "ramp":
-            continue
-        for at_end, key in ((True, "attach_end"), (False, "attach_start")):
-            attach = road.data.get(key)
-            if not attach:
-                continue
-            parent = city.by_id.get(attach["road"])
-            if parent is None:
-                continue
-            end_point = road.path[-1] if at_end else road.path[0]
-            _dist, pidx = parent.nearest(end_point)
-            ramp_index = len(road.path) - 1 if at_end else 0
-            parent_cands = _cands_at(lane_at(by_road.get(parent.id, []), parent, pidx,
-                                             segments), parent.path[pidx])
-            ramp_cands = _cands_at(lane_at(by_road.get(road.id, []), road, ramp_index,
-                                           segments), road.path[ramp_index])
-            if not parent_cands or not ramp_cands:
-                continue
-            pair = _attach_pair(parent_cands, ramp_cands)
-            if pair is None:
-                continue
-            _dist, src, src_end, dst, dst_end = pair
-            dst["attach"] = True      # the ramp's lane that meets its parent
-            # the traffic runs from the exit end of one lane to the entry end
-            # of the other, whichever of the two that is
-            if src_end == 1:
-                first, second = src, dst
-            else:
-                first, second = dst, src
-            a = lane_paths.v3(first["points"][-1])
-            b = lane_paths.v3(second["points"][0])
-            if (a - b).length <= 0.5:
-                links.append({"from": first["id"], "to": second["id"], "turn": "straight"})
-                continue
-            # the ramp does not touch its parent: bridge the gap with a connector
-            pts = lane_paths.connector_points(first, second)
-            if len(pts) < 2:
-                continue
-            cid = "attach_%s_%s" % (first["id"], second["id"])
-            lanes.append({
-                "id": cid, "road": road.id, "attach": True,
-                "dir": first["dir"], "index": first["index"],
-                "leftmost": first["leftmost"], "rightmost": first["rightmost"],
-                "offset": 0.0,
-                "width": first["width"], "speed_kmh": first["speed_kmh"],
-                "elevated": first["elevated"], "connector": True, "turn": "straight",
-                "points": pts, "next": [second["id"]],
-            })
-            links.append({"from": first["id"], "to": cid, "turn": "straight"})
-            links.append({"from": cid, "to": second["id"], "turn": "straight"})
+        segs = segments.get(road.id, [])
+        for seg in segs:
+            for att in seg.get("attach", []):
+                _link_at(city, by_road, segments, links, lanes, road, segs, seg, att)
 
 
-def _cands_at(cands, point):
-    """The (lane, end) candidates whose end is near a path sample.
+def _link_at(city, by_road, segments, links, lanes, road, segs, seg, att):
+    """Link the ramp of one attach to the lanes of the parent."""
+    ramp = city.by_id.get(att[0])
+    if ramp is None:
+        return
+    at_end = att[1]
+    after = _after(segs, seg)
+    # the parent's lanes that meet the attach: the ones the traffic leaves the
+    # parent by and the ones it enters the parent by
+    leave = _of(by_road, road, seg, 1) + _of(by_road, road, after, -1)
+    entry = _of(by_road, road, after, 1) + _of(by_road, road, seg, -1)
+    # the ramp's lane that meets the attach
+    rseg = _end_segment(segments.get(ramp.id, []), ramp, at_end)
+    ramp_lanes = _of(by_road, ramp, rseg, 1)
+    if at_end:
+        # the ramp joins the parent: the traffic leaves the ramp and enters
+        # the parent
+        parent_side, parent_end, ramp_end = entry, 0, 1
+    else:
+        # the ramp leaves the parent: the traffic leaves the parent and enters
+        # the ramp
+        parent_side, parent_end, ramp_end = leave, 1, 0
+    if not ramp_lanes or not parent_side:
+        return
+    # the parent's lane of the carriageway that the ramp runs along
+    same = [lane for lane in parent_side
+            if _same_way(lane, parent_end, ramp_lanes[0], ramp_end)]
+    parent_side = sorted(same or parent_side, key=lambda lane: lane["index"])
+    # the outermost lane of the ramp joins the outermost lane of the parent,
+    # so the traffic does not have to cross the other lanes
+    count = len(parent_side)
+    for i, ramp_lane in enumerate(ramp_lanes[:count]):
+        parent_lane = parent_side[count - len(ramp_lanes) + i]
+        ramp_lane["attach"] = True
+        # the traffic runs from the exit end of one lane to the entry end of
+        # the other, whichever of the two that is
+        if at_end:
+            first, second = ramp_lane, parent_lane
+        else:
+            first, second = parent_lane, ramp_lane
+        _link_attach(first, second, ramp, lanes, links)
 
-    A lane's end is offset from the road's centre line by its own width, so
-    the tolerance has to be a lane's width or more.
+
+def _connector(first, second):
+    """The curve that joins the end of one lane to the start of the other.
+
+    A cubic Bezier whose end tangents are the headings of the two lanes it
+    joins and whose handles are half the length of the curve: the traffic
+    keeps its direction over the whole connector (a car can follow it).
     """
-    out = []
-    for (lane, end) in cands:
-        d = math.dist(lane["points"][end], point)
-        if d <= ATTACH_TOLERANCE:
-            out.append((lane, end))
-    return out
+    p0 = lane_paths.v3(first["points"][-1])
+    p3 = lane_paths.v3(second["points"][0])
+    d0 = p0 - lane_paths.v3(first["points"][-2])
+    d1 = lane_paths.v3(second["points"][1]) - p3
+    if d0.length < 1e-6 or d1.length < 1e-6:
+        return []
+    d0.normalize()
+    d1.normalize()
+    span = max(4.0, (p3 - p0).length * 0.5)
+    p1 = p0 + d0 * span
+    p2 = p3 - d1 * span
+    return lane_paths.resample(lane_paths.bezier(p0, p1, p2, p3))
+
+
+def _after(segs, seg):
+    """The segment after a cut: the one that shares its path index."""
+    cut = seg["indices"][-1]
+    for other in segs:
+        if other is not seg and other["indices"] and other["indices"][0] == cut:
+            return other
+    return None
+
+
+def _link_attach(first, second, road, lanes, links):
+    """Link the end of one lane to the start of the other."""
+    a = lane_paths.v3(first["points"][-1])
+    b = lane_paths.v3(second["points"][0])
+    if (a - b).length <= 0.5:
+        links.append({"from": first["id"], "to": second["id"], "turn": "straight"})
+        return
+    # the ramp does not touch its parent: bridge the gap with a connector
+    pts = _connector(first, second)
+    if len(pts) < 2:
+        return
+    cid = "attach_%s_%s" % (first["id"], second["id"])
+    lanes.append({
+        "id": cid, "road": road.id, "attach": True,
+        "dir": first["dir"], "index": first["index"],
+        "leftmost": first["leftmost"], "rightmost": first["rightmost"],
+        "offset": 0.0,
+        "width": first["width"], "speed_kmh": first["speed_kmh"],
+        "elevated": first["elevated"], "connector": True, "turn": "straight",
+        "points": pts, "next": [second["id"]],
+    })
+    links.append({"from": first["id"], "to": cid, "turn": "straight"})
+    links.append({"from": cid, "to": second["id"], "turn": "straight"})

@@ -1,7 +1,8 @@
 """Lane graph and minimap: game/world/data/lanes.json and minimap.json.
 
-Roads are split into segments at the junctions they pass through. A segment's
-lanes run from one kerb return to the next and keep their design lateral offset.
+Roads are split into segments at the junctions they pass through and at the
+ramp attaches they carry. A segment's lanes run from one kerb return to the
+next and keep their design lateral offset.
 The junction movements and the ramp attaches are in lane_links.py, the
 geometry of a movement in lane_paths.py.
 """
@@ -11,6 +12,8 @@ from city.roads import junctions as jn
 from city.roads import lane_links, lane_paths, profiles
 
 SAMPLE = 2.0
+CUT_GAP = 8.0     # an attach closer than this to another cut shares that cut
+ATTACH_LEAD = 40.0  # the room a connector needs to shift the traffic sideways
 
 
 def godot(p):
@@ -19,13 +22,73 @@ def godot(p):
 
 
 def segments(city, road):
-    """Split a road at the junctions it passes through (the junction stretches are cut).
+    """Split a road at the junctions it passes through and at its ramp attaches.
 
     Every segment remembers the junction at its start and at its end: the lane
     graph needs to know which crossing a lane arrives at and which one it
-    leaves.
+    leaves.  A ramp attach cuts the road as well: the parent's lane has to end
+    (or start) near the attach, so the traffic can leave the viaduct.
+
+    A segment keeps the number of the stretch of road it comes from: the piece
+    that ends the stretch keeps it, the pieces in between are numbered after
+    the stretches.  The lanes at the crossing that ends the stretch keep their
+    ids that way, and with them the ids of the junction movements that name
+    them; the crossing at the start of the stretch names the other pieces, so
+    its movements get new ids.
     """
-    cuts = []
+    holes = _junction_holes(city, road)
+    cuts, marks = _attach_cuts(city, road, holes)
+    stretches = _stretches(road, holes)
+    out = []
+    spare = len(stretches)
+    for num, (indices, start_junction, end_junction) in enumerate(stretches):
+        pieces = _pieces(indices, cuts)
+        for i, piece in enumerate(pieces):
+            last = i == len(pieces) - 1
+            number = num
+            if not last:
+                number = spare
+                spare += 1
+            out.append({"indices": piece,
+                        "start": start_junction if i == 0 else None,
+                        "end": end_junction if last else None,
+                        "number": number})
+    if not out or all(len(s["indices"]) < 2 for s in out):
+        # a short street between two junctions is all junction: it keeps the
+        # middle of its path so the road is still drivable, and its lane does
+        # not end on the same spot as the street it meets
+        inner = list(range(1, len(road.path) - 1))
+        out = [{"indices": inner if len(inner) > 1 else list(range(len(road.path))),
+                "start": None, "end": None, "number": 0}]
+    _mark_attaches(road, out, marks)
+    return out
+
+
+def _mark_attaches(road, segs, marks):
+    """Mark the segment of the road that meets every ramp attach.
+
+    The marker tells the lane graph which ramp attaches where: the segment
+    that ends at the mark, or the one closest to it when the attach lies in
+    a junction and the road is cut there already.
+    """
+    for (pidx, ramp, at_end) in marks:
+        best = None
+        for seg in segs:
+            if not seg["indices"]:
+                continue
+            last = seg["indices"][-1]
+            if last <= pidx and (best is None or last > best[0]):
+                best = (last, seg)
+        if best is not None:
+            seg = best[1]
+            # two ramps can share a piece: one leaves the parent there and the
+            # other one joins it
+            seg["attach"] = seg.get("attach", []) + [(ramp.id, at_end)]
+
+
+def _junction_holes(city, road):
+    """The stretches of a road that a junction takes: [(first, last, junction)]."""
+    holes = []
     for junction in city.junctions_of(road):
         inside = jn.trim_indices(city, road, junction, road.path)
         if not inside:
@@ -42,28 +105,106 @@ def segments(city, road):
         if cur:
             runs.append(cur)
         for run in runs:
-            cuts.append((run[0], run[-1], junction["id"]))
-    cuts.sort()
+            holes.append((run[0], run[-1], junction["id"]))
+    holes.sort()
+    return holes
+
+
+def _stretches(road, holes):
+    """The stretches of a road between its junctions: [(indices, start, end)]."""
     out = []
     start = 0
     start_junction = None
-    for (first, last, jid) in cuts:
+    for (first, last, jid) in holes:
         if first > start:
-            out.append({"indices": list(range(start, first)),
-                        "start": start_junction, "end": jid})
+            out.append((list(range(start, first)), start_junction, jid))
         start = max(start, last + 1)
         start_junction = jid
     if start < len(road.path):
-        out.append({"indices": list(range(start, len(road.path))),
-                    "start": start_junction, "end": None})
-    if not out or all(len(s["indices"]) < 2 for s in out):
-        # a short street between two junctions is all junction: it keeps the
-        # middle of its path so the road is still drivable, and its lane does
-        # not end on the same spot as the street it meets
-        inner = list(range(1, len(road.path) - 1))
-        out = [{"indices": inner if len(inner) > 1 else list(range(len(road.path))),
-                "start": None, "end": None}]
+        out.append((list(range(start, len(road.path))), start_junction, None))
     return out
+
+
+def _pieces(indices, cuts):
+    """The pieces of a stretch of road, cut at the ramp attaches.
+
+    The two pieces of a cut share the path index of the cut, so the lane of
+    the first one ends exactly where the lane of the second one starts: the
+    traffic drives over the cut without a gap.
+    """
+    inside = [c for c in cuts if indices[0] < c < indices[-1]]
+    bounds = [indices[0]] + inside + [indices[-1]]
+    return [list(range(bounds[i], bounds[i + 1] + 1)) for i in range(len(bounds) - 1)]
+
+
+def _attach_cuts(city, road, holes):
+    """The cuts of the road at its ramp attaches: (cut indices, markers).
+
+    The cut is not at the attach itself: the parent's lane has to end (or
+    start) far enough from it for the connector to shift the traffic over to
+    the ramp, or back, without a sharp turn.  The cut lies ATTACH_LEAD metres
+    away in the direction the traffic of the carriageway the ramp runs along
+    goes: a diverge ends the parent's lane before the station, a merge starts
+    it after it.
+
+    A marker is (path index, ramp, at_end): the piece of the road that ends
+    at that index is the one that meets the ramp.  An attach that lands in a
+    junction or too close to another cut keeps the station itself: the road
+    is cut there already and a cut of its own would leave a short lane.
+    """
+    cuts = []
+    marks = []
+    for (pidx, ramp, at_end) in lane_links.attach_stations(city, road):
+        if _in_hole(pidx, holes):
+            # a junction cuts the road at the attach: the attach uses that cut
+            marks.append((pidx, ramp, at_end))
+            continue
+        s = road.dist[pidx] + _lead(road, ramp, pidx, at_end)
+        cut = road.index_at(max(0.0, min(road.length, s)))
+        if _on_another_cut(road, cut, holes) or \
+                any(abs(road.dist[cut] - road.dist[other]) < CUT_GAP for other in cuts):
+            marks.append((pidx, ramp, at_end))
+            continue
+        cuts.append(cut)
+        marks.append((cut, ramp, at_end))
+    return sorted(cuts), marks
+
+
+def _in_hole(pidx, holes):
+    """True when the attach lies in a stretch of the road a junction takes."""
+    for (first, last, _jid) in holes:
+        if first <= pidx <= last:
+            return True
+    return False
+
+
+def _lead(road, ramp, pidx, at_end):
+    """How far the cut of the parent lies from the attach, along the traffic.
+
+    The ramp runs along one of the parent's two carriageways: with the
+    parent's path or against it.  The cut has to lie in the direction the
+    traffic of that carriageway goes, so the connector runs with the traffic.
+    """
+    if at_end:
+        travel = ramp.path[-1] - ramp.path[-2]
+    else:
+        travel = ramp.path[1] - ramp.path[0]
+    sense = 1.0 if travel.dot(road.frames[pidx][0]) > 0.0 else -1.0
+    return sense * (ATTACH_LEAD if at_end else -ATTACH_LEAD)
+
+
+def _on_another_cut(road, pidx, holes):
+    """True when the road is already cut there (a junction or its end)."""
+    s = road.dist[pidx]
+    if s < CUT_GAP or road.length - s < CUT_GAP:
+        return True
+    for (first, last, _jid) in holes:
+        if first <= pidx <= last:
+            return True
+        for b in (first - 1, last + 1):
+            if 0 <= b < len(road.path) and abs(road.dist[b] - s) < CUT_GAP:
+                return True
+    return False
 
 
 def lane_points(road, seg, side, index, lay):
@@ -93,17 +234,18 @@ def build_lanes(city):
         lay = profiles.layout(road)
         segs[road.id] = segments(city, road)
         for si, seg in enumerate(segs[road.id]):
+            number = seg.get("number", si)
             for side in ("fwd", "back"):
                 count = len(lay["lanes"][side])
                 for i in range(count):
                     pts = lane_points(road, seg, side, i, lay)
                     if len(pts) < 2:
                         continue
-                    lid = "%s_%d_%s%d" % (road.id, si, side, i)
+                    lid = "%s_%d_%s%d" % (road.id, number, side, i)
                     lanes.append({
                         "id": lid,
                         "road": road.id,
-                        "segment": si,
+                        "segment": number,
                         "dir": 1 if side == "fwd" else -1,
                         "index": i,
                         "leftmost": i == 0,
@@ -120,8 +262,9 @@ def build_lanes(city):
                         "end_junction": seg.get("end") if side == "fwd" else seg.get("start"),
                         "next": [],
                     })
-                    index[(road.id, si, side, i)] = lid
+                    index[(road.id, number, side, i)] = lid
     # the movements through the junctions and the ramp attaches
+    _link_cuts(city, segs, links, index)
     lane_links.link_junctions(city, lanes, links)
     lane_links.link_attaches(city, lanes, segs, links)
     lanes.sort(key=lambda l: l["id"])
@@ -135,6 +278,35 @@ def build_lanes(city):
         top = sorted(lane_links.SKIPPED.items(), key=lambda kv: -kv[1])[:8]
         print("LANES %d movements skipped: %s" % (sum(lane_links.SKIPPED.values()), top))
     return {"version": 1, "lanes": lanes, "links": links, "roads": _road_stats(city, lanes)}
+
+
+def _link_cuts(city, segs, links, index):
+    """The traffic of a road carries on over the cuts of its ramp attaches.
+
+    The two halves of a cut share the path index of the cut, so the end of the
+    first half and the start of the second half are the same point and the
+    traffic drives over the cut without a gap.  The back carriageway is
+    travelled against the path order, so there the later half comes first.
+    """
+    for road in city.roads:
+        lay = profiles.layout(road)
+        road_segs = segs[road.id]
+        for si in range(len(road_segs) - 1):
+            a, b = road_segs[si], road_segs[si + 1]
+            if not a["indices"] or not b["indices"]:
+                continue
+            if a["indices"][-1] != b["indices"][0]:
+                continue     # a junction: the crossing links the two halves
+            for side in ("fwd", "back"):
+                for i in range(len(lay["lanes"][side])):
+                    first = index.get((road.id, a.get("number", si), side, i))
+                    second = index.get((road.id, b.get("number", si + 1), side, i))
+                    if first is None or second is None:
+                        continue
+                    if side == "fwd":
+                        links.append({"from": first, "to": second, "turn": "straight"})
+                    else:
+                        links.append({"from": second, "to": first, "turn": "straight"})
 
 
 def _road_stats(city, lanes):
