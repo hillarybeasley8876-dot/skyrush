@@ -28,6 +28,9 @@ def discover(filt):
         res = "res://" + path.relative_to(PROJ).as_posix()
         if filt and filt not in res:
             continue
+        text = path.read_text(encoding="utf-8", errors="replace")
+        if "func _ready" not in text and re.search(r"^func run\(", text, re.M):
+            continue   # a sub-module that a host test (test_camera.gd, ...) runs, not a test of its own
         out.append(res)
     return out
 
