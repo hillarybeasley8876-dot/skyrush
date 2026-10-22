@@ -27,6 +27,9 @@ const GATE_PLAN := 8.0
 const GATE_HEIGHT := 3.0
 const GATE_ANGLE := 35.0
 const LANE_STEP := 3.0
+const LINK_HEIGHT := 1.5        # the end of a lane and the start of the lane it is linked to
+const WINDOW := 1500            # line points (2 m apart) in which the next gate is looked for
+const MISS := 40.0              # a gate the line does not come within this many metres of is missed
 const LEG_KEYS := ["unroutable_legs", "backwards_legs", "relaxed_legs", "partial_legs"]
 
 var _failures := 0
@@ -53,6 +56,7 @@ func _run() -> void:
 		_finish()
 		return
 	_build_lane_grid(world.get_lane_paths())
+	_check_links(world.get_lane_paths())
 	for id in world.get_route_ids():
 		_check_route(world.get_route(id))
 	world.queue_free()
@@ -127,6 +131,35 @@ func _on_lane(point: Vector3) -> bool:
 	return false
 
 
+# --- the links of the lane graph ---------------------------------------------------------------------
+
+## A lane continues into the lane it is linked to: the end of the one and the start of the other are on
+## the same level (1.5 m). The world links lanes of different roads that end near each other in the plan
+## (LaneLinks._link_proximity), which joins a street to the deck above it.
+func _check_links(lanes: Array[LanePath]) -> void:
+	var bad := 0
+	var worst := 0.0
+	var example := ""
+	for i in lanes.size():
+		var lane := lanes[i]
+		if lane.curve == null or lane.curve.get_point_count() < 2:
+			continue
+		var end := lane.curve.get_point_position(lane.curve.get_point_count() - 1)
+		for next_index in lane.next_lanes:
+			var next := lanes[next_index]
+			if next.curve == null or next.curve.get_point_count() < 2:
+				continue
+			var start := next.curve.get_point_position(0)
+			var dy := absf(start.y - end.y)
+			if dy > LINK_HEIGHT:
+				bad += 1
+				if dy > worst:
+					worst = dy
+					example = "%s -> %s (%.1f m)" % [lane.road_id, next.road_id, dy]
+	_ok(bad == 0, "lane links: %d links join lanes more than %.1f m apart in height%s" % [
+		bad, LINK_HEIGHT, "" if bad == 0 else ", worst " + example])
+
+
 # --- one route -------------------------------------------------------------------------------------
 
 func _check_route(route: RaceRoute) -> void:
@@ -146,20 +179,29 @@ func _check_route(route: RaceRoute) -> void:
 		return
 	var points := PackedVector3Array(line.get_baked_points())
 	var gates := route.checkpoints
-	# the part of the line that belongs to the legs between the gates (a circuit adds a closing leg)
+	# the part of the line that belongs to the legs between the gates (a circuit adds a closing leg).
+	# A gate is looked for in the next WINDOW line points only; a gate the line misses by more than
+	# MISS metres gets index -1 and does not move the cursor.
 	var cursor := 0
 	var gate_index: Array[int] = []
 	for gate in gates:
 		var best := INF
-		var at := cursor
-		for i in range(cursor, points.size()):
+		var at := -1
+		for i in range(cursor, mini(points.size(), cursor + WINDOW)):
 			var d := points[i].distance_to(gate.origin)
 			if d < best:
 				best = d
 				at = i
-		gate_index.append(at)
-		cursor = at
-	var last := gate_index[gate_index.size() - 1] if not gate_index.is_empty() else points.size() - 1
+		if at < 0 or best > MISS:
+			gate_index.append(-1)
+		else:
+			gate_index.append(at)
+			cursor = at
+	var last := 0
+	for index in gate_index:
+		last = maxi(last, index)
+	if last == 0:
+		last = points.size() - 1
 	# 2. every point of the line is on a lane of its own level
 	var off := 0
 	var worst: Vector3 = Vector3.ZERO
@@ -177,6 +219,10 @@ func _check_route(route: RaceRoute) -> void:
 	var worst_angle := 0.0
 	for g in gates.size():
 		var gate := gates[g]
+		if gate_index[g] < 0:
+			misses += 1
+			print("INFO route %s gate %d: the racing line does not come within %.0f m of it" % [id, g, MISS])
+			continue
 		var p := points[gate_index[g]]
 		var plan := Vector2(p.x - gate.origin.x, p.z - gate.origin.z).length()
 		if plan > GATE_PLAN or absf(p.y - gate.origin.y) > GATE_HEIGHT:

@@ -1,0 +1,78 @@
+{
+  "id": "layers-world-api",
+  "title": "The world matches gates, lanes and links by level",
+  "brief": "briefs/improve/layers-world-api.md",
+  "isolation": "worktree",
+  "owns": [
+    "game/world/api/",
+    "game/world/build/gameplay_sites.gd"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 300,
+  "timeoutMin": 200,
+  "accept": [
+    {
+      "name": "world scripts and scenes load clean",
+      "cmd": "python tools/gd.py check --only=res://world/",
+      "must": [
+        "re:CHECK \\d+ files, 0 failed, 0 engine errors"
+      ],
+      "timeoutS": 1800
+    },
+    {
+      "name": "the world layer unit test passes",
+      "cmd": "python tools/gd.py test res://world/tests/test_layers_world_api.gd",
+      "must": [
+        "WORLD LAYER TESTS OK"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "the unit test fails on the old code",
+      "cmd": "python tools/mutation_check.py --test res://world/tests/test_layers_world_api.gd --files auto",
+      "must": [
+        "MUTATION_CHECK OK"
+      ],
+      "timeoutS": 1500
+    },
+    {
+      "name": "the routes of the real city are driven level by level",
+      "cmd": "python tools/fail_lines.py res://world/tests/test_route_layers.gd --allow \"the line between the gates\" --min-pass 10 --timeout 900",
+      "must": [
+        "FAIL_LINES OK"
+      ],
+      "timeoutS": 1800
+    },
+    {
+      "name": "the world API test does not get worse",
+      "cmd": "python tools/fail_lines.py res://world/tests/test_world_api.gd --allow \"reversals in the racing line\" --allow \"of the line is on a lane\" --allow \"m vs the gates\" --min-pass 30 --timeout 900",
+      "must": [
+        "FAIL_LINES OK"
+      ],
+      "timeoutS": 1800
+    },
+    {
+      "name": "the rest of the world tests pass",
+      "cmd": "python tools/run_tests.py --filter res://world/ --jobs 3 --out F:/dev/skyrush-out/tmp/layers-world-api/tests --allow-fail test_route_layers,test_world_api",
+      "must": [
+        "RUN_TESTS_RATCHET OK"
+      ],
+      "timeoutS": 3600
+    }
+  ],
+  "readonly": [
+    "game/world/tests/test_drive_lanes.gd",
+    "game/world/tests/test_gameplay_sites.gd",
+    "game/world/tests/test_lane_surfaces_world.gd",
+    "game/world/tests/test_multimesh_inventory.gd",
+    "game/world/tests/test_prop_diagnose.gd",
+    "game/world/tests/test_prop_shapes.gd",
+    "game/world/tests/test_route_layers.gd",
+    "game/world/tests/test_site_positions.gd",
+    "game/world/tests/test_tile_load.gd",
+    "game/world/tests/test_world_api.gd",
+    "game/world/tests/test_world_quality.gd",
+    "game/world/tests/water_probe.gd",
+    "game/world/tests/world_error_counter.gd"
+  ]
+}

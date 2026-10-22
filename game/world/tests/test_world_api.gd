@@ -208,15 +208,18 @@ func _check_routes(world: WorldBase) -> void:
 			_check_racing_line(route, lanes)
 
 
-## Every gate has to face the next checkpoint.
+## Every gate has to face along the route. (This used to demand `forward.dot(to_next) > 0`, which is false at a
+## hairpin like the Pudong loop where the next gate lies BEHIND the gate in the plan: the gate faces along the
+## road. The exact check is test_route_layers.gd: every gate within 35 degrees of the racing line.)
 func _check_gate_headings(route: RaceRoute) -> void:
 	var checkpoints := route.checkpoints
 	for i in range(checkpoints.size() - 1):
 		var forward := -checkpoints[i].basis.z
 		var to_next := checkpoints[i + 1].origin - checkpoints[i].origin
-		_check(forward.dot(to_next) > 0.0,
-			"route %s: gate %d faces the next checkpoint (dot %.2f)" % [route.id, i,
-				forward.dot(to_next)])
+		# a gate may face away from the straight line to the next gate (a bend of the road), but not back along it
+		_check(forward.dot(to_next.normalized()) > -0.9,
+			"route %s: gate %d does not face back along the way to the next checkpoint (dot %.2f)" % [route.id, i,
+				forward.dot(to_next.normalized())])
 
 
 ## The start grid: at least six slots, five metres apart, on a lane and facing it.
