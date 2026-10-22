@@ -8,12 +8,6 @@ import math
 
 import citylib
 
-# the landmark plazas a sky lane threads (dossier 10.2)
-TOWER_NOTES = ("landmark:dragon_pillar", "landmark:nanpu_tower_w",
-                "landmark:nanpu_tower_e", "landmark:oriental_pearl",
-                "landmark:swfc", "landmark:jin_mao",
-                "landmark:shanghai_tower", "landmark:pearl_ring")
-
 
 def _road(by_id, rid):
     return by_id.get(rid)
@@ -115,6 +109,40 @@ def build_landmark_pois():
 # ---------------------------------------------------------------- sky lanes
 
 BLOCK_INDEX = None
+SKY_SLOPE = 0.34           # the most a sky lane climbs or dives
+SKY_STEP = 10.0            # the spacing of the plan points of a sky lane
+SKY_CLEAR = 10.0           # the sky lanes clear the lots by 10 m
+SKY_LIFT = 8.0             # a sky lane lands 8 m above the road
+
+# the landmark plazas a sky lane may thread: the pillar and the cables of
+# the Nanpu bridge.  The other towers are obstacles, like any other lot.
+SKY_EXEMPT = ("landmark:dragon_pillar", "landmark:nanpu_tower_w",
+              "landmark:nanpu_tower_e")
+
+# the five flight corridors: id, label, the road and the station of the pad,
+# the direction of the traffic, the lane of the pad, the length of the
+# lead-in, the road and the station of the landing, its direction and its
+# lane, the length of the lead-out, the wanted cruise height and the gates
+# of the flight.  The Huangpu jump climbs the Fujian Rd and leaps the river
+# to the Lujiazui West Rd; the dragon stack flies over the pillar of the
+# interchange; the century canyon runs along the Century Ave corridor below
+# the towers; the Nanpu cables follow the deck of the bridge through its
+# east tower; the Bund riverside leaves the Bund and crosses the river to
+# the Lujiazui.  The gates of a flight are the points it passes between
+# the lead-in and the lead-out: they keep the lane clear of the towers.
+SKY_LANES = [
+    ("huangpu_jump", "黄浦江飞跃", "st_fujian_rd", 300.0, 1, 0, 300.0,
+     "lujiazui_w_rd", 400.0, 1, 0, 300.0, 100.0, []),
+    ("dragon_stack", "龙柱立交飞跃", "ns_elevated", 1730.0, 1, 1, 120.0,
+     "ns_elevated", 2150.0, 1, 1, 120.0, 60.0, []),
+    ("century_canyon", "世纪大道峡谷", "st_d7_ns_16", 300.0, -1, 0, 250.0,
+     "century_ave", 1050.0, 1, 1, 250.0, 90.0,
+     [(1345.8, -88.8), (1357.8, -136.8), (1381.8, -160.8), (1441.8, -136.8)]),
+    ("nanpu_cables", "南浦大桥缆索", "nanpu_bridge", 492.0, 1, 0, 250.0,
+     "nanpu_pudong_loop", 60.0, 1, 0, 60.0, 60.0, []),
+    ("bund_riverside", "外滩江畔", "st_jiujiang_rd", 300.0, -1, 0, 300.0,
+     "lujiazui_w_rd", 500.0, 1, 0, 300.0, 100.0, []),
+]
 
 
 def _block_index(blocks):
@@ -135,50 +163,75 @@ def _block_index(blocks):
 
 
 def _height_at(blocks_index, x, z):
-    """The height of the tallest block under the plan position.
+    """The height of the tallest lot under the plan position.
 
-    The landmark plazas are left out: a sky lane threads the towers of the
-    dossier between their deck and their crossbeam.
+    The landmark plazas a sky lane is meant to thread are left out; every
+    other lot is an obstacle, the towers of the dossier included.
     """
+    best = 0.0
     for b in blocks_index.get((int(x // 200), int(z // 200)), ()):
-        if b.get("notes") in TOWER_NOTES:
+        if b.get("notes") in SKY_EXEMPT:
             continue
         if citylib.point_in_polygon((x, z), b["polygon"]):
-            return b["height_m"][1]
-    return 0.0
+            best = max(best, b["height_m"][1])
+    return best
 
 
-def _lane_profile(plan, pad_y, end_y, blocks, cruise=90.0, slope=0.34):
-    """The height of a sky lane: it clears every block by 10 m and never
-    climbs or dives faster than `slope`."""
+def _densify(plan, step=SKY_STEP):
+    """The plan with a point at least every `step` metres."""
+    out = [[plan[0][0], plan[0][1]]]
+    for a, b in zip(plan, plan[1:]):
+        n = max(1, int(math.ceil(math.dist(a, b) / step)))
+        for k in range(1, n + 1):
+            t = float(k) / n
+            out.append([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t])
+    return out
+
+
+def _lane_profile(plan, pad_y, cruise, end_y, blocks, climb_end, cruise_end,
+                  slope=SKY_SLOPE):
+    """The height of every plan point of a sky lane.
+
+    The lane climbs over the lead-in, cruises over the flight and dives
+    over the lead-out.  It clears every lot by 10 m and never climbs or
+    dives faster than `slope`; the first point stays on the pad.
+    """
     n = len(plan)
     cum = [0.0]
     for a, b in zip(plan, plan[1:]):
         cum.append(cum[-1] + math.dist(a, b))
-    total = cum[-1]
+    climb = cum[climb_end] or 1.0
+    dive = (cum[-1] - cum[cruise_end]) or 1.0
     y = []
-    for i, p in enumerate(plan):
-        t = cum[i] / total if total else 0.0
-        if i == 0:
-            y.append(pad_y)
-            continue
-        # the climb, the cruise and the descent
-        if t < 0.2:
-            base = pad_y + (cruise - pad_y) * (t / 0.2)
-        elif t < 0.75:
+    for i in range(n):
+        if cum[i] <= cum[climb_end]:
+            base = pad_y + (cruise - pad_y) * (cum[i] / climb)
+        elif cum[i] <= cum[cruise_end]:
             base = cruise
         else:
-            base = cruise + (end_y - cruise) * ((t - 0.75) / 0.25)
-        need = _height_at(blocks, p[0], p[1]) + 10.0
-        y.append(max(base, need))
-    # enforce the slope limit with a forward and a backward pass
-    for _ in range(60):
+            base = cruise + (end_y - cruise) * ((cum[i] - cum[cruise_end]) / dive)
+        y.append(base)
+    # a segment takes the height of the tallest lot under it, so the line
+    # between two points never dives into a roof
+    for i in range(n - 1):
+        a, b = plan[i], plan[i + 1]
+        steps = max(1, int(math.dist(a, b) / 2.5))
+        need = 0.0
+        for k in range(steps + 1):
+            t = float(k) / steps
+            need = max(need, _height_at(blocks, a[0] + (b[0] - a[0]) * t,
+                                        a[1] + (b[1] - a[1]) * t))
+        need += SKY_CLEAR
+        y[i] = max(y[i], need)
+        y[i + 1] = max(y[i + 1], need)
+    # the slope limit, forward and backward; the backward pass never lifts
+    # the first point: the lane starts on the pad
+    for _ in range(40):
         for i in range(1, n):
-            gap = slope * (cum[i] - cum[i - 1])
-            y[i] = max(y[i], y[i - 1] - gap)
-        for i in range(n - 2, -1, -1):
-            gap = slope * (cum[i + 1] - cum[i])
-            y[i] = max(y[i], y[i + 1] - gap)
+            y[i] = max(y[i], y[i - 1] - slope * (cum[i] - cum[i - 1]))
+        for i in range(n - 2, 0, -1):
+            y[i] = max(y[i], y[i + 1] - slope * (cum[i + 1] - cum[i]))
+    y[0] = pad_y
     return y
 
 
@@ -234,6 +287,58 @@ def straight_runup(road, direction, lo=0.0, hi=None, min_runup=300.0):
     return None if best is None else best[1]
 
 
+def _road_run(road, s0, length, direction, lane_index, step=8.0):
+    """The plan points of `length` metres of a lane, from the station `s0`
+    in the direction of the traffic."""
+    out = []
+    n = max(1, int(round(length / step)))
+    for k in range(n + 1):
+        s = s0 + direction * min(length, k * step)
+        p, _h = _lane_at(road, s, direction, lane_index)
+        out.append([p[0], p[2]])
+    return out
+
+
+def _sky_lane(by_id, blocks, spec):
+    """One sky lane: the pad, the lead-in, the flight and the landing.
+
+    The lane leaves the pad along the road, climbs over the lead-in,
+    flies over the city clear of the tall lots and dives over the road
+    that carries the landing.
+    """
+    (lid, label, road_id, s_pad, direction, lane_index, lead_in,
+     goal_road, goal_s, goal_dir, goal_lane, lead_out, cruise, gates) = spec
+    road = by_id.get(road_id)
+    goalr = by_id.get(goal_road)
+    if road is None or goalr is None:
+        return None
+    # the pad sits at the straightest station of its run-up
+    s_pad = straight_runup(road, direction, max(300.0, s_pad - 40.0),
+                           s_pad + 40.0) or s_pad
+    pad_p, pad_h = _lane_at(road, s_pad, direction, lane_index)
+    goal_p, _goal_h = _lane_at(goalr, goal_s, goal_dir, goal_lane)
+    end_y = goal_p[1] + SKY_LIFT
+    # the lead-in: the road ahead of the pad, where the lane climbs; the
+    # lead-out: the road behind the landing, where the lane dives
+    lead = _road_run(road, s_pad, lead_in, direction, lane_index)
+    tail = _road_run(goalr, goal_s - goal_dir * lead_out, lead_out,
+                     goal_dir, goal_lane)
+    cruise = min(cruise, pad_p[1] + SKY_SLOPE * lead_in,
+                 end_y + SKY_SLOPE * lead_out)
+    # the flight between the two: the gates keep it clear of the towers
+    mid = [[g[0], g[1]] for g in gates]
+    parts = [_densify(lead), _densify(mid) if mid else [], _densify(tail)]
+    plan = parts[0] + parts[1] + parts[2]
+    climb_end = len(parts[0]) - 1
+    y = _lane_profile(plan, pad_p[1], cruise, end_y, _block_index(blocks),
+                      climb_end, climb_end + len(parts[1]))
+    points, rings, _cum = _lane_points(plan, y, pad_p, goal_p)
+    return {"id": lid, "label": label, "points": points,
+            "pad": {"x": round(pad_p[0], 1), "y": round(pad_p[1], 1),
+                    "z": round(pad_p[2], 1), "heading_deg": round(pad_h, 1)},
+            "n2_rings_m": rings}
+
+
 def build_sky_lanes(by_id, blocks):
     """The flight corridors of the map (gameplay 5.6).
 
@@ -241,60 +346,10 @@ def build_sky_lanes(by_id, blocks):
     run-up behind it, leaves in the direction of that lane, threads the
     towers of the dossier and lands over a drivable lane.
     """
-    index = _block_index(blocks)
     out = []
-
-    def make(lid, label, road_id, s_pad, direction, lane_index, waypoints,
-             end_road, end_s, end_dir, end_lane, cruise=120.0, lift=8.0):
-        road = by_id.get(road_id)
-        endr = by_id.get(end_road)
-        if road is None or endr is None:
-            return
-        pad_p, pad_h = _lane_at(road, s_pad, direction, lane_index)
-        end_p, end_h = _lane_at(endr, end_s, end_dir, end_lane)
-        plan = [[pad_p[0], pad_p[2]]] + [list(w) for w in waypoints] \
-            + [[end_p[0], end_p[2]]]
-        plan = _dedupe(plan)
-        y = _lane_profile(plan, pad_p[1], end_p[1] + lift, index, cruise)
-        points, ring_list, _cum = _lane_points(plan, y, pad_p, end_p)
-        out.append({
-            "id": lid,
-            "label": label,
-            "points": points,
-            "pad": {"x": round(pad_p[0], 1), "y": round(pad_p[1], 1),
-                    "z": round(pad_p[2], 1), "heading_deg": round(pad_h, 1)},
-            "n2_rings_m": ring_list,
-        })
-
-    # the Huangpu jump: north up the Fujian Rd, over the river, down to the
-    # Yincheng Rd on the Pudong side
-    make("huangpu_jump", "黄浦江飞跃", "st_fujian_portal", 200.0, 1, 0,
-         [(-300.0, 230.0), (0.0, 60.0), (300.0, -120.0), (600.0, -350.0)],
-         "yincheng_rd", 245.0, -1, 0, cruise=70.0)
-    # the dragon stack: up the N-S elevated, over the pillar, down again
-    make("dragon_stack", "龙柱立交飞跃", "ns_elevated", 1730.0, 1, 1,
-         [(-1394.0, 543.0), (-1299.0, 687.0), (-1200.0, 780.0)],
-         "ns_elevated", 2150.0, 1, 1, cruise=60.0, lift=8.0)
-    # the century canyon: along the Century Ave corridor, below the towers
-    make("century_canyon", "世纪大道峡谷", "century_ave", 384.0, 1, 1,
-         [(1250.0, -245.0), (1350.0, -200.0), (1450.0, -140.0)],
-         "century_ave", 1050.0, 1, 1, cruise=70.0, lift=8.0)
-    # the Nanpu cables: along the bridge deck, through the east tower
-    make("nanpu_cables", "南浦大桥缆索", "nanpu_bridge", 492.0, 1, 0,
-         [(1480.0, 1505.0), (1545.0, 1535.0)],
-         "nanpu_pudong_loop", 60.0, 1, 0, cruise=60.0, lift=8.0)
-    # the Bund riverside: south along the Bund, over the river, down to the
-    # Lujiazui West Rd
-    make("bund_riverside", "外滩江畔", "bund_zhongshan_e1", 300.0, -1, 1,
-         [(-160.0, -760.0), (100.0, -750.0), (350.0, -700.0), (540.0, -790.0)],
-         "lujiazui_w_rd", 0.0, 1, 0, cruise=60.0, lift=8.0)
+    for spec in SKY_LANES:
+        lane = _sky_lane(by_id, blocks, spec)
+        if lane is not None:
+            out.append(lane)
     return out
 
-
-def _dedupe(plan):
-    """Drop the repeated points of a plan."""
-    out = [list(plan[0])]
-    for p in plan[1:]:
-        if math.dist(out[-1], p) > 1.0:
-            out.append(list(p))
-    return out
