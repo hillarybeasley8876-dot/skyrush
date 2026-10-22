@@ -1,0 +1,69 @@
+{
+  "id": "modes-hygiene",
+  "title": "NEW RECORD works, a finished pursuit stops the police, leaving a mode leaves no chase",
+  "brief": "briefs/improve/modes-hygiene.md",
+  "isolation": "worktree",
+  "owns": [
+    "game/modes/",
+    "game/ui/menu/screens/results_screen.gd"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 250,
+  "timeoutMin": 150,
+  "accept": [
+    {
+      "name": "modes scripts load clean",
+      "cmd": "python tools/gd.py check --only=res://modes/",
+      "must": [
+        "re:CHECK \\d+ files, 0 failed, 0 engine errors"
+      ],
+      "timeoutS": 1200
+    },
+    {
+      "name": "menu scripts load clean",
+      "cmd": "python tools/gd.py check --only=res://ui/menu/",
+      "must": [
+        "re:CHECK \\d+ files, 0 failed, 0 engine errors"
+      ],
+      "timeoutS": 1200
+    },
+    {
+      "name": "the hygiene test passes",
+      "cmd": "python tools/gd.py test res://modes/tests/test_hygiene.gd",
+      "must": [
+        "MODE HYGIENE TESTS OK"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "the test fails on the old code",
+      "cmd": "python tools/mutation_check.py --test res://modes/tests/test_hygiene.gd --files auto",
+      "must": [
+        "MUTATION_CHECK OK"
+      ],
+      "timeoutS": 1500
+    },
+    {
+      "name": "the modes test folder passes",
+      "cmd": "python tools/run_tests.py --filter res://modes/ --jobs 2 --out F:/dev/skyrush-out/tmp/modes-hygiene/tests",
+      "must": [
+        "re:, 0 failed or timed out"
+      ],
+      "timeoutS": 2400
+    },
+    {
+      "name": "the menu test folder passes",
+      "cmd": "python tools/run_tests.py --filter res://ui/menu/ --jobs 2 --out F:/dev/skyrush-out/tmp/modes-hygiene/tests_menu",
+      "must": [
+        "re:, 0 failed or timed out"
+      ],
+      "timeoutS": 2400
+    }
+  ],
+  "readonly": [
+    "game/modes/tests/test_gate_layers.gd",
+    "game/modes/tests/test_mode_switch.gd",
+    "game/modes/tests/test_modes.gd",
+    "game/modes/tests/test_pursuit_mode.gd"
+  ]
+}
