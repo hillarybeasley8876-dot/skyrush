@@ -7,7 +7,10 @@
     "game/modes/"
   ],
   "readonly": [
-    "game/modes/tests/test_gate_layers.gd"
+    "game/modes/tests/test_gate_layers.gd",
+    "game/modes/tests/test_mode_switch.gd",
+    "game/modes/tests/test_modes.gd",
+    "game/modes/tests/test_pursuit_mode.gd"
   ],
   "maxRounds": 3,
   "maxTurns": 150,

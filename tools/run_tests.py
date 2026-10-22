@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """run_tests — run every Godot test through tools/gd.py and summarise the result.
 
-    python tools/run_tests.py [--filter substring] [--jobs 5] [--timeout 300] [--out DIR] [--list]
+    python tools/run_tests.py [--filter substring] [--jobs 5] [--timeout 300] [--out DIR] [--list] [--allow-fail test_a.gd,test_b.gd]
+
+With --allow-fail the exit code is 0 when every failing test is named in the list (a ratchet for tests that fail for
+reasons that are not the job's), and the last line is RUN_TESTS_RATCHET OK or RUN_TESTS_RATCHET FAIL.
 
 Each test's output goes to <out>/<name>.log; <out>/summary.json has one record per test
 (exit code, checks, failures, seconds, the first failing lines) so two runs can be compared.
@@ -88,6 +91,15 @@ def main(argv):
     (out_dir / "summary.json").write_text(json.dumps(results, indent=1, ensure_ascii=False), encoding="utf-8")
     bad = [r for r, v in results.items() if v["exit"] != 0]
     print("\n%d tests, %d passed, %d failed or timed out" % (len(results), len(results) - len(bad), len(bad)))
+    allow = [a for a in opt("--allow-fail", "").split(",") if a]
+    if allow:
+        new_bad = [r for r in bad if not any(a in r for a in allow)]
+        print("allow list: %s" % ", ".join(allow))
+        if new_bad:
+            print("RUN_TESTS_RATCHET FAIL, failing and not on the allow list: %s" % ", ".join(new_bad))
+            return 1
+        print("RUN_TESTS_RATCHET OK (%d failing, all of them on the allow list)" % len(bad))
+        return 0
     return 1 if bad else 0
 
 

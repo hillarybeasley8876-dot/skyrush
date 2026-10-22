@@ -59,5 +59,29 @@
       ],
       "timeoutS": 2400
     }
+  ],
+  "readonly": [
+    "game/ai/police/tests/police_error_log.gd",
+    "game/ai/police/tests/police_test.gd",
+    "game/ai/police/tests/test_box.gd",
+    "game/ai/police/tests/test_box_rules.gd",
+    "game/ai/police/tests/test_brake_probe.gd",
+    "game/ai/police/tests/test_bust_crowd.gd",
+    "game/ai/police/tests/test_busted.gd",
+    "game/ai/police/tests/test_drone.gd",
+    "game/ai/police/tests/test_head_on.gd",
+    "game/ai/police/tests/test_heat.gd",
+    "game/ai/police/tests/test_hold_back.gd",
+    "game/ai/police/tests/test_offences.gd",
+    "game/ai/police/tests/test_offences_contact.gd",
+    "game/ai/police/tests/test_perf.gd",
+    "game/ai/police/tests/test_pit.gd",
+    "game/ai/police/tests/test_pool.gd",
+    "game/ai/police/tests/test_roadblock.gd",
+    "game/ai/police/tests/test_spikes.gd",
+    "game/ai/police/tests/test_toll.gd",
+    "game/ui/hud/tests/test_hud.gd",
+    "game/ui/hud/tests/test_hud_layout.gd",
+    "game/ui/hud/tests/test_hud_perf.gd"
   ]
 }
