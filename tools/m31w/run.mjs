@@ -110,6 +110,7 @@ function runClaude(job, st, prompt, dir) {
     const timer = setTimeout(() => { timedOut = true; killTree(proc.pid); }, (job.timeoutMin ?? 120) * 60000);
     st.sessionStarted = true;
     st.pid = proc.pid;
+    saveState(dir, st);
     proc.stdout.on('data', (chunk) => {
       buf += chunk.toString('utf8');
       let nl;
@@ -260,7 +261,7 @@ async function runJob(job, others) {
     }
     const requested = job.model ?? DEFAULT_MODEL;
     const wrong = Object.entries(r.seen.models).filter(([m]) => m !== requested);
-    const stray = enforceOwnership(job, baseline, others, dir, st.rounds);
+    const stray = enforceOwnership(job, baseline, others(), dir, st.rounds);
     acc = await runAccept(job);
     const pass = acc.every((a) => a.pass) && stray.length === 0;
     st.history.push({ round: st.rounds, end: ended.kind, tools: r.seen.tools, models: r.seen.models, wrongModel: wrong.length > 0, stray, acc: acc.map((a) => ({ name: a.name, pass: a.pass, why: a.why })) });
