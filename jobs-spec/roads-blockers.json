@@ -1,0 +1,77 @@
+{
+  "id": "roads-blockers",
+  "title": "Barriers and pier columns must not stand in the lanes",
+  "brief": "briefs/improve/roads-blockers.md",
+  "isolation": "worktree",
+  "sparse": [
+    "tools/",
+    "data/",
+    "ref/",
+    "briefs/",
+    "blender/",
+    "game/assets/textures/",
+    "game/assets/city/_tex/",
+    "game/world/data/",
+    "SPEC.md",
+    "ART.md",
+    "CONTRACTS.md",
+    "README.md"
+  ],
+  "owns": [
+    "blender/city/roads/collision.py",
+    "blender/city/roads/deck.py",
+    "blender/city/roads/piers.py",
+    "blender/city/roads/planters.py",
+    "blender/city/roads/attaches.py",
+    "blender/city/roads/build_roads.py"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 300,
+  "timeoutMin": 200,
+  "accept": [
+    {
+      "name": "full Blender road build into the scratch directory",
+      "timeoutS": 1500,
+      "cmd": "python tools/gd.py blender run blender/city/roads/build_roads.py -- --city data/city/city.json --out F:/dev/skyrush-out/tmp/roads-blockers/tiles --data F:/dev/skyrush-out/tmp/roads-blockers/data",
+      "must": [
+        "DONE in"
+      ]
+    },
+    {
+      "name": "all 19 ramp joints are clear of barriers",
+      "cmd": "python tools/city/check_path_blockers.py F:/dev/skyrush-out/tmp/roads-blockers/tiles F:/dev/_scratch/attach_paths_v2 --max-bad 0 --min-barrier-area 298000",
+      "must": [
+        "PATH_BLOCKERS OK"
+      ]
+    },
+    {
+      "name": "all chain joints are clear of barriers",
+      "cmd": "python tools/city/check_path_blockers.py F:/dev/skyrush-out/tmp/roads-blockers/tiles F:/dev/_scratch/chain_paths_v2 --max-bad 0 --min-barrier-area 298000",
+      "must": [
+        "PATH_BLOCKERS OK"
+      ]
+    },
+    {
+      "name": "the lanes of the whole city are nearly clear",
+      "cmd": "python tools/city/check_path_blockers.py F:/dev/skyrush-out/tmp/roads-blockers/tiles --lanes F:/dev/skyrush-out/tmp/roads-blockers/data/lanes.json --max-bad 40 --min-barrier-area 298000",
+      "must": [
+        "PATH_BLOCKERS OK"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "the joint surface stays",
+      "cmd": "python tools/city/check_surface_coverage.py F:/dev/skyrush-out/tmp/roads-blockers/tiles F:/dev/skyrush-out/tmp/roads-blockers/data/lanes.json --prefix attach_ --tol 0.4 --max-bad 0 --max-area 2445000",
+      "must": [
+        "SURFACE_COVERAGE bad samples: 0"
+      ]
+    },
+    {
+      "name": "the lane graph is unchanged",
+      "cmd": "python tools/city/check_chain_links.py F:/dev/skyrush-out/tmp/roads-blockers/data/lanes.json --quiet",
+      "must": [
+        "CHAIN_LINKS OK"
+      ]
+    }
+  ]
+}
