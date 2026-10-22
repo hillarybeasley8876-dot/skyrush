@@ -61,3 +61,21 @@ const LANE_CUSHION_SINK := 4.0
 
 ## The ceiling of the glide cushion acceleration (m/s^2).
 const LANE_CUSHION_MAX_ACCEL := 40.0
+
+# --- the obstacles of the lane (dossier 5.6)
+
+## The damage of an obstacle hit in the lane (dossier 5.6: 15 HP, no wreck).
+const FLIGHT_HIT_DAMAGE := 15.0
+
+## The share of the speed the car keeps after an obstacle hit (0.7 = 30 % lost).
+const FLIGHT_HIT_SPEED := 0.7
+
+## The speed of the lane never falls below this after an obstacle hit (km/h). The speed of the
+## lane itself is in m/s, but this one is a car speed, like the entry speed of the contract.
+const FLIGHT_HIT_MIN_KMH := 120.0
+
+## One obstacle that overlaps the car for several ticks counts once.
+const FLIGHT_HIT_IMMUNITY := 1.0
+
+## The refused take-off is explained at most once per this time (the toast throttle).
+const LANE_REFUSAL_TOAST_INTERVAL := 3.0
