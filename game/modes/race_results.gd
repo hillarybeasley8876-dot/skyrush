@@ -52,6 +52,22 @@ func _compare(a: RaceRacer, b: RaceRacer) -> bool:
 	return a.progress > b.progress
 
 
+## The live status of the race for the HUD: the lap and the place of the player, the laps of
+## this race and the number of racers.
+##
+## The place comes from the live order of the race (the same one the results show).
+func live_status(laps: int) -> Dictionary:
+	assign_positions()
+	var lap := 1
+	var position := 1
+	for racer in racers:
+		if not racer.is_player:
+			continue
+		lap = clampi(racer.lap + 1, 1, laps)
+		position = maxi(1, racer.position)
+	return {"lap": lap, "laps": laps, "position": position, "racers": racers.size()}
+
+
 ## The results of the race: one row per racer, in the order of the finish.
 func build() -> Array:
 	var out: Array = []

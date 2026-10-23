@@ -18,6 +18,8 @@ var goal: int = Goal.ESCAPE
 var target_takedowns: int = 3
 ## The time the player has (s).
 var time_limit: float = 180.0
+## True when the mode was given a time limit (the HUD shows a clock then).
+var time_limited: bool = true
 ## The heat the pursuit starts at.
 var heat: int = 3
 ## The state of the pursuit.
@@ -29,12 +31,17 @@ var elapsed: float = 0.0
 
 var _police: Node = null
 var _player: VehicleBase = null
+## The status of the pursuit for the HUD.
+var _status: ModeStatus = ModeStatus.new(self)
 
 
 ## Starts the pursuit.
 func setup(options: Dictionary) -> void:
 	goal = Goal.TAKEDOWNS if String(options.get("goal", "escape")) == "takedowns" else Goal.ESCAPE
 	target_takedowns = maxi(1, int(options.get("count", 3)))
+	# The mode was given a time limit: the HUD shows a clock then. A pursuit without one has no
+	# clock (-1.0 = no limit); the session keeps its own fallback either way.
+	time_limited = options.has("time")
 	time_limit = maxf(1.0, float(options.get("time", 180.0)))
 	heat = clampi(int(options.get("heat", 3)), 1, 5)
 	result = Result.RUNNING
@@ -44,6 +51,7 @@ func setup(options: Dictionary) -> void:
 	Events.pursuit_state_changed.connect(_on_pursuit_state_changed)
 	Events.takedown.connect(_on_takedown)
 	_start_police()
+	_push_status(0.0)
 
 
 ## Raises the heat and lets the police come after the player.
@@ -67,6 +75,23 @@ func _process(delta: float) -> void:
 	elapsed += delta
 	if elapsed >= time_limit:
 		_finish(Result.TIMEOUT)
+		return
+	_push_status(delta)
+
+
+## The status of the pursuit for the HUD: the takedowns, the goal and the time left.
+##
+## The clock is counted in whole seconds, so the status changes once a second and not once a
+## frame.
+func _push_status(delta: float) -> void:
+	var left := -1.0
+	if time_limited:
+		left = floorf(maxf(0.0, time_limit - elapsed))
+	_status.push(&"pursuit", {
+		"takedowns": takedowns,
+		"target": target_takedowns if goal == Goal.TAKEDOWNS else 0,
+		"time_left": left,
+	}, delta)
 
 
 ## The police unit reports the state of the pursuit.
@@ -83,6 +108,7 @@ func _on_takedown(_victim: VehicleBase, kind: StringName) -> void:
 	if kind != &"police" or result != Result.RUNNING:
 		return
 	takedowns += 1
+	_push_status(0.0)
 	if goal == Goal.TAKEDOWNS and takedowns >= target_takedowns:
 		_finish(Result.SUCCESS)
 
@@ -111,6 +137,8 @@ func _finish(new_result: int) -> void:
 		PoliceLink.stop_pursuit(_police)
 	Events.toast.emit(text, style)
 	finished.emit(build_results())
+	# The pursuit is over: the HUD keeps the last numbers of the run.
+	_push_status(0.0)
 
 
 ## The result of the pursuit.

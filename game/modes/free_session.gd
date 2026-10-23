@@ -32,6 +32,8 @@ var elapsed: float = 0.0
 var records: GameRecords = null
 var _player: VehicleBase = null
 var _streak_timer: float = 0.0
+## The status of the run for the HUD.
+var _status: ModeStatus = ModeStatus.new(self)
 
 
 ## Starts the mode.
@@ -50,6 +52,7 @@ func setup(new_records: GameRecords) -> void:
 	Events.takedown.connect(_on_takedown)
 	Events.vehicle_wrecked.connect(_on_wrecked)
 	Events.toast.emit("自由漫游 FREE ROAM", &"info")
+	_push_status(0.0)
 
 
 ## A stunt: the points come with the event.
@@ -85,6 +88,12 @@ func _process(delta: float) -> void:
 		_streak_timer -= delta
 		if _streak_timer <= 0.0:
 			streak = 0
+	_push_status(delta)
+
+
+## The status of the run for the HUD: the score of the run.
+func _push_status(delta: float) -> void:
+	_status.push(&"free", {"score": score}, delta)
 
 
 ## Adds points and stores the high score as soon as it is beaten.
@@ -92,6 +101,7 @@ func _add_score(points: int) -> void:
 	score += points
 	if records != null and float(score) > records.best_score():
 		records.record_score(float(score))
+	_push_status(0.0)
 
 
 ## A wrecked car: the player loses points.
@@ -100,6 +110,7 @@ func _on_wrecked(vehicle: VehicleBase, _source: Node3D) -> void:
 		return
 	wrecks += 1
 	score = maxi(0, score - WRECK_PENALTY)
+	_push_status(0.0)
 
 
 ## The result of the run (the menu shows it on the results screen).
