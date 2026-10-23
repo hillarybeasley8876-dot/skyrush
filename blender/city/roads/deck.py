@@ -316,7 +316,9 @@ def build_acceleration(city, road, tileset, lay):
     The widening is 1:25 (6 m over 150 m), so the traffic of the ramp has a
     lane to speed up in before it joins the parent.  It lies on the side of
     the parent the ramp runs along and it ends at the attach, so it is also
-    drivable: it gets a collision surface of its own.
+    drivable: it gets a collision surface of its own.  That surface follows
+    the height of the parent, so it is dropped where the strip stands over
+    the ramp's own lane: there it would be a roof over that lane.
     """
     for at_end, key in ((True, "attach_end"), (False, "attach_start")):
         attach = road.data.get(key)
@@ -350,12 +352,21 @@ def build_acceleration(city, road, tileset, lay):
             rows.append((inner, outer, p.z))
         if len(rows) < 2:
             continue
-        # every quad goes into the tile it lies on
+        # The strip runs along the ramp's lane at the parent's height: where
+        # the two overlap in plan the strip would roof the ramp's lane, so
+        # the quad gets no collider there.  The asphalt stays: only the
+        # collider is dropped.
+        clear = lay["asphalt_half"] + collision.CORRIDOR_MARGIN
+        grid = collision.lane_grid(city)
         for i in range(len(rows) - 1):
             inner0, outer0, _z0 = rows[i]
             inner1, outer1, _z1 = rows[i + 1]
             mid = (inner0 + inner1) * 0.5
-            collision.pave(tileset.builder_at(mid), inner0, outer0, outer1, inner1)
+            quad = [inner0, outer0, outer1, inner1]
+            collide = not (collision.over_corridor(road, quad, clear)
+                           or collision.roofs_lane(quad, grid))
+            collision.pave(tileset.builder_at(mid), inner0, outer0, outer1, inner1,
+                           collide=collide)
 
 
 def build_cable_anchors(road, tileset, lay):
