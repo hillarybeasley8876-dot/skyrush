@@ -163,9 +163,8 @@ func _build_race() -> void:
 		if is_player:
 			player_time = float(entry.get("time", -1.0))
 			player_position = int(entry.get("position", 0))
-	var best_time := float(payload.get("best_time", -1.0))
 	var best_lap := float(payload.get("best_lap", -1.0))
-	if player_time > 0.0 and (best_time < 0.0 or player_time < best_time):
+	if player_time > 0.0 and _is_new_record():
 		record_label.text = "新纪录  NEW RECORD"
 	elif player_position > 0:
 		record_label.text = "名次  第 %d 名" % player_position
@@ -209,6 +208,30 @@ func _build_free() -> void:
 	var best := int(payload.get("best_score", 0))
 	record_label.text = "新纪录  NEW RECORD" if score >= best and score > 0 else ""
 	_add_buttons(&"free", false)
+
+
+## True when the time of the player is a new record.
+##
+## The flag comes from the modes unit: the payload carries it ("new_record") and the row of the
+## player in the standings carries it as well (the menu builds the payload from the results of
+## the session). The times are not compared: the record is written before the results are built,
+## so the best time of the payload is the time of the player itself.
+func _is_new_record() -> bool:
+	if payload.has("new_record"):
+		return bool(payload.get("new_record", false))
+	return _player_row_is_record()
+
+
+## The record flag of the row of the player in the standings.
+func _player_row_is_record() -> bool:
+	var rows: Variant = payload.get("results", [])
+	if not (rows is Array):
+		return false
+	var list: Array = rows
+	for entry: Dictionary in list:
+		if bool(entry.get("is_player", false)):
+			return bool(entry.get("new_record", false))
+	return false
 
 
 ## One row of the table: the player's row sits on a lit plate, the other rows alternate.

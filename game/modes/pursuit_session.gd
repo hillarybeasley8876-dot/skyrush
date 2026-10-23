@@ -104,6 +104,11 @@ func _finish(new_result: int) -> void:
 		Result.TIMEOUT:
 			text = "超时！ TIME UP"
 			style = &"info"
+	if result == Result.SUCCESS or result == Result.TIMEOUT:
+		# The pursuit is won or over: the police go back to their stations, so the chase does
+		# not go on in the background. A bust and an escape are left to the police unit: it
+		# shows its own aftermath and resets itself.
+		PoliceLink.stop_pursuit(_police)
 	Events.toast.emit(text, style)
 	finished.emit(build_results())
 
