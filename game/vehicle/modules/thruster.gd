@@ -32,6 +32,9 @@ var last_hop: StringName = &""
 var clock: float = 0.0
 ## The moment the last barrel roll ended (-1 when there was none).
 var roll_end_time: float = -1.0
+## The number of the barrel rolls that finished. It is a lifetime counter: a respawn does not
+## reset it, so the stunts module sees every roll of the car.
+var rolls_done: int = 0
 ## The hop key edges of this tick, written by the car body.
 var hop_held: bool = false
 var hop_pressed: bool = false
@@ -101,6 +104,7 @@ func tick(dt: float, grounded: int, v_y: float, touching: bool) -> void:
 			rolling = false
 			roll_time = 0.0
 			roll_end_time = clock
+			rolls_done += 1
 	if landing_window > 0.0:
 		landing_window = maxf(landing_window - dt, 0.0)
 

@@ -135,4 +135,5 @@ func check_trick() -> void:
 	if roll_end < 0.0:
 		return
 	if thruster.clock - roll_end >= RewardTuning.TRICK_ROLL_CLEARANCE:
-		rewards.on_trick(car)
+		# The trick comes from the roll: the roll showed its own pop-up.
+		rewards.on_trick(car, true)
