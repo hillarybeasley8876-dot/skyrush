@@ -43,8 +43,12 @@ func index_car(car: TrafficCar) -> void:
 	ctx.hash.insert(follower.lane, follower.s, car)
 
 
-## The place of a wreck in the index: the body, not the place where it was hit. A wreck that slid
-## off its lane is also indexed on the lane it now lies on.
+## The place of a wreck in the index: the body, not the place where it was hit. A wreck that left
+## its lane is indexed on the lane it now lies on.
+##
+## The lane has to be on the level of the body: a wreck that was hit on the Nanpu approach and
+## fell to the street 30 m below is an obstacle of the street, not a phantom obstacle of the
+## deck above it. When there is no lane under the body, the wreck blocks nothing.
 ##
 ## The lane distance of the wreck is measured by the car itself (see TrafficCarModes.tick_wreck),
 ## so it is not measured twice per tick.
@@ -52,11 +56,17 @@ func index_wreck(car: TrafficCar) -> void:
 	var follower := car.follower
 	var body := car.global_position
 	var s := follower.s
-	ctx.hash.insert(follower.lane, s, car)
-	if ctx.graph.position_at(follower.lane, s).distance_to(body) > WRECK_LANE_DISTANCE:
-		var other := grid.nearest_lane(body, WRECK_LANE_RADIUS)
-		if other >= 0 and other != follower.lane:
-			ctx.hash.insert(other, ctx.graph.closest_offset(other, body), car)
+	if ctx.graph.position_at(follower.lane, s).distance_to(body) <= WRECK_LANE_DISTANCE:
+		ctx.hash.insert(follower.lane, s, car)
+		return
+	# The body left the lane it was hit on: it is indexed on the lane it really lies on, and
+	# only on a lane that is on its level. A wreck that fell off a deck to the street is an
+	# obstacle of the street, not a phantom obstacle of the deck above it. Where there is no
+	# lane under the body, the wreck blocks nothing.
+	var other := TrafficLevel.nearest_lane_at_level(grid, body, WRECK_LANE_RADIUS)
+	if other < 0:
+		return
+	ctx.hash.insert(other, ctx.graph.closest_offset(other, body), car)
 
 
 ## The player is an obstacle in the lane it is driving on, so the traffic brakes for it.
