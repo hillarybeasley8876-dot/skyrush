@@ -306,6 +306,9 @@ func _check_racing_line(route: RaceRoute, lanes: Array[LanePath]) -> void:
 	for i in range(checkpoints.size() - 1):
 		gate_length += checkpoints[i].origin.distance_to(checkpoints[i + 1].origin)
 	var circuit := bool(route.get_meta("circuit", false))
+	if circuit and checkpoints.size() > 1:
+		# the line of a circuit closes: its last leg goes from the last gate back to the first
+		gate_length += checkpoints[checkpoints.size() - 1].origin.distance_to(checkpoints[0].origin)
 	# The line follows the roads, so it is longer than the straight line between the gates (a
 	# route through a grid that curves and climbs is about 1.8 times as long).
 	_check(length <= gate_length * 1.8 + 100.0,
