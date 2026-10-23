@@ -10,6 +10,10 @@ const LIGHTS_NEAR := 3           ## the omni lights of the three nearest units
 const DESPAWN_DISTANCE := 420.0   ## m: a unit further away is removed (when it is out of sight)
 const OFFSCREEN_TIME := 2.0       ## s: a unit has to be out of sight this long before it goes
 const HOLD_BACK_COUNT := 3        ## only the three nearest units come close to the player
+## The key of a unit that is on another level than the player: it is larger than any squared
+## distance of the world, so the units of the player's level come first and the distance still
+## decides the order inside the groups.
+const OTHER_LEVEL_KEY := 1.0e9
 ## The radius a unit that holds back stays outside of (m).
 const HOLD_BACK_RADIUS := 31.0
 ## The speed a unit that holds back gives up on the player (m/s).
@@ -236,12 +240,19 @@ func _rank(player: VehicleBase, camera: Camera3D) -> void:
 
 ## Sorts the units by their distance to the player, the nearest one first.
 ##
-## The sort is an insertion sort on the squared distance: the list is short and a lambda in a
+## The units on the level of the player come first: a unit on the street under the deck must
+## not hold one of the three slots of the chase (the three nearest units keep their roles).
+## The distance still decides the order inside a group.
+##
+## The sort is an insertion sort on the key of the unit: the list is short and a lambda in a
 ## sort_custom costs more than the sort itself.
 func _sort_by_distance(list: Array[PoliceCar], player: VehicleBase) -> void:
 	var keys: Array[float] = []
 	for unit in list:
-		keys.append(unit.global_position.distance_squared_to(player.global_position))
+		var key := unit.global_position.distance_squared_to(player.global_position)
+		if absf(unit.global_position.y - player.global_position.y) > PolicePursuit.LEVEL:
+			key += OTHER_LEVEL_KEY
+		keys.append(key)
 	for i in range(1, list.size()):
 		var unit := list[i]
 		var key := keys[i]

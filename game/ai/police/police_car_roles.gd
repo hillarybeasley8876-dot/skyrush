@@ -149,6 +149,10 @@ func _stops_for_player() -> bool:
 
 
 ## The unit takes its role as soon as the geometry allows it (§6.3).
+##
+## A unit that is on another level does not take its role: a cop on the street under the deck
+## cannot ram the player above him. The head-on unit is the exception: its role is decided by
+## the spawn, not by the geometry of the chase.
 func _try_role_state(distance: float) -> void:
 	if car.role_cooldown > 0.0 or car.state_time < PoliceTactics.ROLE_ENTER_DELAY:
 		return
@@ -156,18 +160,21 @@ func _try_role_state(distance: float) -> void:
 	if player == null:
 		return
 	var rel := PoliceDriver.relative_to_player(car, player)
+	# The height of the unit against the player (rel.y is the same height in the frame of the
+	# player, but the world is the one that counts when the car leans).
+	var on_level := absf(car.global_position.y - player.global_position.y) <= PolicePursuit.LEVEL
 	match car.role:
 		PoliceFleet.Role.RAM:
-			if rel.z > 0.0 and rel.z < PoliceTactics.RAM_DISTANCE \
+			if on_level and rel.z > 0.0 and rel.z < PoliceTactics.RAM_DISTANCE \
 					and absf(rel.x) < PoliceTactics.RAM_LATERAL:
 				enter_state(PoliceCar.State.RAM)
 		PoliceFleet.Role.PIT:
-			if rel.z > -PoliceTactics.PIT_REAR_CLEARANCE \
+			if on_level and rel.z > -PoliceTactics.PIT_REAR_CLEARANCE \
 					and rel.z < PoliceTactics.PIT_APPROACH \
 					and absf(rel.x) < PoliceTactics.PIT_APPROACH_LATERAL:
 				enter_state(PoliceCar.State.PIT)
 		PoliceFleet.Role.BOX_FRONT, PoliceFleet.Role.BOX_SIDE:
-			if distance < PoliceTactics.BOX_ENTER_DISTANCE:
+			if on_level and distance < PoliceTactics.BOX_ENTER_DISTANCE:
 				enter_state(PoliceCar.State.BOX)
 		PoliceFleet.Role.HEAD_ON:
 			enter_state(PoliceCar.State.HEAD_ON)
