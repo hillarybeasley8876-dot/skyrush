@@ -42,7 +42,7 @@ BLENDER = os.environ.get(
 SLOT_DIR = ENV_DIR / "slots"
 STAMP = SLOT_DIR / ("import.%s.stamp" % ROOT.name)   # one per checkout: a worktree must not trust another's import
 POOLS = {"light": 8, "heavy": 5, "import": 1}
-TIMEOUT = {"light": 300, "heavy": 600, "import": 2400}
+TIMEOUT = {"light": 900, "heavy": 900, "import": 2400}
 MAX_WAIT = 540  # give up before a caller's 10-minute tool timeout instead of piling up stale waiters
 
 
