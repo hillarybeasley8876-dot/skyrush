@@ -46,9 +46,10 @@ ROUTE_SPECS = [
         ("bund_zhongshan_e1", -1), ("st_nanjing_e_rd", 1),
         ("st_d2_ew_4", -1), ("st_henan_rd", -1), ("st_fujian_portal", 1),
         ("yanan_tunnel", 1)]),
-    # the Lujiazui ring road, the Century Ave and the Pudong south road
+    # the Lujiazui ring road, a closed loop: a lap ends where it began, so the race can run
+    # more than one lap (the closing leg of a circuit is a few hundred metres, not a drive across the district)
     ("lujiazui_ring", "陆家嘴环线", "race", [
-        ("lujiazui_ring_rd", 1), ("century_ave", 1), ("pudong_south_rd", 1)]),
+        ("lujiazui_ring_rd", 1)]),
 ]
 
 CHECKPOINT_SPACING = 400.0
