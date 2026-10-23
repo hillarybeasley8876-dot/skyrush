@@ -12,8 +12,17 @@ The night rules of ART.md 11 are honoured here (the far city is most of what a
   * half of the generic towers wear cool white LED crown and edge lines;
   * a red aviation beacon on every roof above 100 m;
   * the top of a tower is a mechanical floor, a setback and a mast - never a cone.
+
+A tile may not blow its far triangle budget (40 000 per 512 m tile), and the far
+city is what the player sees from the sky lanes: the detail of a building is
+therefore a LEVEL of a ladder (see LEVELS).  Level 0 is the committed look; every
+level below it drops a little more of the tiny detail and keeps the mass boxes, so
+the silhouette survives to the last level.  `far_budget.far_levels` picks the level
+of every building of a tile so the tile fits its budget: the short buildings lose
+their detail first, the towers of the skyline keep theirs.
 """
 import math
+from collections import namedtuple
 
 import bmesh
 from mathutils import Vector
@@ -38,6 +47,34 @@ LED_CROWN = "emissive_white"   # the cool white LED crown of a generic tower
 CROWN_H = 0.9
 AVIATION_MIN_H = 100.0         # a red beacon on every roof above this (ART.md 11)
 MECHANICAL_H = 6.0             # the height of the mechanical floor band
+BILLBOARD_MIN_H = 25.0
+BILLBOARD_STYLES = ("midrise", "office_tower", "neon_street")
+
+# --- the far-LOD detail ladder -------------------------------------------------
+# tol            the Douglas-Peucker tolerance of the lot outline (0 = keep it)
+# edge_lines     the cool white LED lines up the corners of a tower
+# billboard      the rooftop billboard
+# mast_min_h     the mast is kept for the buildings taller than this
+# podium_merge_h the podium merges into the shaft for the buildings shorter than this
+# setback_min_h  the setback box is kept for the buildings taller than this
+# vent_step      the distance between two lit vents on the mechanical floor
+# mech_min_h     the mechanical floor is kept for the buildings taller than this
+# crown_min_h    the lit crown is kept for the buildings taller than this
+Detail = namedtuple("Detail", "tol edge_lines billboard mast_min_h podium_merge_h "
+                               "setback_min_h vent_step mech_min_h crown_min_h")
+
+LEVELS = [
+    Detail(0.0, True, True, 60.0, 0.0, 40.0, 4.0, 40.0, 0.0),      # 0: the committed look
+    Detail(1.5, False, False, 90.0, 25.0, 40.0, 4.0, 40.0, 0.0),    # 1: the base rule
+    Detail(1.5, False, False, 90.0, 25.0, 40.0, 8.0, 40.0, 0.0),    # 2: fewer lit vents
+    Detail(1.5, False, False, 90.0, 25.0, 80.0, 8.0, 40.0, 0.0),    # 3: no setback under 80 m
+    Detail(1.5, False, False, 90.0, 1e9, 80.0, 8.0, 40.0, 0.0),     # 4: the podium merges
+    Detail(1.5, False, False, 90.0, 1e9, 80.0, 16.0, 40.0, 0.0),    # 5: one vent per edge
+    Detail(1.5, False, False, 90.0, 1e9, 80.0, 16.0, 100.0, 0.0),   # 6: no band under 100 m
+    Detail(1.5, False, False, 90.0, 1e9, 80.0, 16.0, 100.0, 40.0),  # 7: no crown under 40 m
+    Detail(3.0, False, False, 90.0, 1e9, 80.0, 16.0, 100.0, 40.0),  # 8: a harder outline
+]
+MAX_LEVEL = len(LEVELS) - 1
 
 
 def _wall_quad(bm, a, b, normal, h0, h1, preset, offset=(0.0, 0.0)):
@@ -85,7 +122,7 @@ def add_far_box(wall_bm, roof_bm, poly, h0, h1, preset, offset=(0.0, 0.0)):
     shapes.set_uvs(roof_bm, face, {v: (0.5, 0.5) for v in top})
 
 
-def _shrink(poly, factor):
+def shrink(poly, factor):
     """A rectangle shrunk towards its centre (a setback step)."""
     cx = sum(p[0] for p in poly) / len(poly)
     cz = sum(p[1] for p in poly) / len(poly)
@@ -126,7 +163,7 @@ def _edge_lines(buckets, poly, h0, h1, key, size=0.45):
         shapes.add_box(bm, (x, z), (size, size), h0, h1)
 
 
-def _mechanical_floor(buckets, poly, h, key):
+def _mechanical_floor(buckets, poly, h, key, vent_step=4.0):
     """The mechanical floor: a dark service band with a row of lit vents."""
     roof = buckets.setdefault("roof", bmesh.new())
     lit = buckets.setdefault(key, bmesh.new())
@@ -147,8 +184,8 @@ def _mechanical_floor(buckets, poly, h, key):
         rot = math.degrees(math.atan2(uz, ux))
         p = (mx + nx * 0.25, mz + nz * 0.25)
         shapes.add_box(roof, p, (length, 0.5), h, h + MECHANICAL_H, rot_deg=rot)
-        # the lit vents, one every 4 m
-        count = max(1, int(length / 4.0))
+        # the lit vents, one every `vent_step` metres
+        count = max(1, int(length / vent_step))
         for k in range(count):
             t = (k + 0.5) / count
             q = (a[0] + (b[0] - a[0]) * t + nx * 0.55, a[1] + (b[1] - a[1]) * t + nz * 0.55)
@@ -176,9 +213,21 @@ def _atlas_offset(rec, preset):
     return (du, dv)
 
 
-def add_far_from_record(buckets, rec):
-    """The far-LOD mass of one building record: podium, tower, setback, crown."""
-    poly = [(p[0], p[1]) for p in rec["poly"]]
+def is_white_crown(rec):
+    """True when the building wears the cool white LED crown (and its edge lines)."""
+    crown = rec.get("crown") or DISTRICT_CROWN.get(rec.get("district", ""), DEFAULT_CROWN)
+    return crown == LED_CROWN
+
+
+def add_far_from_record(buckets, rec, level=0):
+    """The far-LOD mass of one building record: podium, tower, setback, crown.
+
+    `level` is a step of the detail ladder (see LEVELS): the lower the level, the
+    less tiny detail the mass carries.  The mass boxes are never dropped, so the
+    silhouette of the building is the same at every level.
+    """
+    p = LEVELS[level]
+    poly = outline_of(rec, p)
     h = float(rec.get("height", 10.0))
     style = rec.get("style", "midrise")
     preset = preset_for(style)
@@ -186,12 +235,15 @@ def add_far_from_record(buckets, rec):
     wall = buckets["wall_%s" % preset]
     roof = buckets["roof"]
     podium_h = min(h * 0.12, 9.0)
-    add_far_box(wall, roof, _shrink(poly, 1.12), 0.0, podium_h, preset, offset)
+    merged = h < p.podium_merge_h
+    if not merged:
+        add_far_box(wall, roof, shrink(poly, 1.12), 0.0, podium_h, preset, offset)
+    base = 0.0 if merged else podium_h
     shaft_h = h * 0.78
-    add_far_box(wall, roof, poly, podium_h, shaft_h, preset, offset)
+    add_far_box(wall, roof, poly, base, shaft_h, preset, offset)
     top_poly = poly
-    if h > 40.0:
-        top_poly = _shrink(poly, 0.78)
+    if h > p.setback_min_h:
+        top_poly = shrink(poly, 0.78)
         add_far_box(wall, roof, top_poly, shaft_h, h, preset, offset)
     # the lit crown: half of the generic towers wear the cool white LED signature
     # (the near tower records its crown, so the hand-off does not pop)
@@ -199,13 +251,14 @@ def add_far_from_record(buckets, rec):
     white = crown_key == LED_CROWN
     if white:
         crown_key = LED_CROWN
-    _crown(buckets, top_poly, h, crown_key)
-    if white:
-        _edge_lines(buckets, top_poly, podium_h, h, LED_CROWN)
-    if h > 40.0:
+    if h > p.crown_min_h:
+        _crown(buckets, top_poly, h, crown_key)
+    if white and p.edge_lines:
+        _edge_lines(buckets, top_poly, base, h, LED_CROWN)
+    if h > p.mech_min_h:
         # the top of a tower is a service band, not a pale cone
-        _mechanical_floor(buckets, top_poly, h - MECHANICAL_H, crown_key)
-    if h > 60.0:
+        _mechanical_floor(buckets, top_poly, h - MECHANICAL_H, crown_key, p.vent_step)
+    if h > p.mast_min_h:
         _mast(buckets, top_poly, h)
     if h > AVIATION_MIN_H:
         bm = buckets.setdefault("beacon", bmesh.new())
@@ -213,8 +266,84 @@ def add_far_from_record(buckets, rec):
         cz = sum(p[1] for p in top_poly) / len(top_poly)
         shapes.add_box(bm, (cx, cz), (0.9, 0.9), h, h + 0.9)
     # a rooftop billboard on the tall blocks
-    if h > 25.0 and style in ("midrise", "office_tower", "neon_street"):
+    if p.billboard and h > BILLBOARD_MIN_H and style in BILLBOARD_STYLES:
         bm = buckets.setdefault("led", bmesh.new())
         cx = sum(p[0] for p in top_poly) / len(top_poly)
         cz = sum(p[1] for p in top_poly) / len(top_poly)
         shapes.add_box(bm, (cx, cz), (7.0, 0.4), h + 1.0, h + 4.0)
+
+
+# --- the outline of the far mass ------------------------------------------------
+def _seg_dist(p, a, b):
+    """The distance of a point from a segment."""
+    dx, dz = b[0] - a[0], b[1] - a[1]
+    span = dx * dx + dz * dz
+    if span < 1e-12:
+        return math.hypot(p[0] - a[0], p[1] - a[1])
+    t = ((p[0] - a[0]) * dx + (p[1] - a[1]) * dz) / span
+    t = max(0.0, min(1.0, t))
+    return math.hypot(p[0] - a[0] - dx * t, p[1] - a[1] - dz * t)
+
+
+def _dp_chain(points, tol):
+    """Douglas-Peucker on an open chain of points."""
+    n = len(points)
+    if n < 3:
+        return list(points)
+    keep = [False] * n
+    keep[0] = keep[-1] = True
+    stack = [(0, n - 1)]
+    while stack:
+        i, j = stack.pop()
+        if j <= i + 1:
+            continue
+        a, b = points[i], points[j]
+        far, k = 0.0, -1
+        for m in range(i + 1, j):
+            d = _seg_dist(points[m], a, b)
+            if d > far:
+                far, k = d, m
+        if k >= 0 and far > tol:
+            keep[k] = True
+            stack.append((i, k))
+            stack.append((k, j))
+    return [p for p, k in zip(points, keep) if k]
+
+
+def _farthest_pair(poly):
+    """The indices of the two points of a ring that are the furthest apart."""
+    n = len(poly)
+    best, pair = 0.0, (0, 1)
+    for i in range(n):
+        for j in range(i + 1, n):
+            d = math.hypot(poly[j][0] - poly[i][0], poly[j][1] - poly[i][1])
+            if d > best:
+                best, pair = d, (i, j)
+    return pair
+
+
+def simplify_ring(poly, tol):
+    """A closed lot outline simplified with Douglas-Peucker.
+
+    A ring has no ends, so it is cut at its longest diagonal and the two chains
+    are simplified on their own.  The ring never drops below four points: a
+    building with three walls is not a building.
+    """
+    n = len(poly)
+    if tol <= 0.0 or n <= 4:
+        return list(poly)
+    i, j = _farthest_pair(poly)
+    if j < i:
+        i, j = j, i
+    chain_a = poly[i:j + 1]
+    chain_b = poly[j:] + poly[:i + 1]
+    out = _dp_chain(chain_a, tol)[:-1] + _dp_chain(chain_b, tol)[:-1]
+    if len(out) < 4:
+        return list(poly)
+    return out
+
+
+def outline_of(rec, p):
+    """The lot outline of a building, simplified for the far mass."""
+    poly = [(q[0], q[1]) for q in rec["poly"]]
+    return simplify_ring(poly, p.tol)

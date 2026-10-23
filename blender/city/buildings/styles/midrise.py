@@ -56,9 +56,9 @@ def _facade_clutter(ctx, poly, floors, rng, origin, wall_key):
                 # an AC unit hangs under the sill, centred on the window: the
                 # street side carries most of them, the back a few
                 rate = 0.20 if edge == 0 else 0.05
-                if rng.random() < rate:
+                if rng.random() < rate and ctx.detail >= 3:
                     add_ac_unit(ctx, p, fc["n"], sill - AC_GAP - 0.62, 0.8)
-                if rng.random() < 0.05:
+                if rng.random() < 0.05 and ctx.detail >= 3:
                     add_window_cage(ctx, p, fc["n"], wu1 - wu0 + 2 * CAGE_PAD, sill,
                                     sill + WIN_FRAC * FLOOR_H)
 
@@ -81,6 +81,8 @@ def _balconies(ctx, poly, floors, rng, origin):
                 continue
             p = grid.point_on_wall((wu0 + wu1) * 0.5, fc, u0, u1)
             _assert_on_facade(p, poly, 1.4)
+            if ctx.detail < 2:
+                continue
             add_balcony(ctx, p, fc["n"], wu1 - wu0, 1.1, 0.16)
 
 
@@ -88,14 +90,20 @@ def _roof(ctx, poly, top, rng):
     add_parapet(ctx, poly, top, 1.0, 0.22, "render")
     cx = sum(p[0] for p in poly) / len(poly)
     cz = sum(p[1] for p in poly) / len(poly)
-    add_water_tank(ctx, (cx - 3.0, cz - 2.0), 1.0, 1.6, 0.8)
+    if ctx.detail >= 3:
+        add_water_tank(ctx, (cx - 3.0, cz - 2.0), 1.0, 1.6, 0.8)
     if rng.random() < 0.6:
-        add_antenna(ctx, (cx + 2.5, cz + 1.5), rng.uniform(3.0, 5.5), 3)
-    add_roof_clutter(ctx, poly, top, rng, 3)
+        ant_h = rng.uniform(3.0, 5.5)
+        if ctx.detail >= 3:
+            add_antenna(ctx, (cx + 2.5, cz + 1.5), ant_h, 3)
+    add_roof_clutter(ctx, poly, top, rng, 3, ctx.detail)
     # a lit rooftop billboard frame on every fifth roof
     if rng.random() < 0.2:
         fc = plan.facade(poly, 0)
-        add_led_screen(ctx, fc["a"], fc["n"], rng.uniform(6.0, 9.0), rng.uniform(3.0, 4.5))
+        bw = rng.uniform(6.0, 9.0)
+        bh = rng.uniform(3.0, 4.5)
+        if ctx.detail >= 3:
+            add_led_screen(ctx, fc["a"], fc["n"], bw, bh)
 
 
 def generate(ctx, block, frame, rng, records):

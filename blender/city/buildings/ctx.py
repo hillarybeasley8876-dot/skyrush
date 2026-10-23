@@ -2,6 +2,7 @@
 import random
 
 from . import cells, matsb, openings
+from .detail import FULL, poly_key
 
 SIGN_ATLAS = {
     "neon_v": "neon_vertical",
@@ -30,6 +31,9 @@ class Ctx(object):
         self.origin = (0.0, 0.0)     # the facade grid origin (the cell centre)
         self.cell = (0, 0)
         self.panes = []
+        self.detail = FULL           # the decoration budget of the current building
+        self.detail_map = {}         # footprint key -> decoration budget
+        self._key = None
         self._pool = {}
         self._used = set()
 
@@ -51,6 +55,8 @@ class Ctx(object):
         self.cell = cells.cell_of(cx, cz)
         self.origin = cells.cell_centre_city(self.cell[0], self.cell[1])
         self.panes = []
+        self._key = poly_key(poly)
+        self.detail = self.detail_map.get(self._key, FULL)
         self.bag.begin_building(self.cell)
 
     def end_building(self):
@@ -59,6 +65,7 @@ class Ctx(object):
         if failures:
             raise AssertionError("; ".join(failures[:3]))
         self.bag.end_building()
+        self.bag.building_tris.append((self._key, self.bag.last_tris))
         self.panes = []
 
     def add_pane(self, point, normal, depth):

@@ -46,7 +46,7 @@ def _podium(ctx, poly, rng, rec):
             shapes.add_box(ctx.bag.bm("metal_galv"), c, (unit - 0.6, 3.0), 4.2, 4.4,
                            rot_deg=math.degrees(math.atan2(base["t"][1], base["t"][0])))
     # a banner sign on the podium
-    if rng.random() < 0.5:
+    if rng.random() < 0.5 and ctx.detail >= 3:
         add_led_screen(ctx, base["a"], base["n"], min(9.0, base["w"] * 0.5), 3.4)
 
 
@@ -121,11 +121,12 @@ def _tower(ctx, block, frame, rng, records, index, count, crown_key, s0, s1, t0,
     white = rng.random() < WHITE_CROWN_SHARE
     if white:
         crown_key = "emissive_white"
-        for (px, pz) in cur:
-            shapes.add_box(ctx.bag.bm(crown_key), (px, pz), (0.4, 0.4),
-                           section_bottom, top + 1.2)
+        if ctx.detail >= 2:
+            for (px, pz) in cur:
+                shapes.add_box(ctx.bag.bm(crown_key), (px, pz), (0.4, 0.4),
+                               section_bottom, top + 1.2)
     # the mechanical floor: a service band, not a pale cap
-    add_mechanical_floor(ctx, cur, top - MECHANICAL_H, MECHANICAL_H, crown_key)
+    add_mechanical_floor(ctx, cur, top - MECHANICAL_H, MECHANICAL_H, crown_key, ctx.detail)
     # crown: a proud cap and a wide emissive edge line (readable at 300 m)
     shapes.add_prism(ctx.bag.bm("granite"), cur, top, top + 1.2, cap_bottom=False)
     add_crown_strip(ctx, cur, top + 1.2, CROWN_H, 0.5, crown_key)
@@ -133,10 +134,12 @@ def _tower(ctx, block, frame, rng, records, index, count, crown_key, s0, s1, t0,
     add_parapet(ctx, cur, top, 0.8, 0.2, "granite")
     cx = sum(p[0] for p in cur) / len(cur)
     cz = sum(p[1] for p in cur) / len(cur)
-    if top > AVIATION_MIN_H:
+    if top > AVIATION_MIN_H and ctx.detail >= 3:
         add_aviation_light(ctx, (cx, cz), top + 1.2)
     if rng.random() < 0.6:
-        add_antenna(ctx, (cx + 2.0, cz), rng.uniform(4.0, 9.0), 4)
+        ant_h = rng.uniform(4.0, 9.0)
+        if ctx.detail >= 3:
+            add_antenna(ctx, (cx + 2.0, cz), ant_h, 4)
     rec = {"style": "office_tower", "seed": rng.randrange(1, 9999), "floors": floors,
            "crown": crown_key, "district": block.get("district", "")}
     rec["poly"] = [[round(x, 2), round(z, 2)] for x, z in poly]

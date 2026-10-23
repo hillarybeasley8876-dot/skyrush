@@ -10,7 +10,6 @@ import hashlib
 import json
 import math
 import os
-import random
 import sys
 import time
 
@@ -21,34 +20,15 @@ sys.path.insert(0, os.path.expanduser("~/m/skyrush/blender"))
 
 from lib import common  # noqa: E402
 
-from city.buildings import cells, citydata, colliders, far, ground, kit  # noqa: E402
-from city.buildings import parcels  # noqa: E402
-from city.buildings import plan, roadgrid, shapes, tile_io  # noqa: E402
-from city.buildings.ctx import Ctx  # noqa: E402
-from city.buildings.styles import heritage, industrial, midrise, neon  # noqa: E402
-from city.buildings.styles import office, park, residential, shikumen  # noqa: E402
+from city.buildings import cells, citydata, colliders, detail, far, far_budget  # noqa: E402
+from city.buildings import kit, plan, roadgrid, tile_io  # noqa: E402
+from city.buildings.tile import build_tile, nearby_segments  # noqa: E402
 
 TILE_M = 512.0
-# The dossier's Nanjing Rd pedestrian street (D2).  The map now has neon_street
-# blocks, but the D2 rectangle still gets a neon frontage on the road-facing edge.
-D2_RECT = (-900.0, -170.0, -560.0, -520.0)
+# the triangle budgets of a tile (game/assets/city/blocks/tests/test_blocks.gd)
+NEAR_BUDGET = 600000
+FAR_BUDGET = 40000
 OUT_DIR = os.path.expanduser("~/m/skyrush/game/assets/city/blocks")
-# the building stands at the edge of the block polygon: the map already sets the blocks
-# back from the sidewalk, and a second setback would open a 12-17 m band of paving
-STREET_SETBACK = 0.8
-
-STYLES = {
-    "shikumen": shikumen,
-    "midrise": midrise,
-    "office_tower": office,
-    "residential_slab": residential,
-    "heritage": heritage,
-    "neon_street": neon,
-    "industrial": industrial,
-    "park": park,
-    "plaza": park,
-}
-
 FAR_MATERIALS = {
     "wall_office": "window_far_office",
     "wall_resi": "window_far_resi",
@@ -63,8 +43,10 @@ FAR_MATERIALS = {
 
 
 def parse_args(argv):
-    """--city <path> --out <dir> --tile <tx,tz> --only <tx,tz;tx,tz>"""
-    opts = {"city": citydata.default_city_path(), "out": OUT_DIR, "tile": None, "only": None}
+    """--city <path> --out <dir> --tile <tx,tz> --only <tx,tz;tx,tz]
+    --near <tris> --far <tris> override the triangle budgets."""
+    opts = {"city": citydata.default_city_path(), "out": OUT_DIR, "tile": None, "only": None,
+            "near": NEAR_BUDGET, "far": FAR_BUDGET}
     i = 0
     while i < len(argv):
         key = argv[i]
@@ -79,6 +61,12 @@ def parse_args(argv):
             i += 2
         elif key == "--only":
             opts["only"] = argv[i + 1]
+            i += 2
+        elif key == "--near":
+            opts["near"] = int(argv[i + 1])
+            i += 2
+        elif key == "--far":
+            opts["far"] = int(argv[i + 1])
             i += 2
         else:
             i += 1
@@ -165,130 +153,54 @@ def _split_block(block, limit=400.0):
     return out
 
 
-def build_tile(city, tx, tz, materials, blocks, segments, grid):
-    """Build one tile; returns (bag, records, stats)."""
-    bag = kit.Bag(materials)
-    records = []
-    block_stats = []
-    water = citydata.water_polygons(city)
-    empty = {}
-    for block in blocks:
-        style = block.get("style", "midrise")
-        module = STYLES.get(style)
-        if module is None:
-            continue
-        seed = int(block.get("seed", 0)) * 7919 + tx * 131 + tz * 17
-        rng = random.Random(seed)
-        ctx = Ctx(seed, bag, water)
-        ctx.roads = nearby_segments(segments, block["polygon"], 40.0)
-        ctx.reset_pool()
-        frame = plan.Frame(block["polygon"])
-        before = len(records)
-        try:
-            _block_ground(ctx, block, frame, grid)
-            if style in ("park", "plaza"):
-                module.generate(ctx, block, frame, rng, records)
-            else:
-                _generate_parcels(ctx, module, block, seed, grid, records)
-            if style != "neon_street" and _in_d2(block["polygon"]):
-                _add_d2_neon(ctx, block, records[before:], segments, rng)
-        except Exception as exc:  # a bad block must not kill the whole city
-            import traceback
-            print("WARN block %s (%s): %s" % (block.get("id"), style, exc))
-            traceback.print_exc()
-        if len(records) == before and style not in ("park", "plaza"):
-            empty[style] = empty.get(style, 0) + 1
-            if os.environ.get("BLOCK_DEBUG"):
-                plist = parcels.of_block(block["polygon"], grid)
-                print("EMPTY %s %s parcels=%d %s" % (
-                    block["id"], style, len(plist),
-                    [(round(p.width), round(p.depth), p.front, p.street) for p in plist[:6]]))
-        block_stats.append(_block_stat(block, style, records[before:]))
-    stats = {"blocks": len(blocks), "buildings": len(records), "tris": bag.tris(),
-             "empty_blocks": empty}
-    return bag, records, stats, block_stats
+def _tile_rect(blocks):
+    """The rectangle of the blocks of a tile (in city space)."""
+    xs = [p[0] for b in blocks for p in b["polygon"]]
+    zs = [p[1] for b in blocks for p in b["polygon"]]
+    if not xs:
+        return [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)]
+    x0, x1 = min(xs), max(xs)
+    z0, z1 = min(zs), max(zs)
+    return [(x0, z0), (x1, z0), (x1, z1), (x0, z1)]
 
 
-def _block_stat(block, style, records):
-    """The built coverage of one block: the footprint area over the block area."""
-    area = abs(shapes.signed_area([(p[0], p[1]) for p in block["polygon"]]))
-    built = 0.0
-    for rec in records:
-        poly = rec.get("poly") or []
-        if len(poly) >= 3:
-            built += abs(shapes.signed_area([(p[0], p[1]) for p in poly]))
-    return {"id": block["id"], "style": style, "area": round(area, 1),
-            "built": round(built, 1), "buildings": len(records),
-            "coverage": round(built / area, 3) if area > 1.0 else 0.0}
+def build_tile_within_budget(city, tx, tz, materials, blocks, segments, grid, budget):
+    """Build a tile and keep it inside its near triangle budget.
 
-
-def _generate_parcels(ctx, module, block, seed, grid, records):
-    """Plan every parcel of a block on its own.
-
-    The block polygon is a 10 m raster outline; the planner used to ask for ONE
-    rectangle that fitted inside it, which almost never happens on a staircase, so a
-    fifth of the blocks stayed empty.  The polygon is cut into rectangles now, and
-    every rectangle is planned with a frontage on the edge that faces a road.
+    A tile that fits keeps every building as it is.  A tile over the budget is
+    built again with the decoration of its least important buildings taken away
+    (the ones farthest from the road and the smallest ones): the plan says which
+    building loses which decoration, and the plan is corrected from what the
+    last build really saved until the tile fits.
     """
-    from city.buildings.variety import NeighbourGuard
-    ctx.guard = NeighbourGuard()
-    for pi, parcel in enumerate(parcels.of_block(block["polygon"], grid)):
-        pframe = plan.Frame(parcel.corners(), front_edge=0)
-        pblock = dict(block)
-        pblock["id"] = "%s_p%d" % (block["id"], pi)
-        pblock["setback"] = STREET_SETBACK if parcel.street else 0.0
-        prng = random.Random((seed + pi * 7919) & 0x7FFFFFFF)
-        module.generate(ctx, pblock, pframe, prng, records)
-
-
-def _block_ground(ctx, block, frame, grid):
-    """The ground cover of a block: the paving inside it and the strip to the kerb."""
-    ctx.begin_building(block["polygon"])
-    ground.block_paving(ctx, frame)
-    ground.kerb_strip(ctx, frame, grid)
-    ctx.end_building()
-
-
-def _in_d2(poly):
-    """True when a block polygon touches the dossier's Nanjing Rd rectangle."""
-    xs = [p[0] for p in poly]
-    zs = [p[1] for p in poly]
-    return not (max(xs) < D2_RECT[0] or min(xs) > D2_RECT[1]
-                or max(zs) < D2_RECT[2] or min(zs) > D2_RECT[3])
-
-
-def _add_d2_neon(ctx, block, records, segments, rng):
-    """Give a D2 block the neon frontage on the edge that faces the road."""
-    for rec in records:
-        poly = [(p[0], p[1]) for p in rec.get("poly", [])]
-        if len(poly) != 4:
+    bag, records, stats, block_stats = build_tile(city, tx, tz, materials, blocks,
+                                                  segments, grid)
+    if stats["tris"] <= budget:
+        return bag, records, stats, block_stats
+    base = stats["tris"]
+    counts = dict(bag.building_tris)
+    near = nearby_segments(segments, _tile_rect(blocks), 120.0)
+    need = (base - budget) * 0.5
+    for attempt in range(4):
+        plan, promised = detail.make_plan(records, counts, near, need)
+        bag, records, stats, block_stats = build_tile(city, tx, tz, materials, blocks,
+                                                      segments, grid, plan)
+        tris = stats["tris"]
+        saved = base - tris
+        print("  tile %d,%d: %d tris, asked for %d (the plan promised %d), saved %d"
+              % (tx, tz, tris, int(need), int(promised), saved))
+        if tris <= budget:
+            if tris >= 0.62 * base:
+                break
+            need = max(1.0, need * 0.5)     # too much came off: ask for less
             continue
-        best = None
-        for edge in range(4):
-            fc = plan.facade(poly, edge)
-            mid = (fc["a"][0] + fc["b"][0]) * 0.5, (fc["a"][1] + fc["b"][1]) * 0.5
-            d = citydata.road_edge_distance(mid[0], mid[1], segments)
-            if best is None or d < best[0]:
-                best = (d, edge)
-        if best is None or best[0] > 40.0:
-            continue
-        neon.add_frontage_neon(ctx, poly, best[1], int(rec.get("floors", 6)), rng)
-
-
-def nearby_segments(segments, polygon, pad):
-    """The road segments close to a block (a cheap spatial filter)."""
-    xs = [p[0] for p in polygon]
-    zs = [p[1] for p in polygon]
-    x0, x1 = min(xs) - pad, max(xs) + pad
-    z0, z1 = min(zs) - pad, max(zs) + pad
-    out = []
-    for (ax, az, bx, bz, hw) in segments:
-        if max(ax, bx) < x0 or min(ax, bx) > x1:
-            continue
-        if max(az, bz) < z0 or min(az, bz) > z1:
-            continue
-        out.append((ax, az, bx, bz, hw))
-    return out
+        # not enough: the plan saved `saved` triangles for a request of `need`,
+        # so ask for the share of the deficit that this rate implies
+        rate = saved / float(need) if need > 0 else 1.0
+        need = (base - 0.99 * budget) / max(rate, 0.05)
+    if stats["tris"] > budget:
+        print("WARN near budget: tile %d,%d has %d triangles over %d" % (tx, tz, stats["tris"], budget))
+    return bag, records, stats, block_stats
 
 
 def _far_buckets():
@@ -296,27 +208,47 @@ def _far_buckets():
     return {"wall_office": bmesh.new(), "wall_resi": bmesh.new(), "roof": bmesh.new()}
 
 
-def far_objects(records, col, materials):
-    """The far LOD: one merged mass per facade preset and cell, plus the crowns."""
-    per_cell = {}
+def _far_records(records):
+    """The records that get a far-LOD mass (a park has none)."""
+    out = []
     for rec in records:
         if rec.get("style") in ("park", "plaza"):
             continue
         poly = rec.get("poly") or []
         if len(poly) < 3:
             continue
+        out.append(rec)
+    return out
+
+
+def far_objects(records, col, materials, budget=FAR_BUDGET):
+    """The far LOD: one merged mass per facade preset and cell, plus the crowns.
+
+    The detail of every building is picked so that the tile fits its far
+    triangle budget (`far.far_levels`): a tile that fits keeps the committed
+    look, a tile over the budget drops the tiny detail of its least important
+    buildings first.
+    """
+    useable = _far_records(records)
+    levels = far_budget.far_levels(useable, budget)
+    planned = sum(far_budget.far_cost(rec, lvl) for rec, lvl in zip(useable, levels))
+    per_cell = {}
+    for rec, level in zip(useable, levels):
+        poly = rec.get("poly") or []
         cx = sum(p[0] for p in poly) / len(poly)
         cz = sum(p[1] for p in poly) / len(poly)
         cell = cells.cell_of(cx, cz)
         buckets = per_cell.setdefault(cell, _far_buckets())
-        far.add_far_from_record(buckets, rec)
+        far.add_far_from_record(buckets, rec, level)
     out = []
+    tris = 0
     for cell, buckets in sorted(per_cell.items()):
         centre = cells.cell_centre_blender(cell[0], cell[1])
         for key, bm in sorted(buckets.items()):
             if len(bm.faces) == 0:
                 bm.free()
                 continue
+            tris += _bm_tris(bm)
             name = "blocks_far_%s_c%d_%d" % (key, cell[0], cell[1])
             me = bpy.data.meshes.new(name)
             bm.to_mesh(me)
@@ -328,7 +260,17 @@ def far_objects(records, col, materials):
             col.objects.link(obj)
             me.materials.append(materials[FAR_MATERIALS[key]])
             out.append(obj)
-    return out
+    if tris != planned:
+        print("WARN far cost model: %d triangles built, %d planned" % (tris, planned))
+    if tris > budget:
+        print("WARN far budget: %d triangles over %d" % (tris, budget))
+    return out, tris
+
+
+def _bm_tris(bm):
+    """The triangles of a bmesh (a quad counts as two)."""
+    bm.faces.ensure_lookup_table()
+    return sum(len(f.verts) - 2 for f in bm.faces)
 
 
 def main(argv):
@@ -373,13 +315,13 @@ def main(argv):
     for (tx, tz) in tiles:
         started = time.time()
         col = common.collection("tile_%d_%d" % (tx, tz))
-        bag, records, stats, block_stats = build_tile(city, tx, tz, materials,
-                                                      tile_blocks.get((tx, tz), []),
-                                                      segments, grid)
+        bag, records, stats, block_stats = build_tile_within_budget(
+            city, tx, tz, materials, tile_blocks.get((tx, tz), []), segments, grid,
+            opts["near"])
         origin = (tx * TILE_M, tz * TILE_M)
         objs = bag.emit(col, "blocks_%d_%d" % (tx, tz))
         cols, near_flags = colliders.collider_objects(records, grid, col)
-        far_objs = far_objects(records, col, materials)
+        far_objs, far_tris = far_objects(records, col, materials, opts["far"])
         all_objs = objs + cols
         if not all_objs:
             print("tile %d,%d: empty" % (tx, tz))
@@ -392,9 +334,10 @@ def main(argv):
                               stats, origin, digest, near_flags, block_stats)
         tris = sum(common.tri_count(o) for o in all_objs)
         total_tris += tris
-        print("tile %d,%d: %d blocks, %d buildings, %d tris, %d objects, %d colliders, %.1f s"
+        print("tile %d,%d: %d blocks, %d buildings, %d tris, %d objects, %d colliders, "
+              "far %d tris, %.1f s"
               % (tx, tz, stats["blocks"], len(records), tris, len(all_objs), len(cols),
-                 time.time() - started))
+                 far_tris, time.time() - started))
         if stats["empty_blocks"]:
             print("  blocks without building: %s" % stats["empty_blocks"])
     if not opts["tile"]:
