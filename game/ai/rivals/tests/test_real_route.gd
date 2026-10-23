@@ -32,6 +32,9 @@ func _ready() -> void:
 	add_child(_modes)
 	var route_id := _option("route", "bund_sprint")
 	var limit := float(_option("limit", "120"))
+	# The city builds over several seconds: a mode that is started before it is built waits for it
+	# and has no session yet.
+	await Game.world_ready()
 	var started := _modes.start_mode(&"race", {"route": route_id, "laps": 1,
 		"difficulty": "normal"})
 	_expect(started, "the race on %s starts" % route_id)

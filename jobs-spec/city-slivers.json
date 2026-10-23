@@ -1,0 +1,77 @@
+{
+  "id": "city-slivers",
+  "title": "No lot piece that the building planner cannot build (the clipper leaves slivers)",
+  "brief": "briefs/improve/city-slivers.md",
+  "isolation": "worktree",
+  "sparse": [
+    "tools/",
+    "data/",
+    "ref/",
+    "briefs/",
+    "blender/",
+    "game/assets/textures/",
+    "game/assets/city/_tex/",
+    "game/world/data/",
+    "SPEC.md",
+    "ART.md",
+    "CONTRACTS.md",
+    "README.md"
+  ],
+  "owns": [
+    "tools/city/city_blocks.py",
+    "tools/city/selftest_slivers.py"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 250,
+  "timeoutMin": 150,
+  "accept": [
+    {
+      "name": "the selftest of the sliver rule",
+      "cmd": "python tools/city/selftest_slivers.py",
+      "must": [
+        "selftest_slivers: 0 case(s) wrong"
+      ],
+      "timeoutS": 600
+    },
+    {
+      "name": "generate the map",
+      "cmd": "python tools/city/build_city.py --out F:/dev/skyrush-out/tmp/city-slivers/city.json",
+      "timeoutS": 400
+    },
+    {
+      "name": "build the two tiles with the real building builder",
+      "cmd": "python tools/gd.py blender run blender/city/buildings/build_city.py -- --city F:/dev/skyrush-out/tmp/city-slivers/city.json --out F:/dev/skyrush-out/tmp/city-slivers/blocks --only \"-1,0;1,-1\"",
+      "timeoutS": 1500
+    },
+    {
+      "name": "every lot of the two tiles carries a building",
+      "cmd": "python tools/city/check_blocks_built.py F:/dev/skyrush-out/tmp/city-slivers/blocks --tiles \"-1,0;1,-1\" --city F:/dev/skyrush-out/tmp/city-slivers/city.json",
+      "must": [
+        "BLOCKS_BUILT OK"
+      ]
+    },
+    {
+      "name": "the lots were re-formed, not eaten",
+      "cmd": "python tools/city/check_lots_kept.py F:/dev/skyrush-out/tmp/city-slivers/city.json F:/dev/skyrush-out/baselines/lots_cur.json --keep 0.0 --total 0.99",
+      "must": [
+        "LOTS_KEPT OK"
+      ]
+    },
+    {
+      "name": "gate: no rule worse",
+      "cmd": "python tools/city/accept_rules.py F:/dev/skyrush-out/tmp/city-slivers/city.json --baseline tools/city/rules_baseline.json",
+      "must": [
+        "ACCEPT_RULES OK"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "routes and the network are intact",
+      "cmd": "python tools/city/check_routes_shape.py F:/dev/skyrush-out/tmp/city-slivers/city.json && python tools/city/check_network_size.py F:/dev/skyrush-out/tmp/city-slivers/city.json",
+      "must": [
+        "ROUTES_SHAPE OK",
+        "NETWORK_SIZE OK"
+      ]
+    }
+  ]
+}
