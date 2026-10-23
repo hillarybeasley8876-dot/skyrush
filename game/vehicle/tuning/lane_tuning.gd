@@ -13,6 +13,10 @@ extends RefCounted
 ## The take-off blends into the lane over this time.
 const LANE_TRANSITION_TIME := 0.4
 
+## The most the car may be off the centre line of the lane at the take-off (m, across and above): the offset fades
+## out over the blend. A pad that is not in line with the first metres of the lane puts the car further off.
+const LANE_ENTRY_MAX := 6.0
+
 ## The soft edge: the spring back into the tube (m/s^2 per metre outside the tube). The
 ## dossier says 30, but at the 9 m/s of lateral speed of the tube the car needs 81 m/s^2 to
 ## stop inside the margin, so it would ride the hard clamp.

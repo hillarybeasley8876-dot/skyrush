@@ -39,6 +39,11 @@ var cushioning: bool = false
 
 var _transition: float = 0.0
 var _takeoff: Transform3D = Transform3D.IDENTITY
+## Where the car was against the lane at the take-off (m, across and above the centre line). The offset fades out over the
+## take-off blend: the car does not snap to the centre line, and it does not fly the whole lane at the edge of the tube
+## (the pad of a lane that starts with a ramp puts the car 5 m over the line).
+var _entry_lateral: float = 0.0
+var _entry_vertical: float = 0.0
 var _next_ring: int = 0
 var _exit_time: float = 0.0
 var _ground_y: float = 0.0
@@ -74,8 +79,10 @@ func enter(lane_ref: SkyLane, speed_mps: float, speed_cap: float, takeoff: Trans
 	offset = _entry_offset(takeoff.origin)
 	var start: Transform3D = lane.frame_at(0.0)
 	var delta: Vector3 = takeoff.origin - start.origin
-	lateral = delta.dot(start.basis.x)
-	vertical = delta.dot(start.basis.y)
+	_entry_lateral = clampf(delta.dot(start.basis.x), -LaneTuning.LANE_ENTRY_MAX, LaneTuning.LANE_ENTRY_MAX)
+	_entry_vertical = clampf(delta.dot(start.basis.y), -LaneTuning.LANE_ENTRY_MAX, LaneTuning.LANE_ENTRY_MAX)
+	lateral = 0.0
+	vertical = 0.0
 	var cruise: float = lane_ref.cruise_kmh / DriveTuning.KMH
 	speed = clampf(maxf(speed_mps, cruise), 0.0, speed_cap)
 
@@ -136,7 +143,9 @@ func update(dt: float, steer: float, throttle: float, brake: float, n2: float,
 	if vertical > lane.tube_up:
 		vertical = lane.tube_up
 		vertical_speed = minf(vertical_speed, 0.0)
-	if vertical < -lane.tube_down:
+	# The exit descends below the tube on purpose (the lanes of the city end 5 to 7 m over the ground, the tube
+	# is 3 m deep): the bottom of the tube holds the car only while it flies the lane.
+	if vertical < -lane.tube_down and not exiting:
 		vertical = -lane.tube_down
 		vertical_speed = maxf(vertical_speed, 0.0)
 	# The N2 rings.
@@ -183,7 +192,8 @@ func pose() -> Transform3D:
 			-LaneTuning.LANE_BANK_MAX_DEG, LaneTuning.LANE_BANK_MAX_DEG)
 	var pitch: float = clampf(vertical_speed * LaneTuning.LANE_PITCH_DEG,
 			-LaneTuning.LANE_BANK_MAX_DEG, LaneTuning.LANE_BANK_MAX_DEG)
-	var origin: Vector3 = frame.origin + basis.x * lateral + basis.y * vertical
+	var fade: float = smoothstep(0.0, 1.0, _transition / LaneTuning.LANE_TRANSITION_TIME)
+	var origin: Vector3 = frame.origin + basis.x * (lateral + _entry_lateral * fade) 			+ basis.y * (vertical + _entry_vertical * fade)
 	# The bank is about the car's forward axis, the pitch about its right axis.
 	var oriented: Basis = basis * Basis(Vector3.FORWARD, deg_to_rad(bank)) \
 			* Basis(Vector3.RIGHT, deg_to_rad(pitch))
@@ -235,4 +245,6 @@ func reset() -> void:
 	offset = 0.0
 	lateral = 0.0
 	vertical = 0.0
+	_entry_lateral = 0.0
+	_entry_vertical = 0.0
 	_transition = 0.0
