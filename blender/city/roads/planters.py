@@ -83,27 +83,28 @@ def _seed(text):
     return sum((i + 1) * ord(c) for i, c in enumerate(text))
 
 
-def build_pots(road, tileset, lay, gaps=()):
+def build_pots(road, tileset, lay, gaps=None):
     """The row of white planter pots on both parapets of an elevated road.
 
     Dossier §2.4: a continuous row of pots with a 2 cm gap, ten magenta
     bougainvillea and five green privet in every fifteen. The pots are grouped
     in 64 m chunks so the world unit can fade them out at 90 m, where the
     planted strip takes over. A ramp that leaves the road takes a break in the
-    row: the parapet is not there either.
+    row: the parapet is not there either. The break is per side: only the side
+    the ramp is on gives way.
     """
     if road.style.get("parapet", "planter") != "planter":
         return
+    gaps = gaps or {}
     rng = random.Random(_seed(road.id))
     groups = {}
     counts = {"fwd": 0, "back": 0}
     s = 0.0
     while s <= road.length:
-        if any(a <= s <= b for (a, b) in gaps):
-            s += POT_PITCH
-            continue
         p, t, r, u, _i = road.at(s)
         for side_index, side in enumerate(("fwd", "back")):
+            if any(a <= s <= b for (a, b) in gaps.get(side, ())):
+                continue
             mirror = side == "back"
             edge = lay["asphalt_fwd"] if side == "fwd" else lay["asphalt_back"]
             sign = -1.0 if mirror else 1.0
@@ -142,7 +143,7 @@ def build_pots(road, tileset, lay, gaps=()):
 
 
 
-def build_strip(road, tileset, lay, gaps=()):
+def build_strip(road, tileset, lay, gaps=None):
     """The planted strip on the parapet: the far LOD of the planter row.
 
     From 80 m the row of pots reads as a continuous green and magenta band, so
@@ -150,6 +151,7 @@ def build_strip(road, tileset, lay, gaps=()):
     """
     if road.style.get("parapet", "planter") != "planter":
         return
+    gaps = gaps or {}
     for side in ("fwd", "back"):
         mirror = side == "back"
         edge = lay["asphalt_fwd"] if side == "fwd" else lay["asphalt_back"]
@@ -161,7 +163,7 @@ def build_strip(road, tileset, lay, gaps=()):
         run = []
         for i in range(len(road.path) - 1):
             s = road.dist[i]
-            if any(a <= s <= b for (a, b) in gaps):
+            if any(a <= s <= b for (a, b) in gaps.get(side, ())):
                 if len(run) > 1:
                     _strip_piece(road, run, tileset, x0, x1, z, mirror)
                 run = []
