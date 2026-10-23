@@ -1,0 +1,75 @@
+{
+  "id": "city-clearance",
+  "title": "Repair 22 of the 25 deck clearance violations (Nanpu streets, Lujiazui, the Puxi elevated landing)",
+  "brief": "briefs/improve/city-clearance.md",
+  "isolation": "worktree",
+  "sparse": [
+    "tools/",
+    "data/",
+    "ref/",
+    "briefs/",
+    "SPEC.md",
+    "ART.md",
+    "CONTRACTS.md",
+    "README.md"
+  ],
+  "owns": [
+    "tools/city/city_roads.py",
+    "tools/city/city_roads_east.py",
+    "tools/city/city_marks.py",
+    "tools/city/city_grid.py",
+    "tools/city/city_trim.py",
+    "tools/city/build_city.py",
+    "tools/city/selftest_trim.py"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 300,
+  "timeoutMin": 200,
+  "accept": [
+    {
+      "name": "generate the map",
+      "cmd": "python tools/city/build_city.py --out F:/dev/skyrush-out/tmp/city-clearance/city.json",
+      "timeoutS": 400
+    },
+    {
+      "name": "gate: at most 3 clearance items, nothing else worse",
+      "cmd": "python tools/city/accept_rules.py F:/dev/skyrush-out/tmp/city-clearance/city.json --baseline tools/city/rules_baseline.json --target \"deck clearance\" --max-target 3",
+      "must": [
+        "ACCEPT_RULES OK"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "five routes and the network are intact",
+      "cmd": "python tools/city/check_routes_shape.py F:/dev/skyrush-out/tmp/city-clearance/city.json && python tools/city/check_network_size.py F:/dev/skyrush-out/tmp/city-clearance/city.json",
+      "must": [
+        "ROUTES_SHAPE OK",
+        "NETWORK_SIZE OK"
+      ]
+    },
+    {
+      "name": "the five sky lanes are intact",
+      "cmd": "python tools/city/check_skylanes_shape.py F:/dev/skyrush-out/tmp/city-clearance/city.json && python tools/city/selftest_skylanes.py F:/dev/skyrush-out/tmp/city-clearance/city.json",
+      "must": [
+        "SKYLANES_SHAPE OK",
+        "SELFTEST OK (5 lanes"
+      ]
+    },
+    {
+      "name": "the lots were re-formed, not eaten",
+      "cmd": "python tools/city/check_lots_kept.py F:/dev/skyrush-out/tmp/city-clearance/city.json F:/dev/skyrush-out/baselines/lots_cur.json --keep 0.0 --total 0.99",
+      "must": [
+        "LOTS_KEPT OK"
+      ]
+    },
+    {
+      "name": "the ramp attach and the dragon interchange stay valid",
+      "cmd": "python tools/city/selftest_attach.py F:/dev/skyrush-out/tmp/city-clearance/city.json && python tools/city/selftest_dragon.py F:/dev/skyrush-out/tmp/city-clearance/city.json",
+      "must": [
+        "selftest_attach: 0 case(s) wrong",
+        "selftest_dragon: 0 case(s) wrong"
+      ],
+      "timeoutS": 900
+    }
+  ]
+}
