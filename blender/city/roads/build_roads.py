@@ -96,7 +96,12 @@ def main():
         print("DONE in %.1f s" % (time.time() - start))
         return
     paths = lanes.connector_points(lane_data)
-    for road in city.roads:
+    # The ramps are built last: the roof cut of an attach narrows the
+    # collider of the parent's carriageway, and that collider has to be there
+    # before the cut runs.
+    roads = ([r for r in city.roads if r.kind != "ramp"]
+             + [r for r in city.roads if r.kind == "ramp"])
+    for road in roads:
         build_road(city, road, tileset, records, paths)
     for junction in city.junctions:
         junctions.build(city, junction, tileset)

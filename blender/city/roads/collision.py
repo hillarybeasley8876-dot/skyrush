@@ -11,7 +11,7 @@ import io
 
 from mathutils import Vector
 
-from city.roads import lanes as lane_graph, meshkit, profiles
+from city.roads import lanes as lane_graph, meshkit, profiles, tiles
 
 ASPHALT = "SH_wet_asphalt"
 SURFACE_NAME = "surface-colonly"
@@ -20,11 +20,20 @@ STEEL_NAME = "steel-colonly"
 SURFACE_DROP = 0.015     # the collider sits just under the visible asphalt
 BARRIER_INSET = 0.04     # inset so the collider never z-fights the render mesh
 RIBBON_SHIFT = 1.0       # the connector strip is a step ahead of its lane
+CORRIDOR_MARGIN = 0.5    # a deck keeps its collider this far off the ramp's lane
+LANE_CLEAR = 1.2         # a deck keeps this much room from the lane under it
+CAR_HALF = 0.95          # the half width of the car that drives on the lane
+ROOF_MIN = 0.05          # a step: a surface this far above a lane is in the way
+ROOF_MAX = 1.3           # a roof: a surface higher than this is passed under
+LEDGE_MIN = 0.25         # a surface this far above a lane stands in its way
 
 _LANE_GRAPH = {}         # id(city) -> the lane graph of the city: built once
 _LANE_INDEX = {}         # id(city) -> the lanes with their height and cells
+_LANES = {}              # id(city) -> the lanes of the city in Blender space
+_LANE_GRID = {}          # id(city) -> the lane points per grid cell
 _GRIDS = {}              # id(road) -> the path samples per grid cell
 _CELL = 32.0             # the grid of the lane index, in metres
+_POINT_CELL = 16.0       # the grid of the lane points, in metres
 
 
 def lane_graph_of(city):
@@ -254,11 +263,181 @@ def lane_index(city):
     return out
 
 
-def pave(builder, pa, ra, rb, pb):
-    """The visible asphalt of a quad and the collision surface under it."""
+def lanes_of(city):
+    """The lanes of the city in Blender space: [(road id, [points]), ...].
+
+    The points of the lane graph are in the game's coordinates, so they are
+    turned into the Blender frame here: every helper of this module works in
+    Blender.
+    """
+    out = _LANES.get(id(city))
+    if out is not None:
+        return out
+    out = []
+    for lane in lane_graph_of(city)["lanes"]:
+        pts = [Vector((p[0], -p[2], p[1])) for p in lane["points"]]
+        if len(pts) > 1:
+            out.append((lane.get("road", ""), pts))
+    _LANES[id(city)] = out
+    return out
+
+
+def lane_grid(city):
+    """The lane points of the city in a grid: {(cell): [(road id, point), ...]}.
+
+    The city has hundreds of thousands of lane points, so a deck that stands
+    over one of them is found through the grid and not by walking every lane.
+    """
+    grid = _LANE_GRID.get(id(city))
+    if grid is not None:
+        return grid
+    grid = {}
+    for (road, pts) in lanes_of(city):
+        for p in pts:
+            key = (int(p.x // _POINT_CELL), int(p.y // _POINT_CELL))
+            grid.setdefault(key, []).append((road, p))
+    _LANE_GRID[id(city)] = grid
+    return grid
+
+
+def _quad_points(quad, grid):
+    """The lane points that can lie in the plan of a quad."""
+    x0 = min(p.x for p in quad)
+    x1 = max(p.x for p in quad)
+    y0 = min(p.y for p in quad)
+    y1 = max(p.y for p in quad)
+    for cx in range(int(x0 // _POINT_CELL), int(x1 // _POINT_CELL) + 1):
+        for cy in range(int(y0 // _POINT_CELL), int(y1 // _POINT_CELL) + 1):
+            for item in grid.get((cx, cy), ()):
+                yield item
+
+
+def _in_quad(quad, p):
+    """True when a point lies in the plan of a quad."""
+    signs = [(quad[(i + 1) % 4].x - quad[i].x) * (p.y - quad[i].y)
+             - (quad[(i + 1) % 4].y - quad[i].y) * (p.x - quad[i].x)
+             for i in range(4)]
+    return all(s >= -1e-6 for s in signs) or all(s <= 1e-6 for s in signs)
+
+
+def roofs_lane(quad, grid):
+    """True when a quad stands over a lane as a step.
+
+    The top of the quad is more than LEDGE_MIN above a lane that runs under
+    it: the car on that lane drives into the quad.  A quad that is more than
+    ROOF_MAX above the lane is a roof the car passes under, so it keeps its
+    collider.
+    """
+    top = max(p.z for p in quad)
+    for _road, p in _quad_points(quad, grid):
+        if top - p.z <= LEDGE_MIN:
+            continue
+        if _in_quad(quad, p):
+            return True
+    return False
+
+
+def over_corridor(road, quad, clear):
+    """True when a quad lies (partly) over a road's lane corridor.
+
+    The corridor is the width of the carriageway plus a margin: a quad that
+    reaches into it stands over the lane of that road.
+    """
+    for p in quad:
+        d, i, t = road.closest(p)
+        a, b = road.path[i], road.path[i + 1]
+        dz = p.z - (a.z + (b.z - a.z) * t)
+        if max(0.0, d * d - dz * dz) ** 0.5 < clear:
+            return True
+    return False
+
+
+def pave(builder, pa, ra, rb, pb, collide=True):
+    """The visible asphalt of a quad and the collision surface under it.
+
+    The asphalt is always built: a quad that has no collider is still seen.
+    The collider is dropped where the quad would roof a lane.
+    """
     builder.add(ASPHALT, quad(pa, ra, rb, pb))
+    if not collide:
+        return
     builder.add_named(SURFACE_NAME, quad(pa, ra, rb, pb, drop=SURFACE_DROP),
                       surface="asphalt")
+
+
+def roof_cut(city, ramp, parent, tileset, lay, near):
+    """Narrow the carriageway collider where one deck roofs the other's lane.
+
+    A deck that stands a step or a roof above the lane of the other road
+    takes that lane away: the collider of its carriageway is pulled in to the
+    room the lane needs, so the car on the lane finds its own road again.
+    The road's own outer lane keeps the width a car needs, so the cut never
+    reaches the traffic of the road itself.
+    """
+    for (r, l, other) in ((parent, profiles.layout(parent), ramp.id),
+                          (ramp, lay, parent.id)):
+        cuts = {}
+        for (lroad, pts) in lanes_of(city):
+            if lroad != other:
+                continue
+            for k, p in enumerate(pts):
+                if (p - near).length > 250.0:
+                    continue
+                _d, i, _t = r.closest(p)
+                off = (p - r.path[i]).dot(r.frames[i][1])
+                if (abs(off) > max(l["asphalt_fwd"], -l["asphalt_back"]) + 2.0
+                        or not ROOF_MIN < r.project(p)[1] - p.z < ROOF_MAX):
+                    continue
+                if abs(off) - LANE_CLEAR <= 0.5:
+                    continue
+                sign = 1.0 if off > 0.0 else -1.0
+                side = "fwd" if sign > 0.0 else "back"
+                # the room is measured across the lane, not across the road
+                t = pts[min(k + 1, len(pts) - 1)] - p
+                t.z = 0.0
+                cos_t = max(0.3, abs(r.frames[i][1].cross(t).z) / max(0.1, t.length))
+                cut = sign * min(abs(off) - LANE_CLEAR / cos_t, abs(l["asphalt_" + side]))
+                ivs = [iv for group in l["lanes"].values() for iv in group
+                       if sign * (iv[0] + iv[1]) * 0.5 > 0.0]
+                if ivs:
+                    # the road's own lane keeps the width a car needs: the
+                    # lanes of a one-way road lie on the side of the centre
+                    # line, so every lane is looked at, not only the ones of
+                    # the side that is cut
+                    lane = max(ivs, key=lambda x: abs((x[0] + x[1]) * 0.5))
+                    if sign * cut < sign * (lane[0] + lane[1]) * 0.5 + CAR_HALF:
+                        continue
+                for j in (i - 3, i - 2, i - 1, i, i + 1, i + 2, i + 3):
+                    if j not in cuts or abs(cuts[j]) > abs(cut):
+                        cuts[j] = cut
+        _apply_cuts(r, l, cuts, tileset)
+
+
+def _apply_cuts(r, lay, cuts, tileset):
+    """Move the edge of the carriageway collider of a road inwards."""
+    down = Vector((0.0, 0.0, -SURFACE_DROP))
+    for key, run in tiles.tile_runs(r):
+        if not any(i in cuts for i in run):
+            continue
+        bm = tileset.builder(key).named.get(SURFACE_NAME)
+        if bm is None:
+            continue
+        index = {}
+        for v in bm.verts:
+            index.setdefault((int(v.co.x * 10), int(v.co.y * 10), int(v.co.z * 10)),
+                             []).append(v)
+        for i in run:
+            if i not in cuts:
+                continue
+            p = r.path[i]
+            right = r.frames[i][1]
+            edge = lay["asphalt_fwd" if cuts[i] > 0.0 else "asphalt_back"]
+            old = p + right * edge + down
+            want = p + right * cuts[i] + down
+            for c in index.get((int(old.x * 10), int(old.y * 10), int(old.z * 10)), ()):
+                if (c.co - old).length < 0.01:
+                    c.co = want
+                    break
 
 
 def pier_column(builder, p, r, t, zg, portal, span=12.0, across=True):

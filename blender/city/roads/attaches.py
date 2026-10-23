@@ -118,7 +118,9 @@ def build_gore(city, road, tileset, lay):
 
     The gore is where the traffic of the attach crosses from the parent to
     the ramp, so it gets a collision surface: the same quads as the visible
-    asphalt, dropped a centimetre under it.
+    asphalt, dropped a centimetre under it.  The surface is dropped where the
+    wedge stands over the ramp's own lane: there it would be a step in the
+    lane the traffic of the attach drives on.
     """
     if _gore_built(road):
         return
@@ -133,15 +135,24 @@ def build_gore(city, road, tileset, lay):
         rows = _gore_rows(parent, road, at_end, lay)
         if len(rows) < 2:
             continue
+        # The wedge runs from the parent's edge to the ramp's edge, so it
+        # reaches into the ramp's own corridor: a collider there would stand
+        # over the ramp's lane, so the quad gets none.
+        clear = lay["asphalt_half"] + collision.CORRIDOR_MARGIN
         # every quad goes into the tile it lies on: the gore can be far from the
         # end of the ramp when the ramp does not reach its parent
         for i in range(len(rows) - 1):
             pa, ra, _d, _a = rows[i]
             pb, rb, _e, _b = rows[i + 1]
             mid = (pa + pb) * 0.5
-            collision.pave(tileset.builder_at(mid), pa, ra, rb, pb)
+            quad = [pa, ra, rb, pb]
+            collision.pave(tileset.builder_at(mid), pa, ra, rb, pb,
+                           collide=not collision.over_corridor(road, quad, clear))
         deck.build_chevrons(tileset, rows)
         deck.build_cushion(tileset, rows)
+        # one deck can roof the lane of the other: the carriageway collider of
+        # both is narrowed there, so the lane keeps its own road
+        collision.roof_cut(city, road, parent, tileset, lay, found[3])
     collision.build_connectors(city, road, tileset)
 
 
