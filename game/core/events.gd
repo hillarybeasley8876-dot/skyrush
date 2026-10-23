@@ -60,7 +60,8 @@ signal toast(text: String, style: StringName)
 ## The state of the running mode, for the HUD: the modes unit emits it (on every change and at least every
 ## 0.5 s while the mode runs), the HUD only draws it. `kind` and `data`:
 ##   &"free"    {"score": int}
-##   &"race"    {"lap": int (1 based), "laps": int, "position": int (1 = first), "racers": int}
+##   &"race"    {"lap": int (1 based), "laps": int, "position": int (1 = first), "racers": int,
+##               "route": String (the route id), "next_gate": int (index of the next checkpoint of the player, -1 = home), "gates": int}
 ##   &"pursuit" {"takedowns": int, "target": int (0 = no goal), "time_left": float (s, -1.0 = no limit)}
 ##   &"none"    {} (no mode: nothing to show)
 signal mode_status(kind: StringName, data: Dictionary)
