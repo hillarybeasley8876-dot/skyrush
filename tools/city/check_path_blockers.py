@@ -16,6 +16,7 @@ and the blocked points are summed per road: the worst roads are printed instead 
 footprint (3 x 3 sample points, triangles within 3 m of the path height) is more than M metres (default 0.25) above the path:
 a step the car drives into (e.g. the widened acceleration strip of the parent road lying 1 m above the ramp's deck).
 --max-lips N makes more than N lip positions a failure (default: lips are only printed).
+--max-barrier-area is the other side: the barrier colliders may not grow beyond it (a job that fences open edges must not wall everything in).
 --min-barrier-area guards against "fixing" the blockers by deleting the barriers: the total surface area of the barrier
 colliders (3D, all triangles) must be at least that many square metres.
 Prints one line per path and "PATH_BLOCKERS OK" or "PATH_BLOCKERS FAIL n blocked points in m paths"; exit 0 when the
@@ -104,11 +105,12 @@ def main(argv):
     lift, step, max_bad = float(opt("--lift", "0.30")), float(opt("--step", "1.0")), int(opt("--max-bad", "0"))
     csv_path = opt("--csv", "")
     min_area = float(opt("--min-barrier-area", "0"))
+    max_area = float(opt("--max-barrier-area", "0"))
     lip = float(opt("--lip", "0.25"))
     max_lips = int(opt("--max-lips", "-1"))
     lanes_path = opt("--lanes", "")
     prefix = opt("--prefix", "")
-    for n in ("--lift", "--step", "--max-bad", "--csv", "--lanes", "--prefix", "--min-barrier-area", "--lip", "--max-lips"):
+    for n in ("--lift", "--step", "--max-bad", "--csv", "--lanes", "--prefix", "--min-barrier-area", "--max-barrier-area", "--lip", "--max-lips"):
         if n in argv:
             args.remove(argv[argv.index(n) + 1])
     if lanes_path and "--step" not in argv:
@@ -200,6 +202,9 @@ def main(argv):
         vx, vy, vz = (t[2][i] - t[0][i] for i in range(3))
         area += 0.5 * math.sqrt((uy * vz - uz * vy) ** 2 + (uz * vx - ux * vz) ** 2 + (ux * vy - uy * vx) ** 2)
     print("triangles %d, paths %d, barrier collider area %.0f m2" % (len(tris), len(files), area))
+    if max_area and area > max_area:
+        print("PATH_BLOCKERS FAIL the barrier colliders grew to %.0f m2 (at most %.0f m2): walls were added where no parapet stood" % (area, max_area))
+        return 1
     if min_area and area < min_area:
         print("PATH_BLOCKERS FAIL the barrier colliders shrank to %.0f m2 (at least %.0f m2): the barriers were deleted, not moved" % (area, min_area))
         return 1

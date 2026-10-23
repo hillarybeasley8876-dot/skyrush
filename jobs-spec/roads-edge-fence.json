@@ -1,0 +1,84 @@
+{
+  "id": "roads-edge-fence",
+  "title": "A car cannot fall off a deck: fence the open edges at the ramp attaches",
+  "brief": "briefs/improve/roads-edge-fence.md",
+  "isolation": "worktree",
+  "sparse": [
+    "tools/",
+    "data/",
+    "ref/",
+    "briefs/",
+    "blender/",
+    "game/assets/textures/",
+    "game/assets/city/_tex/",
+    "game/world/data/",
+    "SPEC.md",
+    "ART.md",
+    "CONTRACTS.md",
+    "README.md"
+  ],
+  "owns": [
+    "blender/city/roads/attaches.py",
+    "blender/city/roads/deck.py",
+    "blender/city/roads/collision.py",
+    "blender/city/roads/profiles.py",
+    "blender/city/roads/build_roads.py"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 300,
+  "timeoutMin": 240,
+  "accept": [
+    {
+      "name": "full Blender road build into the scratch directory",
+      "timeoutS": 1800,
+      "cmd": "python tools/gd.py blender run blender/city/roads/build_roads.py -- --city data/city/city.json --out F:/dev/skyrush-out/tmp/roads-edge-fence/tiles --data F:/dev/skyrush-out/tmp/roads-edge-fence/data",
+      "must": [
+        "DONE in"
+      ]
+    },
+    {
+      "name": "the decks have no open edge any more",
+      "cmd": "python tools/city/check_open_edges.py F:/dev/skyrush-out/tmp/roads-edge-fence/tiles F:/dev/skyrush-out/tmp/roads-edge-fence/data/lanes.json --max-regular 90 --max-connector 225",
+      "must": [
+        "OPEN_EDGES OK"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "the traffic of the ramp attaches still drives through",
+      "cmd": "python tools/city/check_path_blockers.py F:/dev/skyrush-out/tmp/roads-edge-fence/tiles F:/dev/_scratch/attach_paths_v3 --lip 0.25 --max-lips 12 --max-bad 0 --min-barrier-area 290000 --max-barrier-area 345000",
+      "must": [
+        "PATH_BLOCKERS OK"
+      ]
+    },
+    {
+      "name": "the chain joints still drive through",
+      "cmd": "python tools/city/check_path_blockers.py F:/dev/skyrush-out/tmp/roads-edge-fence/tiles F:/dev/_scratch/chain_paths_v3 --lip 0.25 --max-lips 0 --max-bad 0 --min-barrier-area 290000 --max-barrier-area 345000",
+      "must": [
+        "PATH_BLOCKERS OK"
+      ]
+    },
+    {
+      "name": "no lane of the city is walled off",
+      "cmd": "python tools/city/check_path_blockers.py F:/dev/skyrush-out/tmp/roads-edge-fence/tiles --lanes F:/dev/skyrush-out/tmp/roads-edge-fence/data/lanes.json --max-bad 40 --min-barrier-area 290000 --max-barrier-area 345000",
+      "must": [
+        "PATH_BLOCKERS OK"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "the road surface is untouched",
+      "cmd": "python tools/city/check_surface_coverage.py F:/dev/skyrush-out/tmp/roads-edge-fence/tiles F:/dev/skyrush-out/tmp/roads-edge-fence/data/lanes.json --tol 0.4 --max-bad 5100 --max-area 2560000",
+      "exit": 0,
+      "timeoutS": 900
+    },
+    {
+      "name": "the lane graph is intact",
+      "cmd": "python tools/city/check_lane_graph.py F:/dev/skyrush-out/tmp/roads-edge-fence/data/lanes.json --quiet && python tools/city/check_chain_links.py F:/dev/skyrush-out/tmp/roads-edge-fence/data/lanes.json --quiet",
+      "must": [
+        "LANE_GRAPH OK",
+        "CHAIN_LINKS OK"
+      ]
+    }
+  ]
+}
