@@ -376,9 +376,20 @@ def special_blocks(roads, pois):
 CLEAR_MARGIN = 0.08              # the float slack of the rule's limit
 SIMPLIFY_TOL = 0.03              # the corridor follows the road this close
 MIN_PIECE_AREA = 80.0            # the smallest lot the map keeps
+MIN_PIECE_WIDTH = 7.0            # the narrowest piece a building can stand on
 LOT_MIN_AREA = 400.0             # the smallest lot the map keeps whole
 LOT_MIN_KEEP = 0.36              # the share a lot keeps when a road crosses it
 INDEX_CELL = 100.0               # the cell of the road index
+
+# The width of a piece is twice its area over its perimeter: about the width of
+# a strip, half the side of a square.  The building planner snaps a lot to the
+# 10 m lattice, so a piece narrower than that gets no building at all, or one
+# that is bigger than the piece.  A piece the clipper cut off a lot is kept
+# only when it is at least MIN_PIECE_WIDTH wide: 7.0 m is the value the real
+# builder accepts (the pieces of the map under it get no building, the worst of
+# them only 28 % built) and an 8 m x 55 m strip (6.98) is too narrow as well.
+# A lot the clipper did not cut is the lot itself and is kept as it is: the
+# raster makes compact 10 m x 20 m lots (6.67) that the planner builds well.
 
 # A lot that the roads took most of lay in a street: there is no lot there
 # and it is dropped.  The check `check_lots_kept` allows twelve such lots to
@@ -661,11 +672,47 @@ def _seg_poly_dist(a, b, poly):
     return best
 
 
+def piece_width(poly):
+    """The width of a lot piece: twice its area over its perimeter.
+
+    About the width of a strip, half the side of a square.  The building
+    planner snaps a lot to the 10 m lattice, so a piece narrower than that
+    gets no building at all.
+    """
+    n = len(poly)
+    perim = 0.0
+    for i in range(n):
+        perim += math.dist(poly[i], poly[(i + 1) % n])
+    if perim < 1e-9:
+        return 0.0
+    return 2.0 * abs(citylib.polygon_area(poly)) / perim
+
+
+def piece_is_buildable(poly, width=MIN_PIECE_WIDTH):
+    """True when a building can stand on this piece of a lot."""
+    return piece_width(poly) >= width
+
+
+def _clean_pieces(pieces):
+    """The pieces of a lot that are big enough to be a lot of the map."""
+    out = []
+    for piece in pieces:
+        piece = _clean(piece)
+        if len(piece) < 3:
+            continue
+        piece = [[round(p[0], 2), round(p[1], 2)] for p in piece]
+        if abs(citylib.polygon_area(piece)) < MIN_PIECE_AREA:
+            continue
+        out.append(piece)
+    return out
+
+
 def _clear_block(block, runs, grid, reach):
     """The lots of one block after the corridors of the roads are cut out of it.
 
     The largest piece keeps the id of the lot, the other pieces get `_s1`,
-    `_s2`; the pieces under 80 m2 are dropped.
+    `_s2`; the pieces under 80 m2 are dropped, and so are the pieces that are
+    too narrow for a building (see MIN_PIECE_WIDTH).
     """
     poly = [[p[0], p[1]] for p in block["polygon"]]
     xs = [p[0] for p in poly]
@@ -697,21 +744,19 @@ def _clear_block(block, runs, grid, reach):
         for piece in pieces:
             left.extend(clip_polygon_by_corridor(piece, [a, b], cut))
         pieces = left
-    lots = []
-    for piece in pieces:
-        piece = _clean(piece)
-        if len(piece) < 3:
-            continue
-        piece = [[round(p[0], 2), round(p[1], 2)] for p in piece]
-        if abs(citylib.polygon_area(piece)) < MIN_PIECE_AREA:
-            continue
-        lots.append(piece)
+    was_cut = len(pieces) > 1      # the clipper cut the lot in pieces
+    lots = _clean_pieces(pieces)
     if not lots:
         return []
     kept = sum(abs(citylib.polygon_area(p)) for p in lots)
     before = abs(citylib.polygon_area(poly))
     if before >= LOT_MIN_AREA and kept < LOT_MIN_KEEP * before:
         return []               # the lot lay in the middle of a road
+    if was_cut:
+        # a piece the clipper cut off the lot must be wide enough for a building
+        lots = [p for p in lots if piece_is_buildable(p)]
+        if not lots:
+            return []
     lots.sort(key=lambda p: -abs(citylib.polygon_area(p)))
     out = []
     for i, piece in enumerate(lots):
