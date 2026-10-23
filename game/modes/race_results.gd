@@ -53,10 +53,11 @@ func _compare(a: RaceRacer, b: RaceRacer) -> bool:
 
 
 ## The live status of the race for the HUD: the lap and the place of the player, the laps of
-## this race and the number of racers.
+## this race and the number of racers, the route that runs, the gate the player has to pass
+## next (-1 when the player is home) and the number of gates of the route.
 ##
 ## The place comes from the live order of the race (the same one the results show).
-func live_status(laps: int) -> Dictionary:
+func live_status(laps: int, route_id: String, next_gate: int, gates: int) -> Dictionary:
 	assign_positions()
 	var lap := 1
 	var position := 1
@@ -65,7 +66,16 @@ func live_status(laps: int) -> Dictionary:
 			continue
 		lap = clampi(racer.lap + 1, 1, laps)
 		position = maxi(1, racer.position)
-	return {"lap": lap, "laps": laps, "position": position, "racers": racers.size()}
+	return {"lap": lap, "laps": laps, "position": position, "racers": racers.size(),
+		"route": route_id, "next_gate": next_gate, "gates": gates}
+
+
+## The gate the player has to pass next (-1 when the player is home or not in the race).
+func player_next_gate() -> int:
+	for racer in racers:
+		if racer.is_player and not racer.is_finished():
+			return racer.next_cp
+	return -1
 
 
 ## The results of the race: one row per racer, in the order of the finish.

@@ -9,6 +9,7 @@ extends "res://ui/hud/glass_panel.gd"
 
 const Icons := preload("res://ui/hud/minimap_icons.gd")
 const Simplify := preload("res://ui/hud/minimap_simplify.gd")
+const Route := preload("res://ui/hud/minimap_route.gd")
 
 const PANEL_SIZE := Vector2(252, 252)
 const CLIP_INSET := 12.0
@@ -60,6 +61,15 @@ var _zoom: float = ZOOM_FAST
 var _icons: Icons
 var _project: Callable
 var _inside_callable: Callable
+
+## The racing line of the race on the map: the world XZ of the line, thinned by the caller.
+var route_points: PackedVector2Array = PackedVector2Array()
+## The world XZ of the next gate of the race.
+var next_gate_world: Vector2 = Vector2.ZERO
+## True when there is a next gate on the map.
+var has_next_gate: bool = false
+## The helper that draws the line of the route.
+var _route: Route = Route.new()
 
 
 func _ready() -> void:
@@ -117,6 +127,42 @@ func set_world(world_polylines: Array[PackedVector2Array], pois: Array[Dictionar
 		_sky_lanes.append(Simplify.simplify(s as PackedVector2Array))
 	_pois = pois
 	_rebuild_texture()
+
+
+## The racing line of the race on the map (world XZ metres, thinned by the caller).
+func set_route(points: PackedVector2Array) -> void:
+	route_points = points
+	_route.set_route(points)
+	_redraw_map()
+
+
+## The route of the race is gone (and the gate of the player with it).
+func clear_route() -> void:
+	route_points = PackedVector2Array()
+	next_gate_world = Vector2.ZERO
+	has_next_gate = false
+	_route.clear_route()
+	_redraw_map()
+
+
+## The next gate of the race on the map (world XZ metres).
+func set_next_gate(pos: Vector2) -> void:
+	next_gate_world = pos
+	has_next_gate = true
+	_redraw_map()
+
+
+## The player is home: there is no next gate on the map.
+func clear_next_gate() -> void:
+	next_gate_world = Vector2.ZERO
+	has_next_gate = false
+	_redraw_map()
+
+
+## The map has to be redrawn (the route or the gate changed).
+func _redraw_map() -> void:
+	if _overlay != null:
+		_overlay.queue_redraw()
 
 
 ## The sky lanes of the world, collected once (a SkyLane is a Path3D whose curve points are world
@@ -300,12 +346,24 @@ func _draw_overlay() -> void:
 		_clip.size - Vector2(MAP_BASE_INSET, MAP_BASE_INSET) * 2.0), MAP_BASE)
 	_draw_map_texture()
 	_draw_vignette()
+	_route.draw(_overlay, _project)
 	_icons.draw_pois(_overlay, _pois, _project, _inside_callable)
 	_icons.draw_blips(_overlay, _rivals, _project, _inside_callable, false)
 	_icons.draw_blips(_overlay, _police, _project, _inside_callable, true)
+	_draw_next_gate()
 	_icons.draw_player(_overlay, _clip.size * 0.5)
 	_icons.draw_north(_overlay, _clip.size * 0.5, minf(_clip.size.x, _clip.size.y) * 0.5,
 		-PI * 0.5 - _rot)
+
+
+## The next gate of the race: a pulsing amber diamond at the gate (clipped like the icons).
+func _draw_next_gate() -> void:
+	if not has_next_gate:
+		return
+	var sp := project_point(next_gate_world)
+	if not _inside(sp):
+		return
+	_icons.draw_gate(_overlay, sp)
 
 
 ## A soft dark edge inside the clip, so the map fades into the panel.

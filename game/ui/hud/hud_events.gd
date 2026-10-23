@@ -8,6 +8,7 @@ const TakedownBanner := preload("res://ui/hud/takedown_banner.gd")
 const CountdownLabel := preload("res://ui/hud/countdown_label.gd")
 const RacePanel := preload("res://ui/hud/race_panel.gd")
 const ModeStatusReadout := preload("res://ui/hud/mode_status_readout.gd")
+const MinimapPanel := preload("res://ui/hud/minimap_panel.gd")
 
 ## Widgets the handlers write into (set by the HUD when it builds its tree).
 var toasts: ToastStack = null
@@ -18,6 +19,19 @@ var hud_root: Control = null
 var race_panel: RacePanel = null
 ## The readout of the mode status (the score, the takedown goal, the countdown).
 var mode_readout: ModeStatusReadout = null
+## The minimap: it draws the route of the race and the next gate of the player.
+var minimap: MinimapPanel = null
+## The route of the demo (the demo has no world, so it hands its own route in).
+var demo_route: RaceRoute = null
+
+## The route of the race that runs (its racing line and its checkpoints).
+var _route: RaceRoute = null
+## The id of the route on the map (the line is only rebuilt when the id changes).
+var _route_id: String = ""
+## The next gate on the map (-1 = none, -2 = not set yet).
+var _next_gate: int = -2
+## The distance between two points of the line of the route (m).
+const ROUTE_STEP := 10.0
 
 ## The state of the running mode, from the bus (`Events.mode_status`).
 var status_kind: StringName = &"none"
@@ -264,11 +278,82 @@ func _on_mode_status(kind: StringName, data: Dictionary) -> void:
 			lap = current
 		if race_panel != null:
 			race_panel.set_place(int(data.get("position", 0)), int(data.get("racers", 0)))
-	elif race_panel != null:
+		_update_route(data)
+	else:
 		# Without a race the standings decide the place again.
-		race_panel.clear_place()
+		if race_panel != null:
+			race_panel.clear_place()
+		_clear_route()
 	if mode_readout != null:
 		mode_readout.set_status(kind, data)
+
+
+## The route of the race and the next gate of the player go on the minimap. The status comes
+## twice a second, so the line is only rebuilt when the route changes and the marker is only
+## moved when the gate changes.
+func _update_route(data: Dictionary) -> void:
+	if minimap == null:
+		return
+	var route_id := String(data.get("route", ""))
+	if route_id != _route_id:
+		_route_id = route_id
+		_route = _find_route(route_id)
+		minimap.clear_route()
+		minimap.set_route(_route_line(_route))
+		_next_gate = -2
+	var gate := int(data.get("next_gate", -1))
+	if gate == _next_gate:
+		return
+	_next_gate = gate
+	_set_gate(gate)
+
+
+## The route of the world (null when the world does not have it). The demo has no world, so it
+## hands its own route in.
+func _find_route(route_id: String) -> RaceRoute:
+	if Game.world != null:
+		var route := Game.world.get_route(StringName(route_id))
+		if route != null:
+			return route
+	if demo_route != null and String(demo_route.id) == route_id:
+		return demo_route
+	return null
+
+
+## The racing line of the route in world XZ, thinned to one point every ROUTE_STEP metres.
+func _route_line(route: RaceRoute) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	if route == null or route.racing_line == null:
+		return out
+	var last := Vector2.ZERO
+	for p in route.racing_line.get_baked_points():
+		var flat := Vector2(p.x, p.z)
+		if out.size() > 0 and flat.distance_to(last) < ROUTE_STEP:
+			continue
+		out.append(flat)
+		last = flat
+	return out
+
+
+## The gate the player has to pass next (-1 = the player is home).
+func _set_gate(gate: int) -> void:
+	if minimap == null:
+		return
+	if gate < 0 or _route == null or gate >= _route.checkpoints.size():
+		minimap.clear_next_gate()
+		return
+	var origin := _route.checkpoints[gate].origin
+	minimap.set_next_gate(Vector2(origin.x, origin.z))
+
+
+## Without a race there is no route on the map.
+func _clear_route() -> void:
+	if minimap == null:
+		return
+	_route = null
+	_route_id = ""
+	_next_gate = -2
+	minimap.clear_route()
 
 
 func _on_game_paused(paused: bool) -> void:
