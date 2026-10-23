@@ -1,0 +1,53 @@
+{
+  "id": "modes-bounds",
+  "title": "A lost player (in the river, off the map) is put back on the road",
+  "brief": "briefs/improve/modes-bounds.md",
+  "isolation": "worktree",
+  "owns": [
+    "game/modes/"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 250,
+  "timeoutMin": 150,
+  "accept": [
+    {
+      "name": "modes scripts load clean",
+      "cmd": "python tools/gd.py check --only=res://modes/",
+      "must": [
+        "re:CHECK \\d+ files, 0 failed, 0 engine errors"
+      ],
+      "timeoutS": 1200
+    },
+    {
+      "name": "the out of bounds test passes",
+      "cmd": "python tools/gd.py test res://modes/tests/test_out_of_bounds.gd",
+      "must": [
+        "OUT OF BOUNDS TESTS OK"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "the test fails on the old code",
+      "cmd": "python tools/mutation_check.py --test res://modes/tests/test_out_of_bounds.gd --files auto",
+      "must": [
+        "MUTATION_CHECK OK"
+      ],
+      "timeoutS": 1500
+    },
+    {
+      "name": "the modes test folder passes",
+      "cmd": "python tools/run_tests.py --filter res://modes/ --jobs 2 --out F:/dev/skyrush-out/tmp/modes-bounds/tests",
+      "must": [
+        "re:, 0 failed or timed out"
+      ],
+      "timeoutS": 2400
+    }
+  ],
+  "readonly": [
+    "game/modes/tests/test_gate_layers.gd",
+    "game/modes/tests/test_hygiene.gd",
+    "game/modes/tests/test_mode_switch.gd",
+    "game/modes/tests/test_modes.gd",
+    "game/modes/tests/test_pursuit_mode.gd"
+  ]
+}
