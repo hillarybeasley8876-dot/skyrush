@@ -1,0 +1,57 @@
+{
+  "id": "vehicle-stunts",
+  "title": "Stunts give score and boost: long airtime, barrel roll, drift chain, fly-over N2",
+  "brief": "briefs/improve/vehicle-stunts.md",
+  "isolation": "worktree",
+  "owns": [
+    "game/vehicle/"
+  ],
+  "readonly": [
+    "game/vehicle/camera/"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 250,
+  "timeoutMin": 180,
+  "accept": [
+    {
+      "name": "vehicle scripts and scenes load clean",
+      "cmd": "python tools/gd.py check --only=res://vehicle/",
+      "must": [
+        "re:CHECK \\d+ files, 0 failed, 0 engine errors"
+      ],
+      "timeoutS": 1200
+    },
+    {
+      "name": "the stunt test passes",
+      "cmd": "python tools/gd.py test res://vehicle/tests/test_stunts.gd",
+      "must": [
+        "re:RESULT \\d+ checks, 0 failures"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "the test fails on the old code",
+      "cmd": "python tools/mutation_check.py --test res://vehicle/tests/test_stunts.gd --files auto",
+      "must": [
+        "MUTATION_CHECK OK"
+      ],
+      "timeoutS": 1500
+    },
+    {
+      "name": "the whole vehicle test folder passes",
+      "cmd": "python tools/run_tests.py --filter res://vehicle/ --jobs 3 --out F:/dev/skyrush-out/tmp/vehicle-stunts/tests",
+      "must": [
+        "re:, 0 failed or timed out"
+      ],
+      "timeoutS": 3600
+    },
+    {
+      "name": "the modes test folder passes",
+      "cmd": "python tools/run_tests.py --filter res://modes/ --jobs 2 --out F:/dev/skyrush-out/tmp/vehicle-stunts/tests_modes",
+      "must": [
+        "re:, 0 failed or timed out"
+      ],
+      "timeoutS": 2400
+    }
+  ]
+}
