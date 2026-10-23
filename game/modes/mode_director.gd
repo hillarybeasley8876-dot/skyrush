@@ -24,6 +24,8 @@ extends Node3D
 var records: GameRecords = GameRecords.new()
 ## The session of the running mode (null when no mode runs).
 var session: Node = null
+## The recovery of a lost player (a car in the river, under the map or far from every lane).
+var out_of_bounds: OutOfBounds = OutOfBounds.new()
 ## The results of the last finished mode (a Dictionary for free roam, an Array for a race).
 var last_results: Variant = {}
 ## The mode that is running.
@@ -45,6 +47,14 @@ func _ready() -> void:
 	# run is counted even when the menu is skipped.
 	if Game.option("skip-menu", "") == "true":
 		start_mode(&"free", {})
+
+
+## Puts a player that is lost back on the road (the river, the kill floor, the edges of the
+## city). It runs in every mode: a race and a pursuit are played in the same world.
+func _physics_process(delta: float) -> void:
+	if Game.player == null or Game.world == null:
+		return
+	out_of_bounds.update(delta, Game.player, Game.world)
 
 
 ## Starts a mode. Returns false when the mode is unknown or cannot run.
