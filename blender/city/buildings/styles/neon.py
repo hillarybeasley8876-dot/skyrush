@@ -28,7 +28,9 @@ def _blades_on_wall(ctx, fc, floors, rng, face="both"):
             height = rng.uniform(3.0, 8.0)
             if bottom + height > floors * 2.95:
                 break
-            add_blade_sign(ctx, p, fc["n"], rng.uniform(1.0, 1.5), height, bottom)
+            width = rng.uniform(1.0, 1.5)
+            if ctx.detail >= 2:
+                add_blade_sign(ctx, p, fc["n"], width, height, bottom)
             bottom += height + 0.35
 
 
@@ -40,7 +42,10 @@ def _signage(ctx, poly, rng, floors):
             continue
         _blades_on_wall(ctx, fc, floors, rng)
         if rng.random() < 0.6:
-            add_led_screen(ctx, fc["a"], fc["n"], rng.uniform(8.0, 16.0), rng.uniform(6.0, 14.0))
+            w = rng.uniform(8.0, 16.0)
+            h = rng.uniform(6.0, 14.0)
+            if ctx.detail >= 3:
+                add_led_screen(ctx, fc["a"], fc["n"], w, h)
 
 
 def add_frontage_neon(ctx, poly, front_edge, floors, rng):
@@ -50,7 +55,10 @@ def add_frontage_neon(ctx, poly, front_edge, floors, rng):
         return
     _blades_on_wall(ctx, fc, floors, rng)
     if rng.random() < 0.6:
-        add_led_screen(ctx, fc["a"], fc["n"], rng.uniform(8.0, 16.0), rng.uniform(6.0, 14.0))
+        w = rng.uniform(8.0, 16.0)
+        h = rng.uniform(6.0, 14.0)
+        if ctx.detail >= 3:
+            add_led_screen(ctx, fc["a"], fc["n"], w, h)
 
 
 def generate(ctx, block, frame, rng, records):
@@ -81,8 +89,9 @@ def generate(ctx, block, frame, rng, records):
             add_parapet(ctx, poly, top, 0.9, 0.22, "render")
             cx = sum(p[0] for p in poly) / len(poly)
             cz = sum(p[1] for p in poly) / len(poly)
-            add_water_tank(ctx, (cx - 2.0, cz - 1.0), 0.9, 1.4, 0.6)
-            add_roof_clutter(ctx, poly, top, rng, 2)
+            if ctx.detail >= 3:
+                add_water_tank(ctx, (cx - 2.0, cz - 1.0), 0.9, 1.4, 0.6)
+            add_roof_clutter(ctx, poly, top, rng, 2, ctx.detail)
             rec = {"style": "neon_street", "seed": rng.randrange(1, 9999), "floors": floors}
             rec["poly"] = [[round(x, 2), round(z, 2)] for x, z in poly]
             rec["height"] = top

@@ -147,6 +147,8 @@ class Bag(object):
         self._cell_value = {}     # cell -> the face tag of that cell
         self._value_cell = {}     # the face tag -> the cell
         self._next_value = 1
+        self.last_tris = 0        # the triangles of the building that just ended
+        self.building_tris = []   # (footprint key, triangles) of every building
 
     def bm(self, key):
         """The bmesh of a material group (created on demand)."""
@@ -193,6 +195,7 @@ class Bag(object):
             self._next_value += 1
             self._cell_value[self.cell] = value
             self._value_cell[value] = self.cell
+        tris = 0
         for key, bm in self.groups.items():
             bm.faces.ensure_lookup_table()
             # a group created during the building has no mark: all its faces are new
@@ -202,9 +205,13 @@ class Bag(object):
                 layer = bm.faces.layers.int.new("bcell")
             for i in range(start, len(bm.faces)):
                 bm.faces[i][layer] = value
+                tris += len(bm.faces[i].verts) - 2
+        # the triangles of this building: the near-LOD budget needs them per
+        # building to know what a building loses when its decoration goes
+        self.last_tris = tris
         if os.environ.get("BAG_DEBUG"):
-            print("BAG end cell=%s value=%s faces=%s" % (self.cell, value,
-                                                         {k: len(b.faces) for k, b in self.groups.items()}))
+            print("BAG end cell=%s value=%s faces=%s tris=%d" % (self.cell, value,
+                                                                 {k: len(b.faces) for k, b in self.groups.items()}, tris))
         self._marks = None
 
     def tris(self):

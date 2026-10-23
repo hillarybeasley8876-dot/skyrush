@@ -13,27 +13,16 @@ import math
 from .. import openings, plan, shapes
 from ..parts2 import add_dormer, add_eave_board, add_ridge_course, edge_boxes
 from ..parts3 import add_ac_unit, add_drain_pipe, add_laundry_pole, add_potted_plant
-from ..parts3 import add_ring_knocker, add_satellite_dish, add_wall_lamp
+from ..parts3 import add_satellite_dish, add_wall_lamp
+from .shikumen_parts import DOOR_H, DOOR_RECESS, DOOR_W, ENTRY_RECESS, FRAME_IN
+from .shikumen_parts import FRAME_PROUD, KNOCKER_H, WALL_T, WIN_H, WIN_SILL
+from .shikumen_parts import WIN_W, WINDOW_RECESS, _door, _pediment, _window
 
 FLOOR_GROUND = 3.4
 FLOOR_UP = 3.2
 HOUSE_DEPTH = 12.0
 LANE_WIDTH = 3.5
 MIN_WIDTH = 3.6          # a house is never a sliver
-DOOR_W = 1.4
-DOOR_H = 2.6
-DOOR_RECESS = 0.30       # the black lacquer doors sit 30 cm inside the wall
-FRAME_PROUD = 0.10       # the granite frame stands 10 cm proud of the brick
-FRAME_IN = 0.14          # and reaches 14 cm into the reveal
-WINDOW_RECESS = 0.15
-WALL_T = 0.40            # the brick wall is 40 cm thick
-ENTRY_RECESS = 1.1       # the ground floor is set back: the 门堂 entrance
-WIN_W = 1.0
-WIN_H = 1.7
-WIN_SILL = 0.95
-CASEMENT_PROUD = 0.08
-CASEMENT_BACK = 0.02
-KNOCKER_H = 1.10      # the ring knocker hangs at 1.10 m on each leaf
 
 
 def _eaves(storeys):
@@ -52,125 +41,6 @@ def _recess_poly(poly, front_edge, depth):
     for i in range(2, len(poly)):
         out.append(poly[(front_edge + 2 + i - 2) % len(poly)])
     return out
-
-
-def _in_wall(fc, u, depth):
-    """The city point on the wall at `u`, `depth` metres inside it."""
-    p = openings.wall_point(fc, u)
-    return (p[0] - fc["n"][0] * depth, p[1] - fc["n"][1] * depth)
-
-
-def _door(ctx, fc, rng, u_frac=None):
-    """The 门堂 door.
-
-    A granite frame with a carved pediment, two black lacquer leaves 30 cm inside
-    the wall and a brass ring knocker on each leaf.  Everything stands proud of the
-    brick - nothing is coplanar with the wall.
-    """
-    u = fc["w"] * (u_frac if u_frac is not None else rng.uniform(0.35, 0.65))
-    u0, u1 = u - DOOR_W * 0.5, u + DOOR_W * 0.5
-    stone = ctx.bag.bm("stone_pale")
-    wood = ctx.bag.bm("wood")
-    brass = ctx.bag.bm("brass")
-    # the two lacquer leaves, 30 cm inside the wall
-    for side in (-1, 1):
-        lu0 = u0 + 0.02 if side < 0 else u + 0.02
-        lu1 = u + 0.02 if side < 0 else u1 - 0.02
-        openings.wall_slab(wood, fc, lu0, lu1, 0.0, DOOR_H, DOOR_RECESS,
-                           DOOR_RECESS + 0.06)
-    # the brass ring knockers on the leaves
-    for side in (-1, 1):
-        ku = u + side * 0.12
-        add_ring_knocker(ctx, _in_wall(fc, ku, DOOR_RECESS), fc["n"], KNOCKER_H)
-    # the granite frame: two jambs, a lintel and a carved pediment
-    jamb_w = 0.34
-    for side in (-1, 1):
-        ju0 = u0 - jamb_w if side < 0 else u1
-        ju1 = u0 if side < 0 else u1 + jamb_w
-        openings.wall_slab(stone, fc, ju0, ju1, 0.0, DOOR_H + 0.42, -FRAME_PROUD,
-                           FRAME_IN)
-    openings.wall_slab(stone, fc, u0 - jamb_w, u1 + jamb_w, DOOR_H + 0.42, DOOR_H + 0.78,
-                       -FRAME_PROUD, FRAME_IN)
-    _pediment(ctx, fc, u, DOOR_H + 0.78, stone)
-    # the stone step in front of the door
-    openings.wall_slab(stone, fc, u0 - 0.2, u1 + 0.2, 0.0, 0.16, -0.40, -0.10)
-    return {"u0": u0, "u1": u1, "h0": 0.0, "h1": DOOR_H}
-
-
-def _pediment(ctx, fc, u, h0, stone):
-    """The carved pediment over the door lintel.
-
-    A stone panel with a relief from the carved atlas (four motifs), framed by two
-    jambs and a cornice and finished with a keystone.
-    """
-    panel_w = 1.05
-    panel_h = 0.62
-    slot = ctx.random_cell("carving")
-    if slot is not None:
-        uv = [(slot["u0"], slot["v0"]), (slot["u1"], slot["v0"]),
-              (slot["u1"], slot["v1"]), (slot["u0"], slot["v1"])]
-    else:
-        uv = None
-    base = openings.wall_point(fc, u - panel_w * 0.5)
-    base = (base[0] - fc["n"][0] * (FRAME_PROUD - 0.02),
-            base[1] - fc["n"][1] * (FRAME_PROUD - 0.02))
-    shapes.add_wall_quad(ctx.bag.bm("carving"), base, fc["n"], panel_w, h0 + 0.02,
-                         h0 + 0.02 + panel_h, uv=uv)
-    # the frame of the panel and the cornice over it
-    for side in (-1, 1):
-        ju0 = u - panel_w * 0.5 - 0.09 if side < 0 else u + panel_w * 0.5
-        ju1 = u - panel_w * 0.5 if side < 0 else u + panel_w * 0.5 + 0.09
-        openings.wall_slab(stone, fc, ju0, ju1, h0, h0 + panel_h + 0.12,
-                           -FRAME_PROUD + 0.01, FRAME_IN)
-    openings.wall_slab(stone, fc, u - panel_w * 0.5 - 0.09, u + panel_w * 0.5 + 0.09,
-                       h0 + panel_h + 0.02, h0 + panel_h + 0.14, -FRAME_PROUD + 0.01, FRAME_IN)
-    # the keystone in the middle of the cornice
-    openings.wall_slab(stone, fc, u - 0.09, u + 0.09, h0 + panel_h + 0.14,
-                       h0 + panel_h + 0.30, -FRAME_PROUD + 0.02, FRAME_IN + 0.02)
-
-
-def _window(ctx, fc, u, h0, rng):
-    """A timber casement in a real reveal, with muntins and sometimes a curtain."""
-    u0, u1 = u - WIN_W * 0.5, u + WIN_W * 0.5
-    h1 = h0 + WIN_H
-    lit = rng.random() < 0.34
-    # the pane at the back of the reveal: an interior or dirty glass
-    if lit:
-        slot = ctx.random_cell("interior")
-        uv = [(slot["u0"], slot["v0"]), (slot["u1"], slot["v0"]),
-              (slot["u1"], slot["v1"]), (slot["u0"], slot["v1"])] if slot else None
-        openings.add_pane(ctx, fc, u0, u1, h0, h1, WINDOW_RECESS, "interior", uv=uv)
-    else:
-        openings.add_pane(ctx, fc, u0, u1, h0, h1, WINDOW_RECESS, "glass")
-    # the timber casement, standing proud of the brick (the sill is the masonry
-    # below the opening, so the frame is three pieces and not four)
-    openings.wall_slab(ctx.bag.bm("wood"), fc, u0 - 0.09, u0, h0, h1 + 0.09,
-                       -CASEMENT_PROUD, -CASEMENT_BACK)
-    openings.wall_slab(ctx.bag.bm("wood"), fc, u1, u1 + 0.09, h0, h1 + 0.09,
-                       -CASEMENT_PROUD, -CASEMENT_BACK)
-    openings.wall_slab(ctx.bag.bm("wood"), fc, u0 - 0.09, u1 + 0.09, h1, h1 + 0.09,
-                       -CASEMENT_PROUD, -CASEMENT_BACK)
-    # the muntin, in the reveal in front of the pane
-    mu = u
-    openings.wall_slab(ctx.bag.bm("wood"), fc, mu - 0.025, mu + 0.025, h0, h1,
-                       WINDOW_RECESS - 0.05, WINDOW_RECESS)
-    # a curtain on a third of the windows
-    if rng.random() < 0.30:
-        slot = ctx.random_cell("cloth")
-        uv = [(slot["u0"], slot["v0"]), (slot["u1"], slot["v0"]),
-              (slot["u1"], slot["v1"]), (slot["u0"], slot["v1"])] if slot else None
-        side = -1 if rng.random() < 0.5 else 1
-        cu0 = u0 if side < 0 else u + WIN_W * 0.5 - 0.02
-        cu1 = u - WIN_W * 0.5 + 0.02 if side < 0 else u1
-        openings.add_quad_in_reveal(ctx, fc, cu0, cu1, h0, h1, WINDOW_RECESS - 0.06,
-                                    "cloth", uv)
-    # the shutters (木百叶窗) beside the window
-    if rng.random() < 0.40:
-        for side in (-1, 1):
-            su = u + side * (WIN_W * 0.5 + 0.16)
-            openings.wall_slab(ctx.bag.bm("wood"), fc, su - 0.13, su + 0.13, h0 - 0.08,
-                               h1 + 0.08, -0.07, -0.02)
-    return {"u0": u0, "u1": u1, "h0": h0, "h1": h1}
 
 
 def _house(ctx, poly, front_edge, storeys, rng, rec, guard=None, skip_upper=()):
@@ -218,9 +88,10 @@ def _house(ctx, poly, front_edge, storeys, rng, rec, guard=None, skip_upper=()):
     shapes.add_prism(ctx.bag.bm("render"), porch, FLOOR_GROUND - 0.30, FLOOR_GROUND,
                      cap_bottom=False)
     # the red band courses at every floor line
-    for h in (FLOOR_GROUND, FLOOR_GROUND + FLOOR_UP):
-        if h + 0.55 < eaves:
-            edge_boxes(ctx.bag.bm("brick_red"), poly, h + 0.05, h + 0.50, 0.10, offset=0.03)
+    if ctx.detail >= 3:
+        for h in (FLOOR_GROUND, FLOOR_GROUND + FLOOR_UP):
+            if h + 0.55 < eaves:
+                edge_boxes(ctx.bag.bm("brick_red"), poly, h + 0.05, h + 0.50, 0.10, offset=0.03)
     # --- the roof: a gable with a ridge course, an eave board and a gutter
     if rng.random() < 0.16:
         shapes.add_prism(ctx.bag.bm("roof"), poly, eaves, eaves + 0.12)
@@ -230,16 +101,17 @@ def _house(ctx, poly, front_edge, storeys, rng, rec, guard=None, skip_upper=()):
         pitch = rng.uniform(1.1, 1.9)
         shapes.add_gable_roof(ctx.bag.bm("roof"), poly, eaves, eaves + pitch,
                               ridge_edge=front_edge, overhang=0.4)
-        add_ridge_course(ctx, poly, eaves + pitch, front_edge)
-        add_eave_board(ctx, poly, eaves, front_edge)
+        if ctx.detail >= 2:
+            add_ridge_course(ctx, poly, eaves + pitch, front_edge)
+            add_eave_board(ctx, poly, eaves, front_edge)
         rec["height"] = eaves + pitch
         # a dormer (老虎窗) in the street slope
-        if rng.random() < 0.55:
+        if rng.random() < 0.55 and ctx.detail >= 3:
             add_dormer(ctx, up_fc, eaves, eaves + pitch)
     # --- the street clutter
     # a warm lamp beside the door, with its pool of light on the step
     lamp_u = door["u1"] + 0.28
-    if lamp_u < gfc["w"] - 0.2:
+    if lamp_u < gfc["w"] - 0.2 and ctx.detail >= 3:
         add_wall_lamp(ctx, openings.wall_point(gfc, lamp_u), gfc["n"], 2.45)
         pool = openings.wall_point(gfc, lamp_u)
         pool = (pool[0] - gfc["n"][0] * 0.55, pool[1] - gfc["n"][1] * 0.55)
@@ -248,12 +120,12 @@ def _house(ctx, poly, front_edge, storeys, rng, rec, guard=None, skip_upper=()):
                                 (pool[0] + 0.45, pool[1] + 0.45), (pool[0] - 0.45, pool[1] + 0.45)],
                                0.16)
     # the laundry pole hangs under a window, not over the door
-    if rng.random() < 0.55 and nwin:
+    if rng.random() < 0.55 and nwin and ctx.detail >= 3:
         u = up_fc["w"] * (0.5 / nwin) + (up_fc["w"] * 0.5 / nwin if nwin == 1 else 0.0)
         p = openings.wall_point(up_fc, u)
         add_laundry_pole(ctx, p, up_fc["n"], rng.uniform(1.6, 2.4),
                          FLOOR_GROUND + 0.30, rng.randint(3, 6))
-    if rng.random() < 0.22:
+    if rng.random() < 0.22 and ctx.detail >= 3:
         p = openings.wall_point(up_fc, up_fc["w"] * 0.08)
         add_drain_pipe(ctx, p, up_fc["n"], 0.0, eaves)
     # one to three potted plants on the step
@@ -261,14 +133,18 @@ def _house(ctx, poly, front_edge, storeys, rng, rec, guard=None, skip_upper=()):
         pu = door["u0"] - rng.uniform(0.1, 0.5)
         if pu < 0.2 or pu > gfc["w"] - 0.2:
             continue
-        add_potted_plant(ctx, openings.wall_point(gfc, pu), gfc["n"], rng.uniform(0.3, 0.5))
+        pw = rng.uniform(0.3, 0.5)
+        if ctx.detail < 3:
+            continue
+        add_potted_plant(ctx, openings.wall_point(gfc, pu), gfc["n"], pw)
     # an AC unit under a side window and a satellite dish on the roof edge
     if rng.random() < 0.55:
         side = plan.facade(poly, 1 if rng.random() < 0.5 else 3)
         su = side["w"] * rng.uniform(0.25, 0.75)
-        add_ac_unit(ctx, openings.wall_point(side, su), side["n"],
-                    FLOOR_GROUND + rng.uniform(0.2, 1.2), 0.75)
-    if rng.random() < 0.20:
+        ac_h = FLOOR_GROUND + rng.uniform(0.2, 1.2)
+        if ctx.detail >= 3:
+            add_ac_unit(ctx, openings.wall_point(side, su), side["n"], ac_h, 0.75)
+    if rng.random() < 0.20 and ctx.detail >= 3:
         add_satellite_dish(ctx, openings.wall_point(up_fc, up_fc["w"] * 0.85), up_fc["n"],
                            eaves - 0.4)
     rec["style"] = "shikumen"

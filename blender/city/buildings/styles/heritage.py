@@ -22,6 +22,8 @@ MAX_FLOORS = 10
 
 def _rustication(ctx, poly):
     """A rusticated stone base: three slightly proud courses."""
+    if ctx.detail < 1:
+        return
     for i in range(3):
         h0 = i * (BASE_H / 3.0)
         edge_boxes(ctx.bag.bm("granite"), poly, h0, h0 + BASE_H / 3.0 - 0.06,
@@ -63,15 +65,16 @@ def _window(ctx, fc, u, h0, rng):
         openings.add_pane(ctx, fc, u0, u1, h0, h1, REVEAL, "glass")
     granite = ctx.bag.bm("granite")
     # the architrave: a sill, a head and two jambs, all proud of the wall
-    openings.wall_slab(granite, fc, u0 - 0.20, u1 + 0.20, h0 - 0.22, h0 - 0.04,
-                       -ARCH_PROUD, 0.02)
-    openings.wall_slab(granite, fc, u0 - 0.20, u1 + 0.20, h1 + 0.04, h1 + 0.22,
-                       -ARCH_PROUD, 0.02)
-    if rng.random() < 0.35:
+    if ctx.detail >= 2:
+        openings.wall_slab(granite, fc, u0 - 0.20, u1 + 0.20, h0 - 0.22, h0 - 0.04,
+                           -ARCH_PROUD, 0.02)
+        openings.wall_slab(granite, fc, u0 - 0.20, u1 + 0.20, h1 + 0.04, h1 + 0.22,
+                           -ARCH_PROUD, 0.02)
+    if rng.random() < 0.35 and ctx.detail >= 3:
         # a keystone above the head
         openings.wall_slab(granite, fc, u - 0.22, u + 0.22, h1 + 0.22, h1 + 0.44,
                            -ARCH_PROUD - 0.02, 0.04)
-    if lit:
+    if lit and ctx.detail >= 2:
         # a two-pane sash: two mullions beside the centre and a transom, so the glass
         # stays visible between them
         wood = ctx.bag.bm("wood")
@@ -107,6 +110,8 @@ def _cornice(ctx, poly, top):
             if (cx - px) * nx + (cz - pz) * nz < 0:
                 nx, nz = -nx, -nz
             q = (px + nx * 0.1, pz + nz * 0.1)
+            if ctx.detail < 3:
+                break           # the balustrade posts are the first thing to go
             shapes.add_box(ctx.bag.bm("granite"), q, (0.12, 0.12), top + 0.35, top + 1.1,
                            rot_deg=math.degrees(math.atan2(dy, dx)))
 
@@ -136,6 +141,8 @@ def generate(ctx, block, frame, rng, records):
             _rustication(ctx, poly)
             _windows(ctx, poly, floors, rng, skip)
             for f in range(1, floors):
+                if ctx.detail < 2:
+                    break       # the string courses are decoration
                 edge_boxes(ctx.bag.bm("granite"), poly, BASE_H + f * FLOOR_H - 0.12,
                            BASE_H + f * FLOOR_H + 0.12, 0.18, offset=0.05, edges=(0, 2))
             _cornice(ctx, poly, top)

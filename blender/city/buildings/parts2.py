@@ -44,11 +44,12 @@ def add_crown_strip(ctx, poly, h0, height=0.45, thickness=0.35, key="emissive_cy
     edge_boxes(ctx.bag.bm(key), poly, h0, h0 + height, thickness, offset=0.06)
 
 
-def add_mechanical_floor(ctx, poly, h0, height=5.0, key="emissive_white"):
+def add_mechanical_floor(ctx, poly, h0, height=5.0, key="emissive_white", detail=3):
     """The mechanical floor of a tower: a dark service band with a row of lit vents.
 
     A pale cone on a roof reads as a toy; a service band with lit vents reads as a
-    building (ART.md 11, B-NIGHT2).
+    building (ART.md 11, B-NIGHT2).  The lit vents are the first thing to go when
+    a tile is over its triangle budget.
     """
     edge_boxes(ctx.bag.bm("granite"), poly, h0, h0 + height, 0.16, offset=0.08)
     lit = ctx.bag.bm(key)
@@ -70,6 +71,8 @@ def add_mechanical_floor(ctx, poly, h0, height=5.0, key="emissive_white"):
         rot = math.degrees(math.atan2(uz, ux))
         count = max(1, int(length / 4.0))
         for k in range(count):
+            if detail < 2:
+                break
             t = (k + 0.5) / count
             px = ax + dx * t + nx * 0.22
             pz = az + dz * t + nz * 0.22
@@ -119,8 +122,12 @@ def add_antenna(ctx, base, height=4.0, arms=3, key="metal_dark"):
         shapes.add_box(bm, (bx, bz), (half * 2.0, 0.05), h, h + 0.05)
 
 
-def add_roof_clutter(ctx, poly, h, rng, count=4):
-    """Stair head, vent boxes and vents - the clutter that sells a roof."""
+def add_roof_clutter(ctx, poly, h, rng, count=4, detail=3):
+    """Stair head, vent boxes and vents - the clutter that sells a roof.
+
+    `detail` below 3 drops the clutter but still draws the random numbers, so a
+    building that loses its clutter does not change the buildings around it.
+    """
     xs = [p[0] for p in poly]
     zs = [p[1] for p in poly]
     x0, x1 = min(xs), max(xs)
@@ -131,8 +138,13 @@ def add_roof_clutter(ctx, poly, h, rng, count=4):
         hh = rng.uniform(1.0, 2.8)
         px = rng.uniform(x0 + 0.5 + w * 0.5, max(x0 + 0.5 + w * 0.5, x1 - w * 0.5))
         pz = rng.uniform(z0 + 0.5 + d * 0.5, max(z0 + 0.5 + d * 0.5, z1 - d * 0.5))
+        rot = rng.uniform(0, 180)
+        if detail < 3:
+            continue
         shapes.add_box(ctx.bag.bm("render"), (px, pz), (w, d), h, h + hh,
-                       rot_deg=rng.uniform(0, 180))
+                       rot_deg=rot)
+    if detail < 3:
+        return
     # stair head with a door
     cx = (x0 + x1) * 0.5
     cz = (z0 + z1) * 0.5

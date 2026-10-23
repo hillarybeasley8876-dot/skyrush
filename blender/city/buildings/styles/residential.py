@@ -88,15 +88,17 @@ def generate(ctx, block, frame, rng, records):
             units = (6.0, 8.0) if ri == 0 else (10.0, 14.0)
             add_ground_floor(ctx, poly, front_edge, GROUND_H, "render", rng,
                              units[0], units[1])
-            _balcony_band(ctx, fc, floors, ctx.origin)
+            if ctx.detail >= 2:
+                _balcony_band(ctx, fc, floors, ctx.origin)
             _core(ctx, poly, top, ctx.origin, rng)
             # roof: parapet, tanks, mast and the red aviation light
             add_parapet(ctx, poly, top, 1.1, 0.24, "render")
             cx = sum(p[0] for p in poly) / len(poly)
             cz = sum(p[1] for p in poly) / len(poly)
-            add_water_tank(ctx, (cx - 2.0, cz - 1.5), 1.0, 1.5, 0.7)
-            add_antenna(ctx, (cx + 2.0, cz + 1.0), 5.0, 3)
-            add_aviation_light(ctx, (cx, cz), top + 1.1)
+            if ctx.detail >= 3:
+                add_water_tank(ctx, (cx - 2.0, cz - 1.5), 1.0, 1.5, 0.7)
+                add_antenna(ctx, (cx + 2.0, cz + 1.0), 5.0, 3)
+                add_aviation_light(ctx, (cx, cz), top + 1.1)
             rec = {"style": "residential_slab", "seed": rng.randrange(1, 9999), "floors": floors}
             rec["poly"] = [[round(x, 2), round(z, 2)] for x, z in poly]
             rec["height"] = top
