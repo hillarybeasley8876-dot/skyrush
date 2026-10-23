@@ -48,6 +48,10 @@ const VERTICAL_SNAP := 0.5         ## m: beyond this the car is put back on the 
 const YAW_GAIN := 2.2              ## 1/s: the heading error gain
 const YAW_MAX := 2.5               ## rad/s: cap on the yaw rate
 const FOLLOW_SEARCH := 6.0         ## m: how far the body is searched on its lane
+## m: the floor of the collision box above the road while the car drives. The lane holds the car up and the kerbs and median strips
+## of the city (15 cm) cross some lanes: a box that starts on the road was held by them for ever (7 jams in 14 sites of the
+## traffic soak). A wreck lies on the road with the whole box (set_box_floor(0)).
+const DRIVING_FLOOR := 0.34
 ## cos(45 deg): a contact whose normal is steeper than this is the road under the car.
 const GROUND_COS := 0.7071
 
@@ -271,6 +275,7 @@ func become_wreck(state: PhysicsDirectBodyState3D, other: Node3D, point: Vector3
 	if mode == Mode.WRECK:
 		return
 	mode = Mode.WRECK
+	set_box_floor(0.0)
 	wreck_time = 0.0
 	speed = 0.0
 	freeze = false
@@ -312,3 +317,8 @@ func apply_wreck_physics() -> void:
 	linear_damp = WRECK_LINEAR_DAMP
 	angular_damp = WRECK_ANGULAR_DAMP
 	continuous_cd = true
+
+
+## Puts the floor of the collision box `floor_y` metres above the origin of the car (the road). TrafficCar knows its box.
+func set_box_floor(_floor_y: float) -> void:
+	pass

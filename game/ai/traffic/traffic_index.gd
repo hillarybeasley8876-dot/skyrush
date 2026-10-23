@@ -22,10 +22,16 @@ var grid: LaneGrid = null
 ## Fills the index with the traffic.
 func rebuild(cars: Array[TrafficCar]) -> void:
 	ctx.hash.clear()
+	ctx.cells.clear()
 	for car in cars:
 		if car.follower == null:
 			continue
 		index_car(car)
+		if car.mode != TrafficCar.Mode.FAR:
+			var key := DriveContext.cell_key(car.global_position.x, car.global_position.z)
+			if not ctx.cells.has(key):
+				ctx.cells[key] = []
+			(ctx.cells[key] as Array).append(car)
 
 
 ## The place of a car in the index.

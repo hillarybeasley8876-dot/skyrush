@@ -238,3 +238,26 @@ limit** (the limit was 8.33 m/s off before).
   per collider) and `Events.vehicle_wrecked` when a car tumbles.
 - (to audio) `TrafficCar.horn_requested(car)` is emitted when a car honks at the player (a gap
   under 1.5 m at more than 5 m/s of relative speed); the car is in the group "traffic".
+
+## 2026-10-24: cars of different lanes, kerbs in a lane (the traffic soak)
+
+`game/tools/soak_traffic.gd` parks the player beside a lane for a few minutes of game time and watches every near traffic car
+(STUCK: 30 s without moving, nothing in front of it and no light; OVERLAP: two bodies 2.4 m apart for 3 s; OFFLANE; FAST; LOW).
+First run, 14 sites of 120 s: 10 problems, i.e. 7 cars that never moved again, 3 overlaps at junctions, 1 car 33 m off its lane.
+
+* **Cars of different lanes did not see each other.** The lane hash knows the cars of ONE lane and the lane after it; two lanes that
+  cross in a junction (a left turn against the oncoming traffic), merge, or lie over each other at the end of a lane were
+  invisible to each other: the cars drove through each other or stood pressed together for ever. `DriveContext.cells` (a grid of 12 m,
+  refilled with the lane hash by `TrafficIndex.rebuild`) and `TrafficCarDriving._conflict_gap`: the car whose instance id is the
+  younger yields to an older car (or to a wreck, whatever its age) that stands within the corridor in front of it (the two half
+  widths plus 0.3 m, 8 to 30 m ahead, same level, other lane). The order is total, so no two cars wait for each other and no ring
+  of cars forms. Test: `test_conflict_yield.gd` (the crossing, the lane beside, the lane that lies over, the same lane, the
+  deck, the wreck).
+* **A kerb in the lane was a wall.** The box of a traffic car started on the road (`_shape.position.y = size.y / 2`); the median strips
+  and kerbs of the city (15 cm) cross some lanes, and the car stood against them for ever (`touching roads_2_0_concrete`).
+  `TrafficCarPhysics.DRIVING_FLOOR = 0.34` m while the car drives, `set_box_floor(0)` when it becomes a wreck (a wreck lies on the road
+  with the whole box). Test: `test_kerb_lane.gd` (a shape query over a 15 cm strip: fails with the old floor).
+* **The bus shelters and the noise walls stood across the road** (see status/world.md): the rest of the stuck cars of the soak stood
+  against them; with the boxes along the road no traffic car stood against a prop in the last soak.
+* Not done: a stuck car at (-967, 526) lane 10898 s 132/222 touching `roads_-2_1_concrete` under the viaduct (found three times, 1 m
+  grid does not show it: a pier or a barrier in the lane; `check_path_blockers` should find it).

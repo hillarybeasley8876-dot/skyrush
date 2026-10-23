@@ -49,8 +49,16 @@ def godot(p):
 
 
 def _heading(tangent):
-    """Heading in degrees, 0 = north (-Z in Godot)."""
-    return round(math.degrees(math.atan2(tangent.x, -tangent.y)) % 360.0, 1)
+    """Heading in degrees, 0 = north (-Z in Godot, +Y in Blender), 90 = east.
+
+    The tangent is a Blender vector (x east, y north). The first version used -y as the north
+    and so gave 180 degrees minus the heading: right on a road that runs east or west, upside
+    down on a road that runs north or south and a mirror image on every diagonal one (the
+    lamp arms, the signs and the traffic lights of the diagonal roads were turned by the
+    difference). The world unit also rotates the bus shelters and the noise walls by the lanes
+    next to them (they do not trust this heading), see world/build/furniture_builder.gd.
+    """
+    return round(math.degrees(math.atan2(tangent.x, tangent.y)) % 360.0, 1)
 
 
 def _item(kind, road, p, tangent, extra=None):

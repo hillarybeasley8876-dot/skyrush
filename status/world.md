@@ -280,3 +280,19 @@ Found with `game/tools/fuzz_drive.gd` and a ray probe in the real world.
   `build_edge_walls` closes the world with four invisible walls (10 m thick, y -80..400, friction 0.05) on the border of that ground.
   Test: `world/tests/test_edge_walls.gd` (rays at 5 heights, the corners, a body at 50/100/200 m/s).
 * Not done: the 100 m of ground beyond the window are empty asphalt (no props, no buildings).
+
+### The bus shelters and the noise walls lie along the road now
+
+The roads unit writes `heading_deg` for every prop, and the world unit makes the -Z of the model point along the heading. A lamp
+(arm on +X) and a gantry (beam on X) are right that way; a bus shelter (8 m) and a noise wall (30 m) have their length on X and stood
+ACROSS the road. Worse, `furniture.py::_heading` was `atan2(east, -north)` with the Blender north (+y): 180 degrees minus the heading
+(right on an east-west road, upside down on a north-south one and mirrored on every diagonal: 3100 of 5300 lamps and signs are more
+than 15 degrees off their road, 750 of them at 75-90). The generator is fixed (`atan2(tangent.x, tangent.y)`); the data in
+`game/world/data/road_furniture.json` is regenerated with the next full roads rebuild (the rest of the props keep the mirrored
+headings until then).
+* `FurnitureBuilder._along_road`: the X of a shelter or a wall is the direction of the lanes next to it (not the heading of the data), the
+  shelter opens (+Z) towards the road. Then `FurnitureFilter.footprint_clear` samples the perimeter of every box prop every metre
+  against the centre lines of the lanes (1.3 m): a box that reaches into a lane moves away from the road in steps up to 3 m, or is dropped.
+  Before: 426 of 541 shelters and all 32 walls reached into a lane (the box is solid now). After: 534 shelters (503 along the road, 94 %),
+  26 walls (all along), 0 reach into a lane. The world cache is version 18.
+* Tools: `tools/prop_lane_clearance.gd` (the box props against the lanes, the angle to their road), `test_prop_alignment.gd`.

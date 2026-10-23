@@ -265,7 +265,7 @@ func _run() -> void:
 			else:
 				still = 0.0
 			frames.append(_frame_line(car, rp, speed))
-			if not fell and y < start_y - EVENT_FALL:
+			if not fell and y < start_y - EVENT_FALL and car.thruster.airborne:
 				fell = true
 				fall_at = car.global_position
 			if car.health <= 0.0:
@@ -294,11 +294,12 @@ func _run() -> void:
 			reasons.append("climbed %.1f m" % (max_y - start_y))
 		if vmax > 330.0 and not _hits.is_empty():
 			reasons.append("%.0f km/h" % vmax)
-		if fell and min_y < start_y - 8.0 and not elevated:
+		if fell and (min_y < start_y - 8.0 or elevated):
 			if _near_edge(fall_at):
 				notes.append("fell off the edge of the city at (%.0f %.0f), to y %.0f" % [fall_at.x, fall_at.z, min_y])
 			else:
-				reasons.append("fell to y %.0f at (%.0f %.0f)" % [min_y, fall_at.x, fall_at.z])
+				reasons.append("fell %s from y %.1f at (%.0f %.0f) to y %.0f" % [
+					"off the deck" if elevated else "", start_y, fall_at.x, fall_at.z, min_y])
 		elif not lane_flight and air > 2.5:
 			reasons.append("airborne %.1f s" % air)
 		if longest_still >= 3.0:

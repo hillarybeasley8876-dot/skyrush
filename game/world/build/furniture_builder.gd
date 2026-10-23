@@ -14,6 +14,14 @@ const ProcMeshes := preload("res://world/loader/proc_meshes.gd")
 const Heading := preload("res://world/api/heading.gd")
 
 const TILE := 512.0
+## The props whose long axis (X of the model: 8 m of shelter, 30 m of wall) runs along the road. The roads unit gives the
+## heading of the road, and a heading makes the -Z of a model point along the road, so the shelters and the walls stood across it
+## (176 of 541 shelters and 20 of 32 walls at a right angle to their road, the rest at every angle in between).
+const ALONG_ROAD: Array[String] = ["bus_stop", "noise_wall"]
+## The least distance between the footprint of a box prop and the centre line of a lane (m): half a car (0.95) and a margin.
+const FOOTPRINT_CLEARANCE := 1.3
+## How far a box that reaches into a lane is moved away from the road to clear it (m).
+const FOOTPRINT_NUDGES: Array[float] = [0.4, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0]
 ## The kinds of the roads unit's road_furniture.json mapped onto the prop types.
 const KIND_ALIASES: Dictionary = {
 	"street_lamp": "lamp",
@@ -227,8 +235,42 @@ func _spot(entry: Dictionary) -> Variant:
 	if _filter != null and not _filter.clear_of_lanes(out.origin):
 		# The prop would stand on a carriageway: it is dropped instead of driving there.
 		return null
+	if _filter != null and ALONG_ROAD.has(type):
+		out.basis = _along_road(out.basis, out.origin, type == "bus_stop", str(entry.get("road", "")))
+	var box: Variant = PropCollision.SHAPES.get(type, {}).get("size", null)
+	if _filter != null and box != null:
+		var size: Vector3 = (box as Vector3) * (entry.get("scale_vector", Vector3.ONE) as Vector3)
+		if not _filter.footprint_clear(out, size, FOOTPRINT_CLEARANCE):
+			# A box that reaches into a lane is solid for the traffic that drives there: it moves away from the road until
+			# it is clear, or it is dropped.
+			var away: Vector3 = -(_filter.road_side(out.origin, str(entry.get("road", ""))) as Vector3)
+			var moved := false
+			if away != Vector3.ZERO:
+				for step in FOOTPRINT_NUDGES:
+					var candidate := Transform3D(out.basis, out.origin + away * step)
+					var clear: bool = _filter.footprint_clear(candidate, size, FOOTPRINT_CLEARANCE) \
+							and _filter.clear_of_lanes(candidate.origin)
+					if clear and _occupancy.is_free(candidate.origin, type):
+						out = candidate
+						moved = true
+						break
+			if not moved:
+				return null
 	_occupancy.reserve(out.origin, type, out.basis.get_euler().y)
 	return out
+
+
+## The basis of a prop whose X axis runs along the road. The direction is the one of the lanes next to the prop, not the heading of
+## the data: the heading of the roads unit is 180 degrees minus the real one (a mirror in furniture.py: atan2 of the east and of
+## MINUS the north), right on the roads that run east-west and wrong on every diagonal one. A shelter opens (+Z) towards the road.
+func _along_road(basis: Basis, origin: Vector3, opens_to_road: bool, road: String) -> Basis:
+	var toward: Vector3 = _filter.road_side(origin, road)
+	if toward == Vector3.ZERO:
+		return basis  # no lane near: the prop stays as the data has it
+	var along: Vector3 = _filter.tangent_at(origin, road)
+	if opens_to_road and Vector3(-along.z, 0.0, along.x).dot(toward) < 0.0:
+		along = -along
+	return Basis(along, Vector3.UP, Vector3(-along.z, 0.0, along.x))
 
 
 ## The direction of the road at a point (the props slide along it).

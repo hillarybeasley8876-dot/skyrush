@@ -21,6 +21,11 @@ var time: float = 0.0
 var density_scale: float = 1.0
 ## The junction id of every lane of the world (empty when the lane has no junction).
 var junctions: PackedStringArray = PackedStringArray()
+## The cars that have a body (the near cars and the wrecks) by the cell of the plan they stand in: key = cell_key(x, z). The lane
+## hash knows the cars of a LANE, so two cars of lanes that cross, merge or lie over each other never saw each other; this index
+## is what they look at. The director refills it with the lane hash.
+var cells: Dictionary = {}
+const CELL := 12.0
 
 
 func _init() -> void:
@@ -57,3 +62,21 @@ func junction_of(lane: int) -> StringName:
 	if lane < 0 or lane >= junctions.size():
 		return &""
 	return StringName(junctions[lane])
+
+
+## The key of the cell of the plan that contains (x, z).
+static func cell_key(x: float, z: float) -> int:
+	return (int(floor(x / CELL)) + 100000) * 200000 + (int(floor(z / CELL)) + 100000)
+
+
+## The cars with a body in the 3 x 3 cells around (x, z).
+func cars_around(x: float, z: float) -> Array:
+	var out: Array = []
+	var cx := int(floor(x / CELL))
+	var cz := int(floor(z / CELL))
+	for dx in range(-1, 2):
+		for dz in range(-1, 2):
+			var key := (cx + dx + 100000) * 200000 + (cz + dz + 100000)
+			if cells.has(key):
+				out.append_array(cells[key])
+	return out

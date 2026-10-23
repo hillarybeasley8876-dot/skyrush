@@ -33,6 +33,8 @@ const MEDIAN_LIMIT := 4.0
 const MEDIAN_MIN := 0.5
 ## The distance at which a deck over a point counts as over it.
 const DECK_CLEARANCE := 3.0
+## The step of the samples along the perimeter of a box prop (footprint_clear).
+const FOOTPRINT_STEP := 1.0
 
 var _probe: LaneProbe
 var _lanes: Array[LanePath] = []
@@ -266,6 +268,47 @@ func tangent_at(position: Vector3, road: String = "") -> Vector3:
 	if tangent.length_squared() < 0.0001:
 		return Vector3.FORWARD
 	return tangent.normalized()
+
+
+## The horizontal unit vector from a point to the nearest lane of `road` (the side of the road the point is on), or ZERO.
+func road_side(position: Vector3, road: String = "") -> Vector3:
+	if _probe == null:
+		return Vector3.ZERO
+	var near: Dictionary = _probe.query(position, QUERY_RADIUS * 2.0)
+	var index := _probe.nearest_lane(near, position, road)
+	if index < 0:
+		index = _probe.nearest_any(near, position)
+	if index < 0:
+		return Vector3.ZERO
+	var info: Dictionary = _probe.grid.detail(index, position)
+	var toward: Vector3 = (info["point"] as Vector3) - position
+	toward.y = 0.0
+	if toward.length_squared() < 0.0001:
+		return Vector3.ZERO
+	return toward.normalized()
+
+
+## True when no lane runs within `clearance` of the footprint of a box prop: the perimeter of the box (size = x, y, z of the
+## box, turned with the yaw of `xform`) is sampled every FOOTPRINT_STEP metres. A box is as long as 8 m (a shelter) or 30 m (a
+## noise wall): the origin that stands clear of the lanes does not say that the ends do.
+func footprint_clear(xform: Transform3D, size: Vector3, clearance: float) -> bool:
+	if _probe == null:
+		return true
+	var turn := Basis(Vector3.UP, atan2(-xform.basis.x.z, xform.basis.x.x))
+	var half := Vector2(size.x, size.z) * 0.5
+	var steps_x := maxi(int(ceil(size.x / FOOTPRINT_STEP)), 1)
+	var steps_z := maxi(int(ceil(size.z / FOOTPRINT_STEP)), 1)
+	for i in steps_x + 1:
+		var x := -half.x + size.x * float(i) / float(steps_x)
+		for z in [-half.y, half.y]:
+			if not _probe.clear_of_lanes(xform.origin + turn * Vector3(x, 0.0, z), clearance):
+				return false
+	for j in range(1, steps_z):
+		var z := -half.y + size.z * float(j) / float(steps_z)
+		for x in [-half.x, half.x]:
+			if not _probe.clear_of_lanes(xform.origin + turn * Vector3(x, 0.0, z), clearance):
+				return false
+	return true
 
 
 ## True when the point stands on a carriageway.

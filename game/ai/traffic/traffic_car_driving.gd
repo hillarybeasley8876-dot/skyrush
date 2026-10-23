@@ -20,8 +20,17 @@ const BRAKE_OVERRIDE_ACCEL := -2.0 ## m/s^2: the brake of the capture scene
 const MERGE_WINDOW := 1.5
 ## s: how long before the merge point the car starts to yield.
 const MERGE_BRAKE_TIME := 2.0
+## The conflict with a car of another lane: how far ahead (s of driving, with a floor and a ceiling in m), how far above or
+## below (m) and how much room besides the two half widths (m).
+const CONFLICT_TIME := 1.5
+const CONFLICT_MIN_REACH := 8.0
+const CONFLICT_MAX_REACH := 30.0
+const CONFLICT_LEVEL := 2.5
+const CONFLICT_MARGIN := 0.3
 
 var ctx: DriveContext = null
+## The car that drives (its body is where the conflicts are looked for).
+var body: TrafficCar = null
 ## The lane state of the car.
 var follower: LaneFollower = null
 ## The length of the car, used for the gaps.
@@ -58,6 +67,11 @@ func acceleration(speed: float, desired_speed: float, reaction_brake: float,
 	if ahead < gap:
 		gap = ahead
 		lead_speed = _found_speed
+	# A car of another lane that is in the way: the lanes cross, merge or lie over each other.
+	var conflict := _conflict_gap()
+	if conflict < gap:
+		gap = conflict
+		lead_speed = _found_speed
 	# The stop line is the end of the lane; a red or amber light puts a stopped leader there.
 	var signal_gap := _signal_gap(lane, speed)
 	if signal_gap < gap:
@@ -72,6 +86,48 @@ func acceleration(speed: float, desired_speed: float, reaction_brake: float,
 	if reaction_brake < 0.0:
 		accel = minf(accel, reaction_brake)
 	return accel
+
+
+## The gap to a car of ANOTHER lane that stands in the way of this one. Two lanes cross in a junction (a left turn against the
+## oncoming traffic), converge at a merge or lie over each other at the end of a lane; the lane hash knows the cars of a lane, so
+## such cars never saw each other and drove through each other, or stood pressed against each other for ever (the traffic soak:
+## 6 overlaps and jams in 8 sites). The YOUNGER car yields, and only to older cars, so two cars never wait for each other (the
+## order is a total order: no ring of cars that wait for each other). A wreck is yielded to whatever its age.
+func _conflict_gap() -> float:
+	if body == null or body.mode != TrafficCar.Mode.NEAR:
+		return INF
+	var here := body.global_position
+	var forward := follower.direction()
+	var right := Vector3(-forward.z, 0.0, forward.x)
+	var reach := clampf(speed * CONFLICT_TIME + car_length, CONFLICT_MIN_REACH, CONFLICT_MAX_REACH)
+	var my_id := body.get_instance_id()
+	var best := INF
+	for other_object in ctx.cars_around(here.x, here.z):
+		var other := other_object as TrafficCar
+		if other == null or other == body:
+			continue
+		var wreck := other.mode == TrafficCar.Mode.WRECK
+		if not wreck and other.get_instance_id() > my_id:
+			continue
+		if other.follower == null or absf(other.global_position.y - here.y) > CONFLICT_LEVEL:
+			continue
+		# the cars of the same lane see each other in the lane hash
+		var same_lane := other.follower.lane == follower.lane and not follower.on_connector() \
+				and not other.follower.on_connector()
+		if not wreck and same_lane:
+			continue
+		var off := other.global_position - here
+		var ahead := off.x * forward.x + off.z * forward.z
+		var side := absf(off.x * right.x + off.z * right.z)
+		var gap := ahead - 0.5 * (car_length + other.car_length)
+		if gap > reach or ahead < 0.0:
+			continue
+		if side > 0.5 * (body.car_width + other.car_width) + CONFLICT_MARGIN:
+			continue
+		if gap < best:
+			best = maxf(gap, 0.05)
+			_found_speed = 0.0 if wreck else maxf(other.speed * other.follower.direction().dot(forward), 0.0)
+	return best
 
 
 ## The gap to the car ahead in the lane the car is driving into.

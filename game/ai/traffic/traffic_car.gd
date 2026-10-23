@@ -125,6 +125,7 @@ func place(lane: int, distance: float) -> void:
 	follower = LaneFollower.new()
 	follower.setup(ctx.graph, lane, distance, ctx.rng.randi())
 	_driving.ctx = ctx
+	_driving.body = self
 	_driving.follower = follower
 	_driving.car_length = car_length
 	_lane_serial = -1
@@ -193,8 +194,23 @@ func park() -> void:
 	angular_velocity = Vector3.ZERO
 
 
+## The top of the collision box above the origin of the car (m).
+var _box_height: float = 0.0
+## The least thickness of the box (m): a low model keeps a box that can be hit.
+const MIN_BOX_THICKNESS := 0.5
+
+
+func set_box_floor(floor_y: float) -> void:
+	if _shape == null or _shape.shape == null or _box_height <= 0.0:
+		return
+	var bottom := clampf(floor_y, 0.0, maxf(_box_height - MIN_BOX_THICKNESS, 0.0))
+	(_shape.shape as BoxShape3D).size.y = _box_height - bottom
+	_shape.position.y = (_box_height + bottom) * 0.5
+
+
 ## The physics of a car that drives: no grip, so the lane change is not fought by the tyres.
 func _reset_physics() -> void:
+	set_box_floor(DRIVING_FLOOR)
 	var material := PhysicsMaterial.new()
 	material.friction = 0.0
 	material.rough = false
@@ -222,6 +238,8 @@ func _build_body(aabb: AABB) -> void:
 	# the gap). A car whose collider starts above its origin would float over the road and
 	# sink into it as soon as it is a wreck.
 	_shape.position = Vector3(0.0, aabb.size.y * 0.5, 0.0)
+	_box_height = aabb.size.y
+	set_box_floor(DRIVING_FLOOR)
 	collision_layer = COLLISION_LAYER
 	collision_mask = COLLISION_MASK
 	contact_monitor = true
