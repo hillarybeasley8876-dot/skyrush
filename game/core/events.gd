@@ -54,6 +54,13 @@ signal pursuit_state_changed(state: StringName)
 signal loading_progress(fraction: float, label: String)
 ## style: &"info", &"good", &"great", &"danger", &"police". HUD shows it as a QQ飞车-style pop-up.
 signal toast(text: String, style: StringName)
+## The state of the running mode, for the HUD: the modes unit emits it (on every change and at least every
+## 0.5 s while the mode runs), the HUD only draws it. `kind` and `data`:
+##   &"free"    {"score": int}
+##   &"race"    {"lap": int (1 based), "laps": int, "position": int (1 = first), "racers": int}
+##   &"pursuit" {"takedowns": int, "target": int (0 = no goal), "time_left": float (s, -1.0 = no limit)}
+##   &"none"    {} (no mode: nothing to show)
+signal mode_status(kind: StringName, data: Dictionary)
 signal slowmo_request(time_scale: float, duration: float, focus: Node3D)
 signal camera_shake(strength: float, duration: float)
 ## Crash cam: look at target for duration seconds (real time), then return to the chase cam.
