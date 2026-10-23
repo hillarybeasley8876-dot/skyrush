@@ -123,6 +123,16 @@ def coarse_index(polys, widths):
     return index
 
 
+def end_point(plan, end):
+    """The point of a plan at one of its ends.
+
+    A plan of more than two points is a street: its first point is its
+    start and its last point is its end.
+    """
+    p = plan[0] if end == 0 else plan[-1]
+    return (p[0], p[1])
+
+
 def scan(plan, end, index, polys, widths, own_id, window, reach=REACH):
     """The first road a street end meets along its own line.
 
@@ -132,7 +142,7 @@ def scan(plan, end, index, polys, widths, own_id, window, reach=REACH):
     "window" (the line leaves the map window) or "none" (no road within
     `reach` metres).
     """
-    point = (plan[end][0], plan[end][1])
+    point = end_point(plan, end)
     head = direction(plan, end)
     half = widths.get(own_id, 12.0) * 0.5
     for i in range(int(reach / STEP) + 1):
@@ -179,6 +189,100 @@ def snap_end(plan, end, index, polys, widths, own_id, window):
     if hit["kind"] == "none":
         return None, None
     return hit["point"], hit["road"]
+
+
+def project(plan, point):
+    """Where a point lies on a plan: (segment, t, distance).
+
+    `segment` is the index of the segment the point lies on, `t` how far
+    along that segment it is (0-1) and the distance is the distance to
+    the plan.  A point outside the plan lies on the first or the last
+    segment, with `t` 0 or 1.
+    """
+    best = (0, 0.0, 1e18)
+    for j, (a, b) in enumerate(zip(plan, plan[1:])):
+        dx, dz = b[0] - a[0], b[1] - a[1]
+        den = dx * dx + dz * dz
+        t = 0.0
+        if den > 1e-9:
+            t = max(0.0, min(1.0, ((point[0] - a[0]) * dx
+                                   + (point[1] - a[1]) * dz) / den))
+        q = (a[0] + dx * t, a[1] + dz * t)
+        d = math.hypot(point[0] - q[0], point[1] - q[1])
+        if d < best[2]:
+            best = (j, t, d)
+    return best
+
+
+def spacing(plan):
+    """The distance between the points of a plan (the median gap)."""
+    gaps = sorted(math.dist(a, b) for a, b in zip(plan, plan[1:]))
+    gaps = [g for g in gaps if g > 1e-6]
+    return gaps[len(gaps) // 2] if gaps else 0.0
+
+
+def even(plan, step, end):
+    """A plan whose segment next to the end is split into even steps.
+
+    The Catmull-Rom of the built road loops when two neighbouring
+    control points are far apart, so a long jump is split up.
+    """
+    if step <= 0.0 or len(plan) < 2:
+        return plan
+    if end == 0:
+        a, b, rest = plan[0], plan[1], plan[2:]
+    else:
+        a, b, rest = plan[-2], plan[-1], plan[:-2]
+    length = math.dist(a, b)
+    if length <= 2.5 * step:
+        return plan
+    n = max(1, int(round(length / step)))
+    pts = [[a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n]
+           for k in range(n + 1)]
+    if end == 0:
+        return pts + rest
+    return rest + pts
+
+
+def on_own_line(plan, point, tol=0.5):
+    """True if a point lies on the line of a plan.
+
+    A street that meets a road on its own line crosses it: the road
+    becomes a junction along the street instead of the end of it.
+    """
+    return project(plan, point)[2] <= tol
+
+
+def trim_to_end(plan, end, snapped, tol=0.5):
+    """The plan of a street whose end was moved onto the road it meets.
+
+    The end of a street walks along the street's own line until it
+    reaches a road.  When that road lies on the street's own line, the
+    end jumps over the points the street has there: those points are
+    dropped, so the street stops at the road instead of folding back on
+    itself.  An end that reaches further out drops nothing.
+    """
+    if len(plan) < 2:
+        return [[snapped[0], snapped[1]]] + [list(p) for p in plan[1:]]
+    j, t, d = project(plan, snapped)
+    step = spacing(plan)
+    if end == 0:
+        if d > tol and j == len(plan) - 2 and t >= 1.0:
+            # the road lies past the far end of the street: that end is
+            # the one that has to move, not this one
+            return [list(p) for p in plan]
+        out = [[snapped[0], snapped[1]]] + [list(p) for p in plan[j + 1:]]
+        return even(out, step, 0)
+    if d > tol:
+        if len(plan) > 2:
+            # a lattice street is cut at the border of its district: it
+            # may not grow into the next one
+            return [list(p) for p in plan]
+        # the end walks on past the street: the street grows there
+        out = [list(p) for p in plan[:-1]] + [[snapped[0], snapped[1]]]
+    else:
+        out = [list(p) for p in plan[:j + 1]] + [[snapped[0], snapped[1]]]
+    return even(out, step, 1)
 
 
 def seg_hits(a, b, poly):
@@ -416,7 +520,7 @@ def extend_plan(plan, end, target, step=20.0):
     keeps its shape and only grows.
     """
     head = outward(plan, end)
-    start = (plan[end][0], plan[end][1])
+    start = end_point(plan, end)
     length = math.dist(start, target)
     n = max(1, int(length / step))
     pts = [(start[0] + head[0] * length * k / n,

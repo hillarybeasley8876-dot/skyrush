@@ -427,6 +427,22 @@ def _broken_ends(net, junctions, attached):
     return out
 
 
+def _move_end(st, end, snapped):
+    """Move one street end onto the road it meets.
+
+    A street that meets the road on its own line crosses it: the end
+    stays where it is and the road becomes a junction along the street.
+    That is the case of the lattice streets, which are cut by the border
+    of their district: cutting them back at the first road they meet
+    would take the leg between the border and that road off the map.
+    A street that meets the road at an angle stops on it, and the points
+    the end jumped over are dropped, so it does not fold back on itself.
+    """
+    if len(st.plan) > 2 and city_snap.on_own_line(st.plan, snapped):
+        return
+    st.plan = city_snap.trim_to_end(st.plan, end, snapped)
+
+
 def _snap_ends(streets, main_roads, reach=400.0):
     """Extend every street end to the road it meets.
 
@@ -448,20 +464,20 @@ def _snap_ends(streets, main_roads, reach=400.0):
     loose = []
     for st in streets:
         for end in (0, 1):
-            point = (st.plan[end][0], st.plan[end][1])
+            point = city_snap.end_point(st.plan, end)
             snapped, road_id = city_snap.snap_end(st.plan, end, index, polys,
                                                   widths, st.id, WINDOW)
             if snapped is None or not on_land(point, snapped):
                 loose.append((st, end))
                 continue
             if math.dist(snapped, point) > 0.5:
-                st.plan[end] = [snapped[0], snapped[1]]
+                _move_end(st, end, snapped)
     # a street that finds no road is joined to the nearest one by a link
     links = _link_ends(loose, polys, widths, index)
     # the links are roads now: a second pass catches the ends they reach
     still = []
     for st, end in loose:
-        point = (st.plan[end][0], st.plan[end][1])
+        point = city_snap.end_point(st.plan, end)
         if _linked(point, links):
             continue
         snapped, road_id = city_snap.snap_end(st.plan, end, index, polys,
@@ -470,9 +486,9 @@ def _snap_ends(streets, main_roads, reach=400.0):
             still.append((st, end))
             continue
         if math.dist(snapped, point) > 0.5:
-            st.plan[end] = [snapped[0], snapped[1]]
+            _move_end(st, end, snapped)
     for st, end in still:
-        point = (st.plan[end][0], st.plan[end][1])
+        point = city_snap.end_point(st.plan, end)
         dead.append((st.id, round(point[0], 1), round(point[1], 1)))
     streets.extend(links)
     # a street that collapsed into a stub carries nothing
@@ -494,7 +510,7 @@ def _link_ends(loose, polys, widths, index):
     """A short link road from every street end that finds no other road."""
     links = []
     for i, (st, end) in enumerate(loose):
-        point = (st.plan[end][0], st.plan[end][1])
+        point = city_snap.end_point(st.plan, end)
         head = city_snap.direction(st.plan, end)
         cands = []
         for name, _idx, _near in index.within(point, 320.0):
