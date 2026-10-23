@@ -1,0 +1,96 @@
+{
+  "id": "city-folds",
+  "title": "No street folds back on itself (the end snap leaves the points it jumped over)",
+  "brief": "briefs/improve/city-folds.md",
+  "isolation": "worktree",
+  "sparse": [
+    "tools/",
+    "data/",
+    "ref/",
+    "briefs/",
+    "SPEC.md",
+    "ART.md",
+    "CONTRACTS.md",
+    "README.md"
+  ],
+  "owns": [
+    "tools/city/city_grid.py",
+    "tools/city/city_snap.py",
+    "tools/city/selftest_folds.py"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 250,
+  "timeoutMin": 120,
+  "accept": [
+    {
+      "name": "the selftest of the fold cut",
+      "cmd": "python tools/city/selftest_folds.py",
+      "must": [
+        "selftest_folds: 0 case(s) wrong"
+      ],
+      "timeoutS": 600
+    },
+    {
+      "name": "generate the map",
+      "cmd": "python tools/city/build_city.py --out F:/dev/skyrush-out/tmp/city-folds/city.json",
+      "timeoutS": 400
+    },
+    {
+      "name": "no street folds back on itself",
+      "cmd": "python tools/city/check_road_retrace.py F:/dev/skyrush-out/tmp/city-folds/city.json",
+      "must": [
+        "ROAD_RETRACE OK"
+      ]
+    },
+    {
+      "name": "the roads are still on the ground",
+      "cmd": "python tools/city/check_road_coverage.py F:/dev/skyrush-out/tmp/city-folds/city.json F:/dev/skyrush-out/baselines/city_pre_folds.json",
+      "must": [
+        "ROAD_COVERAGE OK"
+      ],
+      "timeoutS": 600
+    },
+    {
+      "name": "gate: no rule worse",
+      "cmd": "python tools/city/accept_rules.py F:/dev/skyrush-out/tmp/city-folds/city.json --baseline tools/city/rules_baseline.json",
+      "must": [
+        "ACCEPT_RULES OK"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "the network did not shrink beyond the doubled road",
+      "cmd": "python tools/city/check_network_size.py F:/dev/skyrush-out/tmp/city-folds/city.json --min-km 160 --min-roads 340",
+      "must": [
+        "NETWORK_SIZE OK"
+      ]
+    },
+    {
+      "name": "routes and sky lanes are intact",
+      "cmd": "python tools/city/check_routes_shape.py F:/dev/skyrush-out/tmp/city-folds/city.json && python tools/city/check_skylanes_shape.py F:/dev/skyrush-out/tmp/city-folds/city.json && python tools/city/selftest_skylanes.py F:/dev/skyrush-out/tmp/city-folds/city.json",
+      "must": [
+        "ROUTES_SHAPE OK",
+        "SKYLANES_SHAPE OK",
+        "SELFTEST OK"
+      ],
+      "timeoutS": 600
+    },
+    {
+      "name": "the lots were re-formed, not eaten",
+      "cmd": "python tools/city/check_lots_kept.py F:/dev/skyrush-out/tmp/city-folds/city.json F:/dev/skyrush-out/baselines/lots_cur.json --keep 0.0 --total 0.99",
+      "must": [
+        "LOTS_KEPT OK"
+      ]
+    },
+    {
+      "name": "ramps, the dragon interchange and the deck cut stay valid",
+      "cmd": "python tools/city/selftest_attach.py F:/dev/skyrush-out/tmp/city-folds/city.json && python tools/city/selftest_dragon.py F:/dev/skyrush-out/tmp/city-folds/city.json && python tools/city/selftest_trim.py F:/dev/skyrush-out/tmp/city-folds/city.json",
+      "must": [
+        "selftest_attach: 0 case(s) wrong",
+        "selftest_dragon: 0 case(s) wrong",
+        "selftest_trim: 0 case(s) wrong"
+      ],
+      "timeoutS": 900
+    }
+  ]
+}
