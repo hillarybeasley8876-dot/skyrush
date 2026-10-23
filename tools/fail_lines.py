@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """fail_lines — run a Godot test and accept only the FAIL lines that are on an allow list.
 
-    python tools/fail_lines.py <res://test.gd> [--allow REGEX ...] [--min-pass N] [--timeout 900]
+    python tools/fail_lines.py <res://test.gd> [--allow REGEX ...] [--min-pass N] [--timeout 900] [--args "--timeout=300 --route=x"]
 
 Runs `tools/gd.py test <test>` and reads its output.  Every line that starts with FAIL must match one of the --allow
 regular expressions (re.search); lines that do not are printed as NEW FAIL.  At least --min-pass lines must start with PASS
@@ -21,10 +21,13 @@ ROOT = Path(__file__).resolve().parent.parent
 
 def main(argv):
     test = argv[1]
-    allow, min_pass, timeout = [], 1, 900
+    allow, min_pass, timeout, extra = [], 1, 900, []
     i = 2
     while i < len(argv):
-        if argv[i] == "--allow":
+        if argv[i] == "--args":
+            extra = argv[i + 1].split()
+            i += 2
+        elif argv[i] == "--allow":
             allow.append(re.compile(argv[i + 1]))
             i += 2
         elif argv[i] == "--min-pass":
@@ -35,7 +38,8 @@ def main(argv):
             i += 2
         else:
             i += 1
-    proc = subprocess.run([sys.executable, str(ROOT / "tools" / "gd.py"), "test", test], capture_output=True, text=True,
+    cmd = [sys.executable, str(ROOT / "tools" / "gd.py"), "test", test] + (["--"] + extra if extra else [])
+    proc = subprocess.run(cmd, capture_output=True, text=True,
                           encoding="utf-8", errors="replace", timeout=timeout + 600)
     out = (proc.stdout or "") + (proc.stderr or "")
     passes = sum(1 for line in out.splitlines() if line.startswith("PASS"))

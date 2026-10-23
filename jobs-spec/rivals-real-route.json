@@ -1,0 +1,104 @@
+{
+  "id": "rivals-real-route",
+  "title": "The rivals race the real routes (no pile-up at the first corner, no rival stuck on the grid)",
+  "brief": "briefs/improve/rivals-real-route.md",
+  "isolation": "worktree",
+  "owns": [
+    "game/ai/rivals/"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 300,
+  "timeoutMin": 240,
+  "accept": [
+    {
+      "name": "rivals scripts and scenes load clean",
+      "cmd": "python tools/gd.py check --only=res://ai/rivals/",
+      "must": [
+        "re:CHECK \\d+ files, 0 failed, 0 engine errors"
+      ],
+      "timeoutS": 1200
+    },
+    {
+      "name": "bund_sprint: every rival gets round the first corner and passes the gates",
+      "cmd": "python tools/gd.py test res://ai/rivals/tests/test_real_route.gd -- --timeout=300 --stub=traffic,police,audio,fx,damage,hud,menu --route=bund_sprint --limit=120",
+      "must": [
+        "REAL ROUTE TESTS OK (0 failures)"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "lujiazui_ring: every rival leaves the grid",
+      "cmd": "python tools/gd.py test res://ai/rivals/tests/test_real_route.gd -- --timeout=300 --stub=traffic,police,audio,fx,damage,hud,menu --route=lujiazui_ring --limit=150",
+      "must": [
+        "REAL ROUTE TESTS OK (0 failures)"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "river_loop does not get worse",
+      "cmd": "python tools/gd.py test res://ai/rivals/tests/test_real_route.gd -- --timeout=300 --stub=traffic,police,audio,fx,damage,hud,menu --route=river_loop --limit=150",
+      "must": [
+        "REAL ROUTE TESTS OK (0 failures)"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "elevated_sprint does not get worse",
+      "cmd": "python tools/gd.py test res://ai/rivals/tests/test_real_route.gd -- --timeout=300 --stub=traffic,police,audio,fx,damage,hud,menu --route=elevated_sprint --limit=150",
+      "must": [
+        "REAL ROUTE TESTS OK (0 failures)"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "the real start test passes",
+      "cmd": "python tools/gd.py test res://ai/rivals/tests/test_real_start.gd",
+      "must": [
+        "REAL START TESTS OK (0 failures)"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "the real start test fails on the old code",
+      "cmd": "python tools/mutation_check.py --test res://ai/rivals/tests/test_real_start.gd --files auto",
+      "must": [
+        "MUTATION_CHECK OK"
+      ],
+      "timeoutS": 2400
+    },
+    {
+      "name": "the sandbox judges still pass",
+      "cmd": "python tools/gd.py test res://ai/rivals/tests/test_rival_driving.gd && python tools/gd.py test res://ai/rivals/tests/test_start_grid.gd",
+      "must": [
+        "RIVAL DRIVING TESTS OK (0 failures)",
+        "START GRID TESTS OK (0 failures)"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "the race flow keeps its 13 passing checks",
+      "cmd": "python tools/fail_lines.py res://ai/rivals/tests/test_race_flow.gd --args \"--timeout=300\" --allow \"no rival hit a rival over 800\" --min-pass 12 --timeout 600",
+      "must": [
+        "FAIL_LINES OK"
+      ],
+      "timeoutS": 1500
+    },
+    {
+      "name": "the rivals test folder does not get worse",
+      "cmd": "python tools/run_tests.py --filter res://ai/rivals/ --jobs 2 --out F:/dev/skyrush-out/tmp/rivals-real-route/tests --allow-fail test_performance,test_race_flow,test_real_route",
+      "must": [
+        "RUN_TESTS_RATCHET OK"
+      ],
+      "timeoutS": 3000
+    }
+  ],
+  "readonly": [
+    "game/ai/rivals/tests/test_layers.gd",
+    "game/ai/rivals/tests/test_performance.gd",
+    "game/ai/rivals/tests/test_race_flow.gd",
+    "game/ai/rivals/tests/test_real_route.gd",
+    "game/ai/rivals/tests/test_rival_driving.gd",
+    "game/ai/rivals/tests/test_rubber_band.gd",
+    "game/ai/rivals/tests/test_start_grid.gd"
+  ]
+}
