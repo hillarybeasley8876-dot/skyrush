@@ -30,6 +30,7 @@ const LANE_STEP := 3.0
 const LINK_HEIGHT := 1.5        # the end of a lane and the start of the lane it is linked to
 const WINDOW := 1500            # line points (2 m apart) in which the next gate is looked for
 const MISS := 40.0              # a gate the line does not come within this many metres of is missed
+const MAX_REVERSAL_LINES := 12   # the reversals that are printed with their place
 const LEG_KEYS := ["unroutable_legs", "backwards_legs", "relaxed_legs", "partial_legs"]
 
 var _failures := 0
@@ -254,6 +255,23 @@ func _check_route(route: RaceRoute) -> void:
 		straight += gates[g].origin.distance_to(gates[g + 1].origin)
 	_ok(length <= straight * 1.8 + 100.0 and length >= straight * 0.9,
 		"route %s: the line between the gates is %.0f m, the straight lines %.0f m" % [id, length, straight])
+	# 6. the line never turns back on itself: a rival that follows a line with a U-turn drives into the
+	# traffic, or gets stuck and is picked up by the marshal (the same count as test_world_api.gd)
+	var reversals := PackedInt32Array()
+	for i in range(1, mini(points.size() - 6, last + 1)):
+		var ahead := points[i + 5] - points[i]
+		var behind := points[i] - points[i - 1]
+		if ahead.length_squared() > 0.01 and behind.length_squared() > 0.01 				and ahead.normalized().dot(behind.normalized()) < -0.5:
+			reversals.append(i)
+	_ok(reversals.is_empty(), "route %s: %d reversals in the racing line" % [id, reversals.size()])
+	for k in mini(reversals.size(), MAX_REVERSAL_LINES):
+		var at := reversals[k]
+		var leg := 0
+		for g in gate_index.size():
+			if gate_index[g] >= 0 and gate_index[g] <= at:
+				leg = g
+		print("INFO route %s: reversal %d at (%.0f, %.1f, %.0f), after gate %d, line point %d of %d" % [
+			id, k, points[at].x, points[at].y, points[at].z, leg, at, points.size()])
 
 
 # --- reporting -------------------------------------------------------------------------------------
