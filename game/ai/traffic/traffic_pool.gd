@@ -28,6 +28,9 @@ func acquire(model_id: StringName) -> TrafficCar:
 	car.add_to_group("traffic")
 	car.add_to_group("vehicles")
 	car.build(ctx, model_id, Color.WHITE, ctx.rng.randi())
+	# The car waits in the parking place until it is given a lane: a car that waits in the
+	# middle of the city stands where the player drives.
+	car.set_active(false)
 	return car
 
 

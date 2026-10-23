@@ -40,6 +40,11 @@ var wreck_point: Vector3 = Vector3.ZERO
 var vertical_credit: bool = false
 ## The dent painter of the car (null when it has no painted body).
 var painter: DentPainter = null
+## The collision box of the car in its local space: the centre and the half sizes. It is read
+## once per car (the shape of a car does not change) and not on every hit.
+var body_centre: Vector3 = Vector3.ZERO
+var body_half: Vector3 = Vector3.ZERO
+var body_known: bool = false
 ## The tier rig of the car (built when the car is hurt, not when it joins).
 var fx: DamageFx = null
 ## The transforms of the parts that moved (the sprung doors), so the respawn can put them back.

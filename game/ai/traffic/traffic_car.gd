@@ -31,6 +31,17 @@ const SHADOW_ALPHA := 0.6          ## how dark the blob shadow is
 const SHADOW_RANGE := 70.0         ## m: only the cars this close to the player get a shadow
 const COLLISION_LAYER := 1 << 1    ## the traffic drives on this layer
 const COLLISION_MASK := 0b10111    ## what the traffic hits
+## The place where the cars wait for their turn: far under the world. A car that waits in the
+## middle of the city stands where the player drives, and the move to the lane would hit it.
+const PARKING := Vector3(0.0, -500.0, 0.0)
+## The number of parking places (the cars are spread over them, so they do not overlap).
+const PARKING_PLACES := 16
+## m: the space between two parking places.
+const PARKING_STEP := 8.0
+## m: how close the body has to be to the lane before the car may collide again.
+const SETTLE_EPSILON := 0.5
+## The steps a car waits for its body before it collides anyway.
+const SETTLE_LIMIT := 30
 
 ## The lamps of the car (head, tail, brake, indicators).
 var lamps: TrafficLamps = TrafficLamps.new()
@@ -64,6 +75,14 @@ var _far_counter: int = 0
 var _visual: Node3D = null
 var _shape: CollisionShape3D = null
 var _shadow: Decal = null
+## True while the body of the car is still travelling to the lane it was placed on.
+var _settling: bool = false
+## Where the body of the car has to arrive before the car may collide again.
+var _settle_target: Vector3 = Vector3.ZERO
+## The steps the body of the car has been travelling.
+var _settle_steps: int = 0
+## The parking place of the next car that waits.
+static var _parking_next: int = 0
 ## The acceleration of the last tick (m/s^2), used by the brake lamps.
 var _accel: float = 0.0
 ## The personal speed factor of the driver of this car.
@@ -120,11 +139,18 @@ func place(lane: int, distance: float) -> void:
 	_contact_times.clear()
 	_reset_physics()
 	place_on_lane()
+	# The car may not collide until its body has arrived on the lane. The engine moves a frozen
+	# body one step after the transform is set, and it gives the body the velocity of the move
+	# (the distance of the move divided by the step): a car that collides at its old place with
+	# that velocity hits the player with a huge impulse.
+	_settling = true
+	_settle_target = global_position
+	_settle_steps = 0
 	freeze = true
 	freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
 	visible = true
-	collision_layer = COLLISION_LAYER
-	collision_mask = COLLISION_MASK
+	collision_layer = 0
+	collision_mask = 0
 
 
 ## Puts the paint of the car in another colour.
@@ -148,6 +174,20 @@ func set_active(active: bool) -> void:
 	freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
 	stopped = true
 	despawn = true
+	_settling = false
+	park()
+
+
+## Puts the car in the parking place, far under the world, where it waits for its next turn.
+## The cars used to wait at the origin, in the middle of the junction the player drives
+## through: a car that is placed on a lane then leaves the junction with the velocity of the
+## move, and the player that drives through it is hit by a huge impulse.
+func park() -> void:
+	_parking_next = (_parking_next + 1) % PARKING_PLACES
+	var spot := PARKING + Vector3(float(_parking_next) * PARKING_STEP, 0.0, 0.0)
+	global_transform = Transform3D(Basis(), spot)
+	linear_velocity = Vector3.ZERO
+	angular_velocity = Vector3.ZERO
 
 
 ## The physics of a car that drives: no grip, so the lane change is not fought by the tyres.
@@ -372,6 +412,7 @@ func lane_error() -> float:
 ## The physics step of a NEAR car: the lane velocity is steered into the body, the yaw follows
 ## the lane and a hit switches the car to WRECK.
 func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
+	_settle(state)
 	if not TrafficCar.measure_cost:
 		integrate(state)
 		return
@@ -379,3 +420,25 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	integrate(state)
 	var cost := float(Time.get_ticks_usec() - started) / 1000.0
 	TrafficCar.integrate_total_ms += cost
+
+
+## The body of the car has arrived on its lane: the car may collide again.
+##
+## The engine moves a frozen body one step after its transform is set, and it gives the body the
+## velocity of the move (the distance of the move divided by the step). While the body is still
+## on its way, the car must not collide: it would hit whatever is on its old place with the
+## velocity of the move.
+func _settle(state: PhysicsDirectBodyState3D) -> void:
+	if not _settling:
+		return
+	_settle_steps += 1
+	var arrived: bool = state.transform.origin.distance_to(_settle_target) <= SETTLE_EPSILON
+	# A car that drives (NEAR) or tumbles (WRECK) is not waiting for its body any more.
+	var driving: bool = not freeze
+	if not arrived and not driving and _settle_steps < SETTLE_LIMIT:
+		return
+	_settling = false
+	collision_layer = COLLISION_LAYER
+	collision_mask = COLLISION_MASK
+	# The velocity of the move is gone with the move: the car must not carry it into the traffic.
+	linear_velocity = Vector3.ZERO

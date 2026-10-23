@@ -28,7 +28,8 @@ var sparks: SparkBurst = null
 ## The damage of a hit on one car.
 ## `own_velocity` is the speed of the car before the hit (the respawn speed of §7.8).
 func hit(car: VehicleBase, other: Node3D, n_car: Vector3, point: Vector3, v_n: float,
-		impact: float, v_rel: Vector3, elapsed: float, own_velocity: Vector3 = Vector3.ZERO) -> void:
+		impact: float, v_rel: Vector3, elapsed: float, own_velocity: Vector3 = Vector3.ZERO,
+		severity: float = -1.0) -> void:
 	if car == null or car.is_wrecked:
 		return
 	var state := registry.state_of(car)
@@ -44,8 +45,13 @@ func hit(car: VehicleBase, other: Node3D, n_car: Vector3, point: Vector3, v_n: f
 	# The front-ram bonus: the car that hits with its front takes half the damage. In a
 	# head-on both cars drive into each other, so nobody rams and nobody gets the bonus.
 	var factor := ram_factor(car, n_car, other_car)
-	var hp := Rules.damage_hp(v_n, k) * factor
-	var contact := contact_of(car, n_car, point, v_n, impact, v_rel.normalized())
+	# The severity of the hit: the speed it took from this car. It is the measure of the
+	# hit for the HP and for the wreck rule. It is the momentum the hit transferred divided
+	# by the mass of the car and not the closing speed of the two cars: a car that meets a
+	# slow car head-on does not lose the speed of the other car.
+	var force: float = severity if severity >= 0.0 else v_n
+	var hp := Rules.damage_hp(force, k) * factor
+	var contact := contact_of(car, state, n_car, point, v_n, impact, v_rel.normalized())
 	# The point of the hit, so the wheel that comes off is the nearest one.
 	state.wreck_point = contact.world_point
 	# The side of the hit, so the bumper hangs on the corner away from it.
@@ -62,8 +68,8 @@ func hit(car: VehicleBase, other: Node3D, n_car: Vector3, point: Vector3, v_n: f
 				impact)
 	spark_hit(contact, v_rel)
 	parts.check(car, state, contact, v_n, impact, own_velocity)
-	# A head-on hit at 30 m/s wrecks the car that was hit (dossier 7.2).
-	if factor >= 1.0 and impact >= Rules.HIT_LIMIT and v_n >= Rules.WRECK_HEAD_ON:
+	# A head-on hit that took 30 m/s of speed from the car wrecks it (dossier 7.2).
+	if factor >= 1.0 and impact >= Rules.HIT_LIMIT and force >= Rules.WRECK_HEAD_ON:
 		car.wreck(other)
 
 
@@ -72,24 +78,24 @@ func vertical_takedown(vehicle: VehicleBase, other_car: VehicleBase, normal: Vec
 		point: Vector3, v_n: float) -> void:
 	var below := other_car if other_car.global_position.y < vehicle.global_position.y else vehicle
 	var above := vehicle if below == other_car else other_car
-	var contact := contact_of(below, -normal, point, v_n, 1.0)
+	var contact := contact_of(below, registry.state_of(below), -normal, point, v_n, 1.0)
 	below.apply_damage(Rules.VERTICAL_HP, contact.world_point, above)
 	if above == Game.player:
 		registry.state_of(below).vertical_credit = true
 
 
 ## The contact of a hit, in the world and in the local space of the car that was hit.
-func contact_of(car: VehicleBase, n_world: Vector3, point: Vector3, v_n: float,
-		impact: float, slide: Vector3 = Vector3.ZERO) -> Contact:
+func contact_of(car: VehicleBase, state: CarDamage, n_world: Vector3, point: Vector3,
+		v_n: float, impact: float, slide: Vector3 = Vector3.ZERO) -> Contact:
 	var contact := Contact.new()
 	var basis := car.global_transform.basis
 	var local_normal := basis.inverse() * n_world
 	if local_normal.length() < 0.001:
 		local_normal = Vector3.FORWARD
 	local_normal = local_normal.normalized()
-	var box := body_box(car)
-	var centre: Vector3 = box["centre"]
-	var half: Vector3 = box["half"]
+	body_box(car, state)
+	var centre: Vector3 = state.body_centre
+	var half: Vector3 = state.body_half
 	# The point of the contact: the one the engine reported, or the middle of the panel.
 	var world_point := point
 	var local_point := car.global_transform.affine_inverse() * world_point
@@ -159,7 +165,14 @@ func spark_hit(contact: Contact, v_rel: Vector3) -> void:
 
 
 ## The body box of a car in its local space (the collision shape of the car).
-func body_box(car: VehicleBase) -> Dictionary:
+##
+## The box of a car does not change, so it is read once per car and kept in its state: a hit
+## must not walk the children of the car again.
+func body_box(car: VehicleBase, state: CarDamage) -> void:
+	if state != null and state.body_known:
+		return
+	var centre: Vector3 = DEFAULT_CENTRE
+	var half: Vector3 = DEFAULT_HALF
 	for child in car.get_children():
 		var node := child as CollisionShape3D
 		if node == null:
@@ -167,5 +180,10 @@ func body_box(car: VehicleBase) -> Dictionary:
 		var box := node.shape as BoxShape3D
 		if box == null:
 			continue
-		return {"centre": node.position, "half": box.size * 0.5}
-	return {"centre": DEFAULT_CENTRE, "half": DEFAULT_HALF}
+		centre = node.position
+		half = box.size * 0.5
+		break
+	if state != null:
+		state.body_centre = centre
+		state.body_half = half
+		state.body_known = true
