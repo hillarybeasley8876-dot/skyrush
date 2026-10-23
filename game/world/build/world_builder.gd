@@ -166,9 +166,12 @@ func _build_terrain() -> void:
 	var window := data.window_rect()
 	var bodies := terrain.parse_water(data.water())
 	var ground := _group("Terrain")
-	GroundBuilder.new().build(ground, window, terrain.water_polygons())
+	# The ground goes on past the window and the walls close the world (TerrainBuilder.EDGE_RING).
+	var area := window.grow(TerrainBuilder.EDGE_RING)
+	GroundBuilder.new().build(ground, area, terrain.water_polygons())
 	terrain.build_water(ground, bodies)
 	terrain.build_kill_floor(ground, window)
+	terrain.build_edge_walls(ground, area)
 
 
 func _build_roads() -> void:

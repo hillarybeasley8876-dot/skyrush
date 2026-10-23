@@ -24,6 +24,10 @@ const TRAVEL := 0.20
 
 const BUMPSTOP_K := 300000.0
 
+## The damper of the bump stop, as a time (s): the damping coefficient is BUMPSTOP_K * this (N*s/m). It acts in both directions
+## while the stop is engaged, so the energy of a hard landing is lost and not given back as a bounce.
+const BUMPSTOP_DAMP_TIME := 0.06
+
 ## Static sag of the 1.9 t car: 4659.75 N per corner / 70 000 N/m. Every car keeps this sag
 ## (its spring rate is mass * g / 4 / sag), so a heavy car does not sit on its bump stops.
 const STATIC_SAG := 0.0665679
@@ -50,6 +54,11 @@ const PROBE_CAST := 0.90
 ## the rule a car that leans against a building has its wheels on the wall: the suspension pushes it
 ## along the wall, the upright torque aligns it to the wall and it drives up the facade.
 const MIN_GROUND_NORMAL_Y := 0.35
+
+## The lowest the floor of the collision box may be above the road at rest (m). The wheels climb a kerb with their springs;
+## the box has to stay clear of the kerbs of the city (15 cm) with the sag and the pitch of a car at 250 km/h, or the lower
+## edge of the box meets the kerb like a wall: the car stops dead or is thrown.
+const MIN_BOX_BOTTOM := 0.34
 
 ## The gravity of the world (m/s^2): the static sag of a car is mass * g / 4 / k.
 const GRAVITY := 9.81

@@ -164,6 +164,52 @@ func _build_banks(parent: Node3D, poly: PackedVector2Array, y: float, id: String
 	parent.add_child(mi)
 
 
+## The ground of the city goes on for EDGE_RING metres past the window, and the walls stand at the end of it. Before, the
+## ground ended at the window and a car that drove off the end of a road at the edge fell 60 m to the kill floor (9 drives of 60
+## in the fuzz drive), was wrecked there, and the police cars that followed it fell as well.
+const EDGE_RING := 100.0
+## The walls at the edge: thick (a car at 250 km/h moves 0.6 m a tick), from under the kill floor to far above the highest
+## viaduct and sky lane, and slippery (the car slides along them, it does not stick).
+const EDGE_WALL_THICKNESS := 10.0
+const EDGE_WALL_BOTTOM := -80.0
+const EDGE_WALL_TOP := 400.0
+const EDGE_WALL_FRICTION := 0.05
+
+
+## The invisible walls around `area` (the ground of the city and its ring): four boxes outside the border, whose inner faces are
+## on the border.
+func build_edge_walls(parent: Node3D, area: Rect2) -> void:
+	var body := StaticBody3D.new()
+	body.name = "EdgeWalls"
+	body.collision_layer = 1
+	body.collision_mask = 0
+	var material := PhysicsMaterial.new()
+	material.friction = EDGE_WALL_FRICTION
+	material.bounce = 0.0
+	body.physics_material_override = material
+	var height := EDGE_WALL_TOP - EDGE_WALL_BOTTOM
+	var middle := (EDGE_WALL_TOP + EDGE_WALL_BOTTOM) * 0.5
+	var long_x := area.size.x + 2.0 * EDGE_WALL_THICKNESS
+	var long_z := area.size.y + 2.0 * EDGE_WALL_THICKNESS
+	var centre := area.get_center()
+	var half := EDGE_WALL_THICKNESS * 0.5
+	# west, east, north, south: {size, centre}
+	var walls: Array[Array] = [
+		[Vector3(EDGE_WALL_THICKNESS, height, long_z), Vector3(area.position.x - half, middle, centre.y)],
+		[Vector3(EDGE_WALL_THICKNESS, height, long_z), Vector3(area.end.x + half, middle, centre.y)],
+		[Vector3(long_x, height, EDGE_WALL_THICKNESS), Vector3(centre.x, middle, area.position.y - half)],
+		[Vector3(long_x, height, EDGE_WALL_THICKNESS), Vector3(centre.x, middle, area.end.y + half)],
+	]
+	for wall in walls:
+		var shape := CollisionShape3D.new()
+		var box := BoxShape3D.new()
+		box.size = wall[0]
+		shape.shape = box
+		shape.position = wall[1]
+		body.add_child(shape)
+	parent.add_child(body)
+
+
 func build_kill_floor(parent: Node3D, window: Rect2) -> void:
 	var mesh := ProcMeshes.box(Vector3(window.size.x + 400.0, 4.0, window.size.y + 400.0))
 	var mi := MeshInstance3D.new()

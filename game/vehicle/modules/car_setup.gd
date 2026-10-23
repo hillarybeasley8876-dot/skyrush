@@ -4,6 +4,7 @@ extends RefCounted
 ## spec and the modules.
 
 const BodyTuning := preload("res://vehicle/tuning/body_tuning.gd")
+const SuspensionTuning := preload("res://vehicle/tuning/suspension_tuning.gd")
 const BoostTuning := preload("res://vehicle/tuning/boost_tuning.gd")
 const WheelMod := preload("res://vehicle/modules/wheel.gd")
 const DriveMod := preload("res://vehicle/modules/drive.gd")
@@ -71,10 +72,14 @@ func build_body(body: Node3D) -> void:
 		shape = CollisionShape3D.new()
 		shape.name = "Body"
 		body.add_child(shape)
+	# The wheels are probes: they climb a kerb with their springs. The box must not meet a kerb at all (a kerb that meets
+	# the lower edge of the box is a wall, not a step), so its floor is at least MIN_BOX_BOTTOM above the road.
+	var top: float = spec.body_center_y + spec.body_size.y * 0.5
+	var bottom: float = maxf(spec.body_center_y - spec.body_size.y * 0.5, SuspensionTuning.MIN_BOX_BOTTOM)
 	var box := BoxShape3D.new()
-	box.size = spec.body_size
+	box.size = Vector3(spec.body_size.x, top - bottom, spec.body_size.z)
 	shape.shape = box
-	shape.position = Vector3(0.0, spec.body_center_y, 0.0)
+	shape.position = Vector3(0.0, (top + bottom) * 0.5, 0.0)
 
 
 ## Creates the four wheel probes.

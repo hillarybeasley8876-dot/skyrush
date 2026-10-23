@@ -256,3 +256,27 @@ wins when both are there), as the lead's TILE-TEX note asks.
 - (to bund) `bund_buildings.glb` should be exported in world coordinates (like
   `bund_lights.json`) or the placement transform has to be documented.
 - (to buildings) the block glb tiles reference `textures/windows_far_emit.jpg`, which is missing.
+
+
+## 2026-10-24: street props were not solid, the edge of the world
+
+Found with `game/tools/fuzz_drive.gd` and a ray probe in the real world.
+
+* **The 49,571 props had no collision.** `PropCollision.build` made the shapes (a dozen shared `BoxShape3D`/`CylinderShape3D`)
+  and gave them to the physics server by RID. The builder is a temporary object (`PropCollision.new().build(...)`): the
+  shapes died with it, the server dropped them from the bodies, and the 76 `PropCollision_<tile>` bodies had 0 shapes.
+  Cars drove through lamps, trees, signs, bollards, bus stops and noise walls (the 50 hits of the fuzz runs were all buildings,
+  roads and cars). The bodies keep the shapes now (`body.set_meta(&"shapes", ...)`): 1000-1600 shapes per tile body, every kind
+  is solid for a ray at knee height (25 of 25 per kind).
+* **The boxes ignored the heading of the prop.** `bus_stop` (8 x 2.6 x 1.8, 556 of them), `noise_wall` (30 x 3.6 x 0.35, 33),
+  `planter`, `bike_share`, `metro_entrance` were put into the world axes: 88 % of the bus stops and 85 % of the noise walls
+  stood at an angle to their box (a 30 m box across the viaduct is a wall the player cannot see). The shapes turn with the yaw
+  of the prop now (and follow its `scale_vector`: a noise wall of 24 m). The arm of a traffic light mast was on +Z of the pole,
+  the glb has it on -Z (7.3 m); it is a box of 0.45 x 0.45 x 7 m at the top, on -Z.
+  Test: `world/tests/test_prop_collision_orientation.gd` (25 checks, fails on the old code: not even the heading 0 box was there).
+* **The edge of the world.** The ground ended at the window (x -2200..1800, z -1200..1800); 9 of 60 random drives drove off the end
+  of a road, fell 60 m to the kill floor (y -60), were wrecked there (hp 0), and the police that followed them fell as well
+  (police at y -11 beyond x -2200). `TerrainBuilder.EDGE_RING = 100` m of ground go on past the window and
+  `build_edge_walls` closes the world with four invisible walls (10 m thick, y -80..400, friction 0.05) on the border of that ground.
+  Test: `world/tests/test_edge_walls.gd` (rays at 5 heights, the corners, a body at 50/100/200 m/s).
+* Not done: the 100 m of ground beyond the window are empty asphalt (no props, no buildings).

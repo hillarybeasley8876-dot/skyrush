@@ -114,7 +114,9 @@ func suspension_force(v_mount: Vector3, up: Vector3, damp_mult: float) -> float:
 	var c: float = _damp_bump if v_vert < 0.0 else _damp_rebound
 	var f: float = _spring_k * compression - c * damp_mult * v_vert
 	if compression > _travel:
-		f += _bumpstop_k * (compression - _travel)
+		# The stop springs and damps: a stop that only springs gives the energy of a hard landing back as a bounce (the
+		# floor of the collision box used to take the landing, and it is out of reach of the road now).
+		f += _bumpstop_k * (compression - _travel) - _bumpstop_k * SuspensionTuning.BUMPSTOP_DAMP_TIME * v_vert
 	return clampf(f, 0.0, _susp_max)
 
 

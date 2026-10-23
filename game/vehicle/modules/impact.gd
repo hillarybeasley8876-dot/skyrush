@@ -30,6 +30,11 @@ var glance_torque: float = 0.0
 var glancing: bool = false
 ## How many solver spikes the guard has cut (a test reads it).
 var spikes: int = 0
+## What the guard saw on the last tick (the fuzz drive records it): the box contacts, the speed away from the ground and
+## whether the guard was holding.
+var seen_contacts: int = 0
+var seen_away: float = 0.0
+var seen_holding: bool = false
 
 var _prev_velocity: Vector3 = Vector3.ZERO
 ## The seconds the solver spike guard still holds after a spike.
@@ -133,6 +138,9 @@ func tick(dt: float, car: VehicleBase, state: PhysicsDirectBodyState3D, mass: fl
 func _guard_solver_spike(state: PhysicsDirectBodyState3D, velocity: Vector3, ground_normal: Vector3,
 		own_kick: bool, dt: float) -> Vector3:
 	_spike_hold = maxf(_spike_hold - dt, 0.0)
+	seen_contacts = state.get_contact_count()
+	seen_away = velocity.dot(ground_normal)
+	seen_holding = _spike_hold > 0.0
 	if own_kick or ground_normal == Vector3.ZERO or state.get_contact_count() == 0:
 		return velocity
 	var away: float = velocity.dot(ground_normal)

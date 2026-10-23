@@ -362,11 +362,35 @@ car is not the cause (the old one flew the same), its wider track only made the 
   every tick. Result: 0 launches in 40 passes (worst pitch 13 deg), a 17 cm kerb at 240 km/h is a 0.6 m hop. Tests:
   `test_kerb_graze.gd`. (`damage/tests/test_budget.gd` spawned its eight cars in ONE spot and got its damage from the push
   that threw them apart: they are side by side now.)
-* **Tried and dropped: raising the box to 0.30 m.** It cleared the 15 cm kerbs, but the floor of the box is what stops the
-  car after a hard landing (a landing from a Big Hop rebounds 0.03-0.1 m with it, 0.3 m and 0.2 s of air without it): the landing
-  mini boost test failed. The guard does the job without touching the landing.
+* **Tried and dropped: raising the box to 0.30 m** (superseded the same day, see "The box floor and the bump stop" below).
 * **Out of bounds.** `spawn_placer.closest_lane` assigned `range()` to an `Array[int]`: a script error whenever the car was
   further than 96 m from every lane, so the put-back after a fall placed it at 1 m over the spot where it fell. Fixed, with a
   check in `test_world_api.gd`.
 * Not done: the Bund street runs within a car width of the landmark colliders in ~750 of 152 000 lane samples (the old
   and the new car alike).
+
+## 2026-10-24 (2): the box floor and the bump stop
+
+The fuzz drive (`game/tools/fuzz_drive.gd`, a flight recorder for every odd drive) caught a launch the guard did not stop:
+the Lujiazui ring road has a median of 6 x 1 m concrete strips, 15 cm above the road. At 250 km/h the lower front edge of the
+box (22 cm above the road at rest, 17 cm at speed) meets a strip's side: Jolt resolves the edge-edge contact with a diagonal
+normal, takes 70 % of the speed in two ticks (250 -> 72 km/h), throws the car up at 33 m/s in ONE tick (the guard acts on the
+next tick: it is too late) and the damage module counts the lost speed as a crash (hp 0 in 4 passes of 24). The measure
+(`zz_probe_graze`, flat world, slab kerbs 10-26 cm, 150/200/250 km/h): from 17 cm up, every kerb stopped the car dead, whatever
+its width. A kerb of 15-17 cm was the edge between "a bump" and "a wall", decided by the pitch of the car.
+
+* **The wheels climb kerbs, the box must not meet them.** `SuspensionTuning.MIN_BOX_BOTTOM = 0.34` m: `car_setup.build_body`
+  puts the floor of the collision box at least this high (the top of the box stays where the spec has it). Kerbs up to 26 cm:
+  speed loss 0 km/h, vertical speed <= 1.7 m/s, pitch <= 2.5 deg, at 150 and 250 km/h. A wall of 55 cm still stops the car.
+* **The bump stop springs and damps.** The floor of the box used to take the hard landings (inelastic: no bounce); out of
+  reach of the road it does not, and an undamped bump stop gave the landing back as a bounce (`test_air_boosts`: the landing
+  mini fired as an air mini, the car was in the air again). `SuspensionTuning.BUMPSTOP_DAMP_TIME = 0.06` s: the stop damps
+  with `BUMPSTOP_K * 0.06` N*s/m in both directions while it is engaged. Drops of 0.3-15 m at 0, 120 and 250 km/h: no bounce
+  above the old values (a drop of 2 m is taken by the suspension alone now, 0.5 s to settle against 0.3 s; from 4 m the floor
+  of the box still takes it, 0.12 m deeper).
+* Tests: `test_kerb_climb.gd` (kerbs 10-24 cm x 1 and 6 m wide x 150/250 km/h, the wall, the landing; fails on the old tuning
+  with a loss of 250 km/h). All 34 vehicle tests, damage 12/12, police 20/20, modes 7/7, fx 3/3 pass.
+* Telemetry for the tools: `impact.seen_contacts/seen_away/seen_holding` (what the guard saw on its last tick).
+* Not changed: a landing from a drop of 0.5 m at 250 km/h in the test host still counts as a crash for the damage module (the
+  impulse of a hit is `mass * |dv|` of ONE tick, and a landing changes the horizontal speed a little too): the fuzz start was
+  lowered (`--lift`) instead. To look at: the damage of a normal landing at top speed.

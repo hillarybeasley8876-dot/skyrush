@@ -131,7 +131,8 @@ func build(parent: Node3D, entries: Array[Dictionary]) -> Array[Dictionary]:
 		_add_entry(entry)
 		_register_light(entry)
 		_collision.append({"type": type, "transform": spot,
-			"height_m": float(entry.get("height_m", 0.0))})
+			"height_m": float(entry.get("height_m", 0.0)),
+			"scale_vector": entry.get("scale_vector", Vector3.ONE)})
 	for key in gantries.keys():
 		signs.append(_signs.build_gantry(parent, gantries[key]))
 	print("[world] furniture: the props are sorted in %.2f s" % (float(Time.get_ticks_msec() - clock) / 1000.0))

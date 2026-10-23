@@ -5,6 +5,11 @@ extends RefCounted
 ##
 ## The bodies are on the prop layer (bit 2), with the mask 0: the cars drive on the mask 0b111,
 ## so they hit the props, and the props do not hit anything themselves.
+##
+## Two things made the props not solid for a long time: the shapes were freed with the (temporary)
+## builder, so the bodies had no shape at all (test_prop_collision_orientation.gd checks the
+## rays), and the boxes ignored the heading of the prop (a bus shelter or a noise wall that
+## runs along the road had a box along the X axis of the world).
 
 const Layers := preload("res://world/api/layers.gd")
 
@@ -38,6 +43,11 @@ const SHAPES: Dictionary = {
 	"vms": {"size": Vector3(0.5, 7.0, 0.5)},
 }
 
+## The arm of a traffic light mast (the glb: 7.3 m long on -Z, at the top of the pole): its box, and how far under the top of
+## the pole the box is.
+const MAST_ARM_SIZE := Vector3(0.45, 0.45, 7.0)
+const MAST_ARM_DROP := 0.25
+
 ## The bodies of the city, one per tile.
 var _bodies: Dictionary = {}
 ## The shapes of the city, shared between the props of a kind.
@@ -58,12 +68,19 @@ func build(parent: Node3D, entries: Array[Dictionary]) -> int:
 		if not SHAPES.has(type):
 			continue
 		var xform: Transform3D = entry.get("transform", Transform3D.IDENTITY)
-		for part in _parts_of(type, float(entry.get("height_m", 0.0))):
-			_add(parent, xform, part["shape"], part["offset"], part["yaw"])
+		var stretch: Vector3 = entry.get("scale_vector", Vector3.ONE)
+		var yaw := yaw_of(xform)
+		for part in _parts_of(type, float(entry.get("height_m", 0.0)), stretch):
+			_add(parent, xform.origin, yaw, part["shape"], part["offset"])
 	# The bodies enter the tree at the end: a body that is in the tree is in the broadphase,
 	# and every shape that is added to it costs a broadphase update.
 	for key in _bodies.keys():
-		parent.add_child(_bodies[key])
+		var body: StaticBody3D = _bodies[key]
+		# The physics server knows a shape by its RID only: the resource has to live as long as the body. The builder is a
+		# temporary object and the shared shapes died with it, the server dropped them from the bodies and the 49,000 props of
+		# the city had no collision at all (every body had 0 shapes). The bodies keep the shapes now.
+		body.set_meta(&"shapes", _shared_shapes.values())
+		parent.add_child(body)
 	return _count
 
 
@@ -83,29 +100,34 @@ func _body_for(parent: Node3D, point: Vector3) -> StaticBody3D:
 	return body
 
 
-## Adds one shape to the body of the tile of the prop.
-func _add(parent: Node3D, xform: Transform3D, shape: Shape3D, offset: Vector3,
-		yaw: float) -> void:
-	var body := _body_for(parent, xform.origin)
-	var basis := Basis(Vector3.UP, yaw)
-	var local := Transform3D(basis, xform.origin + offset - body.position)
+## The yaw of a prop (its rotation about the vertical axis): the props stand upright, and the shapes turn with them.
+static func yaw_of(xform: Transform3D) -> float:
+	return atan2(-xform.basis.x.z, xform.basis.x.x)
+
+
+## Adds one shape to the body of the tile of the prop. `offset` is in the frame of the prop (it turns with the yaw).
+func _add(parent: Node3D, origin: Vector3, yaw: float, shape: Shape3D, offset: Vector3) -> void:
+	var body := _body_for(parent, origin)
+	var turn := Basis(Vector3.UP, yaw)
+	var local := Transform3D(turn, origin + turn * offset - body.position)
 	PhysicsServer3D.body_add_shape(body.get_rid(), shape.get_rid(), local)
 	_count += 1
 
 
 ## The shapes of a prop kind: a cylinder for a pole, a box for a shelter or a wall, and a box
 ## for the arm of a traffic-light mast. The shapes are shared: the city has 48,000 props and
-## there are only a dozen different shapes.
-func _parts_of(type: String, height_m: float) -> Array[Dictionary]:
+## there are only a dozen different shapes. `stretch` is the scale of the prop (a noise wall
+## of 24 m is the wall of 30 m scaled by 0.8 on X).
+func _parts_of(type: String, height_m: float, stretch: Vector3 = Vector3.ONE) -> Array[Dictionary]:
 	var spec: Dictionary = SHAPES[type]
 	var out: Array[Dictionary] = []
 	if spec.has("size"):
-		var size: Vector3 = spec["size"]
+		var size: Vector3 = (spec["size"] as Vector3) * stretch
 		var box := _shared("box_%s" % str(size), func() -> Shape3D:
 			var b := BoxShape3D.new()
 			b.size = size
 			return b)
-		out.append({"shape": box, "offset": Vector3(0.0, size.y * 0.5, 0.0), "yaw": 0.0})
+		out.append({"shape": box, "offset": Vector3(0.0, size.y * 0.5, 0.0)})
 		return out
 	var height := float(spec.get("height", 9.0))
 	if height_m > 0.1 and type.begins_with("lamp"):
@@ -116,14 +138,14 @@ func _parts_of(type: String, height_m: float) -> Array[Dictionary]:
 		c.radius = radius
 		c.height = maxf(height, 0.2)
 		return c)
-	out.append({"shape": cylinder, "offset": Vector3(0.0, height * 0.5, 0.0), "yaw": 0.0})
+	out.append({"shape": cylinder, "offset": Vector3(0.0, height * 0.5, 0.0)})
 	if type == "traffic_light":
-		# The arm of the mast: a box over the road.
+		# The arm of the mast: a box over the road. The glb has it on -Z of the pole (7.3 m, at the top).
 		var arm := _shared("mast_arm", func() -> Shape3D:
 			var a := BoxShape3D.new()
-			a.size = Vector3(0.5, 0.4, 4.5)
+			a.size = Vector3(MAST_ARM_SIZE.x, MAST_ARM_SIZE.y, MAST_ARM_SIZE.z)
 			return a)
-		out.append({"shape": arm, "offset": Vector3(0.0, height - 0.4, 2.4), "yaw": 0.0})
+		out.append({"shape": arm, "offset": Vector3(0.0, height - MAST_ARM_DROP, -MAST_ARM_SIZE.z * 0.5)})
 	return out
 
 
