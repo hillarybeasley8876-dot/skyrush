@@ -33,6 +33,7 @@ bump_strength = 2.0
 render_priority = 0
 shader = ExtResource("1_uqdsv")
 shader_parameter/base_color = Color(0.9254902, 0.92941177, 0.9372549, 1)
+shader_parameter/allow_override = true
 shader_parameter/metallic_amount = 0.0
 shader_parameter/base_roughness = 0.12
 shader_parameter/flake_strength = 0.06

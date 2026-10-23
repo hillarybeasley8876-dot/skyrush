@@ -4,7 +4,8 @@ extends RefCounted
 const C := preload("res://shaders/recipes_common.gd")
 
 
-## Car paint. `kind`: "hero" (Ano White Roadster), "npc" (traffic), "police", "taxi".
+## Car paint. `kind`: "hero" (Ano White Roadster), "hero_black" (its gloss black panels), "npc"
+## (traffic), "police", "taxi".
 ## The paint colour is a plain uniform; a traffic car overrides it with base_color_override.
 static func car_paint(kind: String) -> ShaderMaterial:
 	var m := C.mat("car_paint.gdshader")
@@ -16,7 +17,14 @@ static func car_paint(kind: String) -> ShaderMaterial:
 	var coat := 1.0
 	var coat_rough := 0.04
 	var grime_h := 0.30
+	var keeps_colour := false
 	match kind:
+		"hero_black":
+			paint = Color("0b0c0e")   # the two-tone Roadster: white pearl body, gloss black panels
+			rough = 0.1
+			flake = 0.0
+			coat_rough = 0.03
+			keeps_colour = true   # a rival takes its racing colour on the white paint only
 		"npc":
 			paint = Color("e8e8e6")
 			metallic = 0.3
@@ -66,23 +74,25 @@ static func car_paint(kind: String) -> ShaderMaterial:
 		"clearcoat_detail_scale": 0.5,
 		"clearcoat_breakup": 0.06,
 		"use_livery": false,
+		"allow_override": not keeps_colour,
 	})
 	return m
 
 
-## Roadster canopy: dark bronze-gold, fresnel, metallic sheen, rain streaks.
-static func glass_gold() -> ShaderMaterial:
-	var m := C.mat("glass_gold.gdshader")
+## Roadster canopy: neutral dark smoke, fresnel, a silver sheen, the cabin faintly through it,
+## rain streaks. (The first Roadster had bronze-gold glass; the car is black and white now.)
+static func glass_smoke() -> ShaderMaterial:
+	var m := C.mat("glass_canopy.gdshader")
 	C.apply(m, {
-		"tint_color": Color("5a3f2a"),
-		"sheen_color": Color(0.85, 0.68, 0.42),
-		"interior_color": Color(0.30, 0.22, 0.16),
-		"base_alpha": 0.68,
-		"interior_amount": 0.35,
+		"tint_color": Color("0a0b0c"),
+		"sheen_color": Color(0.80, 0.83, 0.88),
+		"interior_color": Color(0.10, 0.10, 0.11),
+		"base_alpha": 0.55,
+		"interior_amount": 0.30,
 		"fresnel_power": 3.0,
-		"fresnel_opacity": 0.85,
-		"sheen_strength": 0.5,
-		"roughness_value": 0.05,
+		"fresnel_opacity": 0.8,
+		"sheen_strength": 0.45,
+		"roughness_value": 0.04,
 		"rain_streaks": 1.0,
 		"streak_noise": C.noise(0.05, 31, 512),
 		"streak_scale": 3.0,

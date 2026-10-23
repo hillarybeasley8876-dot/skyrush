@@ -102,3 +102,8 @@ centre, spin axis X), `Caliper_*`, `Wing` (origin at hinge), `Door_L`, `Door_R` 
 `Lamp_FR`, `Brake_Light` meshes; Empties: `Nozzle_R1`..`Nozzle_R4` (rear, +Y = exhaust
 direction), `Nozzle_P1`..`Nozzle_P6` (perimeter: P1/P2 front corners down, P3/P4 sides, P5/P6
 rear corners down), `Fan_Intake`, `Light_Front`, `Light_Rear`, `Camera_Hood`, `Seat_Driver`.
+Since 2026-10-23 the hero glb is the black and white Car Concept (`blender/car/concept/`): it also has
+`Mirror_L`, `Mirror_R`, `Skirt_L`, `Skirt_R` and `Plate_Rear` (parts of the damage catalogue), carries no texture,
+and has no `Diffuser`, `Lamp_Front` or `*_Inner` surfaces; `Wheel_*` is one mesh (rim, tyre and disc), the
+contract materials are `SH_car_paint` (white), `SH_car_paint_black` (gloss black panels, ignores the racing
+colour) and `SH_glass_smoke`.

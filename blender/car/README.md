@@ -1,5 +1,9 @@
 # The hero Roadster (blender/car)
 
+> **Since 2026-10-23 the game's Roadster is not built here any more.** The hero car is the Khronos Car Concept,
+> converted and painted black and white by `blender/car/concept/` (see its README). This procedural car, the
+> 2nd-gen Tesla Roadster described below, stays in the repository as the reference it was built from.
+
 Procedural build of the SKYRUSH hero car, the 2nd-gen Tesla Roadster as revealed
 on 2026-10-15, with the **Rocket** trim (4 rear nozzles + 6 perimeter nozzles,
 one driver seat and a COPV tank in the passenger space).

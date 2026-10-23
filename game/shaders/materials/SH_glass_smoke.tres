@@ -1,0 +1,30 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/glass_canopy.gdshader" id="1_5gvmw"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_4e8q5"]
+seed = 31
+frequency = 0.05
+fractal_octaves = 4
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_yv7y5"]
+noise = SubResource("FastNoiseLite_4e8q5")
+seamless = true
+bump_strength = 2.0
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_5gvmw")
+shader_parameter/tint_color = Color(0.039215688, 0.043137256, 0.047058824, 1)
+shader_parameter/sheen_color = Color(0.8, 0.83, 0.88, 1)
+shader_parameter/interior_color = Color(0.1, 0.1, 0.11, 1)
+shader_parameter/base_alpha = 0.55
+shader_parameter/interior_amount = 0.3
+shader_parameter/fresnel_power = 3.0
+shader_parameter/fresnel_opacity = 0.8
+shader_parameter/sheen_strength = 0.45
+shader_parameter/roughness_value = 0.04
+shader_parameter/rain_streaks = 1.0
+shader_parameter/streak_noise = SubResource("NoiseTexture2D_yv7y5")
+shader_parameter/streak_scale = 3.0
+shader_parameter/streak_speed = 0.35

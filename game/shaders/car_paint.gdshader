@@ -16,6 +16,7 @@ global uniform float skyrush_rain;      // 0 dry .. 1 raining
 
 uniform vec3 base_color : source_color = vec3(0.925, 0.929, 0.937); // Ano White #ECEDEF
 instance uniform vec4 base_color_override : source_color = vec4(0.0); // per-car override (alpha > 0)
+uniform bool allow_override = true;   // false: this paint keeps its colour whatever the car wears (the black panels of the two-tone Roadster)
 instance uniform float panel_offset_y = 0.0;  // height of the mesh origin in car space (0 = the body root)
 // The rest are PLAIN uniforms: they differ per material (hero vs traffic vs police vs taxi) and
 // must survive in the .tres, which cannot store instance-uniform values.
@@ -69,7 +70,7 @@ void vertex() {
 
 void fragment() {
 	vec3 paint = base_color;
-	if (base_color_override.a > 0.0) {
+	if (allow_override && base_color_override.a > 0.0) {
 		paint = base_color_override.rgb;
 	}
 	vec3 col = paint * texture(albedo_texture, UV).rgb;

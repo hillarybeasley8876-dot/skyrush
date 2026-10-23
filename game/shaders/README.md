@@ -49,9 +49,9 @@ Ano White until the traffic director sets `base_color` per car.
 | `facade_windows.gdshader` | `SH_facade_office`, `SH_facade_residential` | Procedural floors/bays/windows, per-building `building_seed`, cladding texture + rain grime, LOD fade below ~2 px per cell. Window emission peaks at 0.95 so windows never bloom. |
 | `neon_tube.gdshader` | `SH_neon` | White-hot core, saturated rim, dropout/faulty flicker, flat LED strip mode. |
 | `hologram_billboard.gdshader` | `SH_hologram` | mode 0 = LED dot grid (tower screens), mode 1 = additive hologram with scanlines, chroma split and glitch. |
-| `car_paint.gdshader` | `SH_car_paint`, `SH_car_paint_npc` | Clear coat, orange-peel micro-normal, fine flake, livery on UV2, road grime in the lowest 0.3 m, rain water film. |
+| `car_paint.gdshader` | `SH_car_paint`, `SH_car_paint_black`, `SH_car_paint_npc` | Clear coat, orange-peel micro-normal, fine flake, livery on UV2, road grime in the lowest 0.3 m, rain water film. |
 | `sky_night_city.gdshader` | (the sky, not a mesh) | Gradient + city-lit cloud deck; the radiance cubemap pass samples the real `shanghai_bund` HDRI at 0.18 energy and cross-fades to `vignaioli_night` while it rains (`rain_mix`). |
-| `glass_gold.gdshader` | `SH_glass_gold` | Roadster canopy: dark bronze-gold, fresnel, metallic sheen, faint interior, rain streaks. |
+| `glass_canopy.gdshader` | `SH_glass_smoke` | Roadster canopy: neutral dark smoke (the first Roadster had bronze-gold), fresnel, metallic sheen, faint interior, rain streaks. |
 | `glass_tinted.gdshader` | `SH_glass_tinted` | Dark tinted glass for traffic cars. |
 | `water_river.gdshader` | `SH_water` | The Huangpu: opaque, very dark, two scrolling normals 40 deg apart, plus rain ripples while it rains, SSR friendly. |
 | `soffit_blue.gdshader` | `SH_soffit_blue` | Under-deck wash (#2357F3, E1 = 0.9) plus the two edge LED strips (E3). UV: u = along the deck in METRES, v = across it. |
@@ -68,7 +68,7 @@ matching shader uniforms **when the shader declares them**:
 
 | Imported glTF slot | Shader uniform | Present in |
 |---|---|---|
-| albedo | `albedo_texture` | road_wet, facade_windows, car_paint, glass_gold, glass_tinted, neon_tube, soffit_blue, concrete_stained |
+| albedo | `albedo_texture` | road_wet, facade_windows, car_paint, glass_canopy, glass_tinted, neon_tube, soffit_blue, concrete_stained |
 | normal | `normal_texture` | road_wet, facade_windows, car_paint, soffit_blue, concrete_stained |
 | roughness | `roughness_texture` | road_wet, car_paint, concrete_stained |
 | emission | `emission_texture` | neon_tube, hologram_billboard |
@@ -93,10 +93,11 @@ All other uniforms stay as the `.tres` sets them.
 | `SH_neon` | neon_tube | `emission_color #FF2A8A`, `emission_energy 5.0` (E3 4-6, hero E4 8-12), `core_whiten 0.12`, `dropout_rate 0.015`; the imported base-colour and emission maps mask the tube colour | `neon_color` (alpha > 0 = valid), `neon_energy` (> 0 = valid), `neon_seed`, `faulty`, `is_flat_strip` |
 | `SH_hologram` | hologram_billboard | `emission_texture` = the ad artwork (the props' own PNG is forwarded here), `scan_lines 220`, `chroma_px 2`, `glitch_rate 0.08` | `mode`, `energy`, `tint` |
 | `SH_car_paint` | car_paint | Ano White `#ECEDEF`, `base_roughness 0.12`, `clearcoat 1.0 / 0.04`, `flake_strength 0.06`, `grime_amount 0.15`, `grime_height_m 0.30`, orange peel 0.10 in object space, the clear coat broken up by the `SurfaceImperfections001` dust sheet (object space, 2 m tile) | `base_color_override` (alpha > 0 = valid), `panel_offset_y` |
+| `SH_car_paint_black` | car_paint | the gloss black of the two-tone Roadster: `#0B0C0E`, `base_roughness 0.10`, `clearcoat 1.0 / 0.03`, no flake, grime as the white paint. The rival cars keep it black when they take their racing colour (`RivalVisual`) | `base_color_override`, `panel_offset_y` |
 | `SH_car_paint_police` | car_paint | POLICE_WHITE `#F2F4F5`, metallic 0, `base_roughness 0.35`, clear coat 1.0 / 0.06, grime 0.35 | `base_color_override`, `panel_offset_y` |
 | `SH_car_paint_taxi` | car_paint | the fictional teal `#1E8C8A`, metallic 0.2, `base_roughness 0.38`, clear coat 0.9 / 0.07 | `base_color_override`, `panel_offset_y` |
 | `SH_car_paint_npc` | car_paint | `metallic 0.3`, `base_roughness 0.42`, `clearcoat 0.8 / 0.08`, `flake_strength 0.2`, `grime_amount 0.45`, `grime_height_m 0.45` | `base_color_override` (**the traffic director must set it per car**), `panel_offset_y` |
-| `SH_glass_gold` | glass_gold | tint `#5A3F2A`, `base_alpha 0.68`, `fresnel_opacity 0.85`, `sheen_strength 0.5`, `roughness 0.05`, the grime and the rain streaks in object space, the imported grime at its authored UV | - |
+| `SH_glass_smoke` | glass_canopy | tint `#0A0B0C`, `base_alpha 0.55`, `fresnel_opacity 0.8`, `sheen_strength 0.45`, `roughness 0.04`, the grime and the rain streaks in object space, the imported grime at its authored UV | - |
 | `SH_glass_tinted` | glass_tinted | tint `#0A0E12`, `base_alpha 0.72`, `roughness 0.08`, `grime_amount 0.25` | - |
 | `SH_water` | water_river | `#0B1016`, `roughness 0.08` (DOSSIER 4.9), `wave_strength 0.38`, two normals at 0.6 / 0.25 m/s 40 deg apart, `tile_m 6.0` | - |
 | `SH_soffit_blue` | soffit_blue | wash `#2357F3` at `wash_energy 0.9` with `wash_falloff 0.45` (100 % at the outer edge, ~55 % toward the girder), the strips `#5A3DFF` E3 (4.5) and 5 cm wide (`strip_width_m` / `soffit_width_m`), the formwork joints every 1.2 m (u in METRES) and the girder lines at v = 0.25 / 0.5 / 0.75, the water stains from the `Leaking004` OPACITY sheet, `uv_scale 1.0` | - |

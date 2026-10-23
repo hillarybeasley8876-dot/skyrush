@@ -70,6 +70,12 @@ func _ready() -> void:
 	UI.place(credit, 1, 1, 1, 1, -300, -52, -36, -28)
 	add_child(credit)
 
+	# CC BY 4.0 asks for the credit where the player can see it (CREDITS.md has the full text).
+	var model_credit := UI.label("车模 Car Concept © Eric Chadwick / Darmstadt Graphics Group · CC BY 4.0", 13,
+			Palette.TEXT_DIM, Fonts.text(), HORIZONTAL_ALIGNMENT_RIGHT)
+	UI.place(model_credit, 1, 1, 1, 1, -700, -26, -36, -6)
+	add_child(model_credit)
+
 	_snapshot = TextureRect.new()
 	_snapshot.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_snapshot.stretch_mode = TextureRect.STRETCH_SCALE

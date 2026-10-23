@@ -16,10 +16,11 @@ const EXPECTED: Dictionary = {
 	"SH_neon": ["neon_tube.gdshader", {"core_whiten": 0.12, "dropout_rate": 0.015, "emission_energy": 5.0}],
 	"SH_hologram": ["hologram_billboard.gdshader", {"scan_lines": 220.0, "glitch_rate": 0.08}],
 	"SH_car_paint": ["car_paint.gdshader", {"base_roughness": 0.12, "clearcoat_amount": 1.0, "grime_height_m": 0.3}],
+	"SH_car_paint_black": ["car_paint.gdshader", {"base_color": Color("0b0c0e"), "base_roughness": 0.1, "clearcoat_amount": 1.0, "allow_override": false}],
 	"SH_car_paint_npc": ["car_paint.gdshader", {"base_roughness": 0.42, "clearcoat_amount": 0.8, "grime_amount": 0.45}],
 	"SH_car_paint_police": ["car_paint.gdshader", {"base_color": Color("f2f4f5"), "base_roughness": 0.35, "clearcoat_rough": 0.06}],
 	"SH_car_paint_taxi": ["car_paint.gdshader", {"base_color": Color("1e8c8a"), "base_roughness": 0.38}],
-	"SH_glass_gold": ["glass_gold.gdshader", {"tint_color": Color("5a3f2a"), "roughness_value": 0.05}],
+	"SH_glass_smoke": ["glass_canopy.gdshader", {"tint_color": Color("0a0b0c"), "roughness_value": 0.04}],
 	"SH_glass_tinted": ["glass_tinted.gdshader", {"tint_color": Color("0a0e12"), "base_alpha": 0.72}],
 	"SH_water": ["water_river.gdshader", {"water_color": Color("0b1016"), "roughness_value": 0.08}],
 	"SH_soffit_blue": ["soffit_blue.gdshader", {"wash_color": Color("2357f3"), "wash_energy": 0.9, "wash_falloff": 0.45, "strip_energy": 4.5, "strip_width_m": 0.05, "joint_spacing_m": 1.2}],
@@ -36,7 +37,7 @@ const WEATHER_SHADERS: Dictionary = {
 	"road_wet": [true, true],
 	"road_marking": [true, true],
 	"car_paint": [true, true],
-	"glass_gold": [true, true],
+	"glass_canopy": [true, true],
 	"glass_tinted": [true, true],
 	"concrete_stained": [true, false],   # rain does not change concrete, the wetness does
 	"sky_night_city": [false, true],      # a rain sky is overcast, the road wetness is irrelevant
@@ -56,10 +57,11 @@ const INSTANCE_UNIFORMS: Dictionary = {
 ## has no AO map at all, so its ao stays empty (the shader reads white).
 const EMPTY_SAMPLERS: Dictionary = {
 	"SH_car_paint": ["albedo_texture", "roughness_texture", "normal_texture", "livery_tex"],
+	"SH_car_paint_black": ["albedo_texture", "roughness_texture", "normal_texture", "livery_tex"],
 	"SH_car_paint_npc": ["albedo_texture", "roughness_texture", "normal_texture", "livery_tex"],
 	"SH_car_paint_police": ["albedo_texture", "roughness_texture", "normal_texture", "livery_tex"],
 	"SH_car_paint_taxi": ["albedo_texture", "roughness_texture", "normal_texture", "livery_tex"],
-	"SH_glass_gold": ["albedo_texture"],
+	"SH_glass_smoke": ["albedo_texture"],
 	"SH_glass_tinted": ["albedo_texture"],
 	"SH_neon": ["emission_texture", "albedo_texture"],
 	"SH_road_marking_white": ["mask_texture"],

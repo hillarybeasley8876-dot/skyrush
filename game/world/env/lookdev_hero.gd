@@ -68,9 +68,9 @@ static func build_hero(p: Node, roadster: Node) -> void:
 		_set_panel_offsets(roadster)
 	else:
 		# A stand-in for the Roadster while the car unit exports the glb: the same SH_ materials
-		# on a car-shaped body, so the look-dev still judges the paint and the gold glass.
+		# on a car-shaped body, so the look-dev still judges the paint and the smoke glass.
 		K.mesh(p, K.box(Vector3(1.86, 0.62, 4.3)), K.mat("SH_car_paint"), Vector3(0, 0.62, 0))
-		K.mesh(p, K.box(Vector3(1.5, 0.55, 1.9)), K.mat("SH_glass_gold"), Vector3(0, 1.16, -0.15))
+		K.mesh(p, K.box(Vector3(1.5, 0.55, 1.9)), K.mat("SH_glass_smoke"), Vector3(0, 1.16, -0.15))
 		K.mesh(p, K.box(Vector3(1.7, 0.22, 1.1)), K.mat("SH_car_paint"), Vector3(0, 0.95, 0.85))
 		for sx: float in [-1.0, 1.0]:
 			for sz: float in [-1.0, 1.0]:

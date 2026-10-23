@@ -29,7 +29,7 @@ No more than ~15 % of any frame may be saturated neon. Warm/cool contrast: gold 
 | Neon primaries | pink `#FF2BD6`, cyan `#19E6FF`, blue `#3D5CFF`, violet `#9B5CFF`, amber `#FFB000`, red `#FF2A3A`, acid green `#9DFF3C` (rare) |
 | Street light | sodium `#FFB46B` (old streets), LED `#D9E8FF` (expressways), under-deck strips `#2F7BFF` |
 | Bund | floodlit stone `#E9C98F` on `#C9B79A`, gold lamps `#FFCF87` |
-| Roadster | **Ano White `#ECEDEF`** (the reveal car — overrides the red in ref/art), black trim `#111113`, gold glass `#5A3F2A`, light bar `#FF1A2E`, plume `#CFE8FF` |
+| Roadster | **Ano White `#ECEDEF`** (the reveal car — overrides the red in ref/art), black trim `#111113`, light bar `#FF1A2E`, plume `#CFE8FF`. **Changed 2026-10-23 (owner's request): the car is black and white** — white pearl body, gloss black panels `#0B0C0E`, black wheels, neutral smoke glass `#0A0B0C` (the gold glass `#5A3F2A`, gold wheels and red accents are gone); the model is the Khronos Car Concept, see `blender/car/concept/README.md` |
 | Police | red `#FF2030`, blue `#2A5CFF`, white body `#F4F6FA`, livery blue `#1E4FB8` |
 | UI | cyan `#19E6FF`, magenta `#FF2BD6`, text `#F2F6FF`, panel glass `#0A0F1E` @ 70 %, warning `#FFCC00` |
 

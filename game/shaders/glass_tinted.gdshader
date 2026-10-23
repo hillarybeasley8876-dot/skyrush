@@ -1,6 +1,6 @@
 // SKYRUSH - tinted car glass for traffic cars (NPC). Dark, slightly dirty, cheap and opaque enough
 // to hide the empty interior of a low-detail traffic model.
-// New shader for the environment unit (sibling of glass_gold.gdshader).
+// New shader for the environment unit (sibling of glass_canopy.gdshader).
 shader_type spatial;
 render_mode blend_mix, depth_draw_opaque, cull_disabled, diffuse_burley, specular_schlick_ggx;
 

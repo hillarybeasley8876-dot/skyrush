@@ -1,15 +1,15 @@
 # 飞驰申城 SKYRUSH: NEON SHANGHAI
 
-赛博朋克夜上海街机竞速游戏。主角车是 2026 款特斯拉 Roadster，靠冷气推进器跳跃、悬停、飞行车道和空中翻滚。玩法参考 QQ飞车（漂移、小喷、氮气），加上警察追捕和碰撞物理。地图按比例压缩还原上海：外滩、陆家嘴、延安高架龙柱立交、南浦大桥螺旋引桥、收费站、加油站和充电站。
+赛博朋克夜上海街机竞速游戏。主角车是一台黑白双色的 Roadster 概念跑车，靠冷气推进器跳跃、悬停、飞行车道和空中翻滚。玩法参考 QQ飞车（漂移、小喷、氮气），加上警察追捕和碰撞物理。地图按比例压缩还原上海：外滩、陆家嘴、延安高架龙柱立交、南浦大桥螺旋引桥、收费站、加油站和充电站。
 
-A cyberpunk night-Shanghai arcade racer starring the 2026 Tesla Roadster (cold-gas thrusters: hops, hover, sky lanes, barrel rolls), with QQ Speed–style drifting, police pursuits and crash physics.
+A cyberpunk night-Shanghai arcade racer starring a black-and-white concept Roadster (cold-gas thrusters: hops, hover, sky lanes, barrel rolls), with QQ Speed–style drifting, police pursuits and crash physics.
 
 > 这是公开版快照，对应 M3.1 最后一轮评审时的状态，全部脚本都能通过检查，游戏可以完整运行。之后未完成的修复，以及 `ref/` 里的第三方参考图片，不在公开版里。
 >
 > Public snapshot of the state after the last worker review round: every script passes the project check and the game runs end to end. Later work-in-progress fixes and the third-party reference photos in `ref/` are not included.
 
 - 引擎：Godot 4.7.2（Forward+、Metal、Jolt 物理 120 Hz）
-- 建模：Blender 5.2，全部用 Python 程序化生成（车辆、城市、地标、道具）
+- 建模：Blender 5.2，用 Python 程序化生成（城市、地标、道具、交通车）；主角车是转换后的第三方模型（见下）
 - 开发方式：21 个模块由 MiniMax M3.1 工人按任务书实现，Claude Opus 负责规划、评审和美术指导
 
 ## 运行
@@ -39,5 +39,6 @@ tools/blender.sh run blender/npc_cars/build.py   # 重新生成某个模块的�
 
 ## 第三方素材
 
+- 主角车模：Khronos glTF Sample Assets 的 Car Concept（Eric Chadwick，CC BY 4.0，原型是 Unity Fan 的 CC0 模型），改成黑白双色并按本项目的车辆契约重新拆分，转换脚本在 `blender/car/concept/`，署名全文见 `CREDITS.md`
 - 贴图：Poly Haven、ambientCG（CC0），用 `tools/textures/fetch.py` 下载
 - 字体：得意黑 Smiley Sans、Noto Sans SC（SIL OFL，许可证见 `game/assets/fonts/`）
