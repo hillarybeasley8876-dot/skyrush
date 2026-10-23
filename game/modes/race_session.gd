@@ -37,6 +37,8 @@ var new_record: bool = false
 
 var _gate_builder := RaceGates.new()
 var _results := RaceResults.new()
+## The status of the race for the HUD.
+var _status: ModeStatus = ModeStatus.new(self)
 var _countdown_number: int = 3
 var _countdown_left: float = 0.0
 var _player_slot: Transform3D = Transform3D.IDENTITY
@@ -101,10 +103,19 @@ func _process(delta: float) -> void:
 		State.COUNTDOWN:
 			_hold_player_on_grid()
 			_tick_countdown(delta)
+			_push_status(delta)
 		State.RUNNING:
 			elapsed += delta
 			_update_progress()
+			_push_status(delta)
 			_check_finished()
+
+
+## The status of the race for the HUD: the lap and the place of the player, the laps of this
+## race and the number of racers.
+func _push_status(delta: float) -> void:
+	_results.racers = racers
+	_status.push(&"race", _results.live_status(laps), delta)
 
 
 ## Holds the player on its grid slot through the countdown (the menu may unfreeze it).

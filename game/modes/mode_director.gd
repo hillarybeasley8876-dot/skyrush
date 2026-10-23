@@ -172,6 +172,8 @@ func _stop_session() -> void:
 	var director := _rival_director()
 	if director != null and director.has_method("stop_race"):
 		director.call("stop_race")
+	# The mode is over: the HUD has nothing to show (the next mode says what it needs).
+	Events.mode_status.emit(&"none", {})
 
 
 ## The chase of a pursuit is over: the heat goes back to zero, the units leave the road and
