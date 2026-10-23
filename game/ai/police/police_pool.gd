@@ -10,6 +10,10 @@ extends RefCounted
 const BLOCK_COUNT := 3
 const STRIP_COUNT := 4
 const DRONE_COUNT := 2
+## The collision layer of a unit on the road (the layer of the cars) and the mask it hits
+## (the world, the cars and the props): the same as the spec of the vehicle unit.
+const UNIT_LAYER := 1 << 1
+const UNIT_MASK := 0b111
 ## The kinds of the pooled units: the head-on unit needs the SUV, the PIT the interceptor.
 const UNIT_KINDS: Array[StringName] = [
 	&"heavy_suv", &"heavy_suv", &"interceptor", &"interceptor", &"interceptor", &"interceptor",
@@ -108,10 +112,16 @@ func take_unit(kind: StringName = &"") -> PoliceCar:
 	_free_units.remove_at(index)
 	car.process_mode = Node.PROCESS_MODE_INHERIT
 	car.visible = true
-	car.collision_layer = 2
+	car.collision_layer = UNIT_LAYER
+	# A unit that was wrecked lost its collider (the wreck flow takes it away): the unit
+	# that comes out of the pool hits the world and the other cars again.
+	car.collision_mask = UNIT_MASK
 	car.add_to_group("police")
 	car.add_to_group("vehicles")
 	car.reset_for_spawn()
+	# The unit is back on the road: the unit that keeps the state of the cars (the damage
+	# unit) makes it whole again. The signal is the only link between the two units.
+	Events.vehicle_recycled.emit(car)
 	return car
 
 

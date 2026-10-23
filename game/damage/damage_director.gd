@@ -9,6 +9,7 @@ extends Node3D
 const Rules := preload("res://damage/damage_rules.gd")
 const Parts := preload("res://damage/part_catalog.gd")
 const CarDamage := preload("res://damage/car_damage.gd")
+const CarRecycler := preload("res://damage/car_recycler.gd")
 const Contact := preload("res://damage/contact.gd")
 const ContactPairs := preload("res://damage/contact_pairs.gd")
 const CarStateManager := preload("res://damage/car_state_manager.gd")
@@ -29,6 +30,8 @@ const TRACK_REFRESH := 0.5
 
 
 var _registry: CarStateManager = null
+## The restore of the cars that come out of their pool.
+var _recycler: CarRecycler = null
 var _tracked: Array[VehicleBase] = []
 var _prev_velocity: Dictionary = {}   # instance id -> the velocity before the last step
 var _pairs: ContactPairs = ContactPairs.new()   # the contacts of the pairs of cars
@@ -68,6 +71,9 @@ func _ready() -> void:
 	_flow = WreckFlow.new()
 	_flow.name = "WreckFlow"
 	add_child(_flow)
+	_recycler = CarRecycler.new()
+	_recycler.registry = _registry
+	_recycler.flow = _flow
 	_parts = PartManager.new()
 	_parts.debris = _debris
 	_takedowns = TakedownTracker.new()
@@ -83,6 +89,7 @@ func _ready() -> void:
 	Events.vehicle_wrecked.connect(_on_vehicle_wrecked)
 	Events.vehicle_damaged.connect(_on_vehicle_damaged)
 	Events.player_respawned.connect(_on_player_respawned)
+	Events.vehicle_recycled.connect(_on_vehicle_recycled)
 
 
 ## The static textures and the shader uniforms are built here, not on the first crash: the
@@ -354,6 +361,15 @@ func _on_player_respawned() -> void:
 		respawn_usec = Time.get_ticks_usec() - t0
 
 
+## A pooled car (traffic, police) comes back into play: it is a whole new car.
+##
+## The wreck of its old life is void (the sink, the fade and the hide), the car has its
+## health back and its damage state is fresh. A car that was never hurt is not touched:
+## the traffic spawns cars all the time and the handler must cost nothing.
+func _on_vehicle_recycled(vehicle: VehicleBase) -> void:
+	_recycler.on_recycled(vehicle)
+
+
 ## Sets the tier of a car and shows it.
 func _update_tier(vehicle: VehicleBase) -> void:
 	if vehicle == null or not is_instance_valid(vehicle):
@@ -390,6 +406,7 @@ func _on_vehicle_wrecked(vehicle: VehicleBase, source: Node3D) -> void:
 	if vehicle == null:
 		return
 	var state := _registry.state_of(vehicle)
+	state.wrecked = true
 	var fx := state.ensure_fx()
 	if fx != null:
 		fx.apply_tier(CarDamage.Tier.WRECKED)

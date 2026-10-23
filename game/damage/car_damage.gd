@@ -16,6 +16,9 @@ const ZONE_TOP := &"top"
 var vehicle: VehicleBase = null
 var max_health: float = 100.0
 var tier: int = Tier.CLEAN
+## True when the car was wrecked: a car that comes out of its pool has to be made whole
+## again, even when the pool repaired it before the signal.
+var wrecked: bool = false
 ## The damage per zone (dossier §7.6 uses the front damage for the bumper).
 var zone_damage: Dictionary = {}
 ## The glb node names of the parts that already came off.
@@ -49,6 +52,10 @@ var body_known: bool = false
 var fx: DamageFx = null
 ## The transforms of the parts that moved (the sprung doors), so the respawn can put them back.
 var rest_transforms: Dictionary = {}
+## The place of the visual of the car when it was whole: a violent wreck tilts it on the bare
+## hub, so a car that comes out of its pool has to get it back.
+var rest_visual: Transform3D = Transform3D.IDENTITY
+var rest_visual_known: bool = false
 ## The parts that already sprang open (a door opens once, not on every hit).
 var sprung: Dictionary = {}
 
@@ -57,6 +64,10 @@ func setup(car: VehicleBase) -> void:
 	vehicle = car
 	max_health = maxf(car.max_health, 1.0)
 	zone_damage = {ZONE_FRONT: 0.0, ZONE_REAR: 0.0, ZONE_SIDE: 0.0, ZONE_TOP: 0.0}
+	var visual := car.get_visual_root()
+	if visual != null:
+		rest_visual = visual.transform
+		rest_visual_known = true
 
 
 ## The tier rig of the car, built the first time the car is hurt.
@@ -101,11 +112,19 @@ func is_detached(node_name: StringName) -> bool:
 	return detached.has(node_name)
 
 
-## Marks a part as gone and remembers its mesh, so the respawn can put it back.
-func mark_detached(node_name: StringName, node: MeshInstance3D = null) -> void:
+## Marks a part as gone and remembers its meshes, so the respawn can put them back.
+## `meshes` are the meshes of the part (the node, its children and its inner shell).
+func mark_detached(node_name: StringName, node: MeshInstance3D = null,
+		meshes: Array = []) -> void:
 	detached[node_name] = true
-	if node != null:
-		detached_nodes[node_name] = node
+	var group: Array = []
+	for mesh in meshes:
+		if mesh is MeshInstance3D:
+			group.append(mesh)
+	if group.is_empty() and node != null:
+		group.append(node)
+	if not group.is_empty():
+		detached_nodes[node_name] = group
 
 
 ## Remembers where a part was, so the respawn can put it back.
@@ -127,10 +146,10 @@ func mark_sprung(node_name: StringName) -> void:
 func reset() -> void:
 	zone_damage = {ZONE_FRONT: 0.0, ZONE_REAR: 0.0, ZONE_SIDE: 0.0, ZONE_TOP: 0.0}
 	detached.clear()
-	for node in detached_nodes.values():
-		var mesh := node as MeshInstance3D
-		if mesh != null and is_instance_valid(mesh):
-			mesh.visible = true
+	for meshes: Array in detached_nodes.values():
+		for node: MeshInstance3D in meshes:
+			if node != null and is_instance_valid(node):
+				node.visible = true
 	detached_nodes.clear()
 	for node_name: StringName in rest_transforms:
 		var mesh := _mesh_of(node_name)
@@ -142,7 +161,19 @@ func reset() -> void:
 	pre_crash_velocity = Vector3.ZERO
 	wreck_impact = 0.0
 	vertical_credit = false
+	wrecked = false
 	tier = Tier.CLEAN
+
+
+## A car that comes out of its pool: it is a whole new car, the visual included (a violent
+## wreck tilts it on the bare hub of the wheel that came off).
+func recycle() -> void:
+	reset()
+	if not rest_visual_known or vehicle == null or not is_instance_valid(vehicle):
+		return
+	var visual := vehicle.get_visual_root()
+	if visual != null:
+		visual.transform = rest_visual
 
 
 ## The mesh of a part of the car.

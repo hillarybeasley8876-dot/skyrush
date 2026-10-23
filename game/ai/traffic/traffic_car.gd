@@ -151,6 +151,9 @@ func place(lane: int, distance: float) -> void:
 	visible = true
 	collision_layer = 0
 	collision_mask = 0
+	# The car is back on the road: the unit that keeps the state of the cars (the damage
+	# unit) makes it whole again. The signal is the only link between the two units.
+	Events.vehicle_recycled.emit(self)
 
 
 ## Puts the paint of the car in another colour.
