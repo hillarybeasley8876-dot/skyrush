@@ -10,6 +10,7 @@ const WATCHDOG_TIME := 4.0      ## s: the window the travel of a rival is measur
 const WATCHDOG_TRAVEL := 15.0   ## m: a rival that covers less than this in the window is stuck
 const WATCHDOG_OFF_LINE := 2.0  ## s: the time a rival may be off its line before the rescue
 const WATCHDOG_SPEED := 1.05    ## the share of the hard cap a rival may not pass
+const OVER_CAP_TIME := 2.0      ## s: the time a car may be above its cap before the rescue
 const OFF_LINE_HEIGHT := 4.0    ## m: the car is off the road when it is this far from the line
 const OFF_LINE_CROSS := 6.0     ## m: the cross-track error that counts as off the road
 const OFF_LINE := 15.0          ## m: the rival is off its line when it is this far from it
@@ -30,6 +31,7 @@ var _watch_start: float = 0.0
 var _watch_time: float = 0.0
 var _off_line_time: float = 0.0
 var _queue_time: float = 0.0
+var _over_cap_time: float = 0.0
 
 
 ## The watchdog: true when the car was rescued (the caller stops the tick).
@@ -51,16 +53,23 @@ func check(brain: RivalBrain, delta: float, car: ArcadeCar, ctx: RivalContext) -
 	# 2: the car is off its line for too long (at any speed).
 	if cross > OFF_LINE:
 		_off_line_time += delta
-		var limit := ROAD_RESCUE_TIME if brain.road.on_road else WATCHDOG_OFF_LINE
-		if _off_line_time > limit:
+		var off_limit := ROAD_RESCUE_TIME if brain.road.on_road else WATCHDOG_OFF_LINE
+		if _off_line_time > off_limit:
 			rescue(brain, car, ctx, "off the line")
 			return true
 	else:
 		_off_line_time = 0.0
 	# 3: the car drives faster than the hard cap of its own car: it is falling.
-	if brain.speed > _hard_cap(car) * WATCHDOG_SPEED:
-		rescue(brain, car, ctx, "too fast")
-		return true
+	# A car that comes back under its cap is not picked up: the nitro of a car ends and
+	# the cap pull of the car brings it back under its cap within a second.
+	var limit := _hard_cap(car) * WATCHDOG_SPEED
+	if brain.speed > limit:
+		_over_cap_time += delta
+		if _over_cap_time > OVER_CAP_TIME:
+			rescue(brain, car, ctx, "too fast")
+			return true
+	else:
+		_over_cap_time = 0.0
 	# 4: the car is off the road: it is high above its line and far away from it.
 	var here := brain.line.point_at(brain.offset)
 	if absf(car.global_position.y - here.y) > OFF_LINE_HEIGHT and cross > OFF_LINE_CROSS:
@@ -87,10 +96,13 @@ func _in_queue(brain: RivalBrain, delta: float) -> bool:
 
 
 ## The highest speed the car of this rival may drive (its own top speed).
+##
+## The nitro counts: a car that burns its N2 may drive as fast as its boost cap allows,
+## and the marshal may not pick it up for that.
 func _hard_cap(car: ArcadeCar) -> float:
 	if car.spec == null:
 		return INF
-	return car.spec.top_speed
+	return maxf(car.spec.top_speed, car.boost.speed_cap)
 
 
 ## Puts the rival back on the road, on its own line.
@@ -115,6 +127,7 @@ func rescue(brain: RivalBrain, car: ArcadeCar, ctx: RivalContext, reason: String
 	_watch_start = brain.distance
 	_watch_time = 0.0
 	_off_line_time = 0.0
+	_over_cap_time = 0.0
 
 
 ## The spot the rescued car is put on: the road of the world at the point of the line.

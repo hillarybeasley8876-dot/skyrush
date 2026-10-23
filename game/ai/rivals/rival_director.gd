@@ -17,7 +17,7 @@ const FAR_DISTANCE := 150.0     ## m: a rival further away than this is ticked a
 const NEAR_REFRESH := 0.1       ## s: the near list of a rival is rebuilt at 10 Hz
 const NEAR_RANGE := 95.0        ## m: the cars this close to a rival are in its near list
 const LANE_LIMIT := 4.5         ## m: the personal line never leaves this far from the line
-const LANE_SLOT := 3.0           ## m: the personal lines of the field are two lanes apart
+const LANE_SLOT := 4.5           ## m: the personal lines of the field are two lanes apart
 const DEFAULT_SEED := 0          ## the seed of a race when none is given
 
 ## The rivals of the current race.

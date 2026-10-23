@@ -25,9 +25,7 @@ const FOLLOW_B := 3.0            ## m/s^2: the comfortable deceleration of the r
 const FOLLOW_V := 4.0            ## the exponent of the free road term of the model
 const CAR_LENGTH := 4.3          ## m: the length of a car (the Roadster of the rivals)
 const PASS_MARGIN_SPEED := 6.0   ## m/s: the rival may be this much faster than the car it passes
-const PASS_CLOSING := 1.5         ## m/s: the rival must be this much faster to close up
 const PASS_GAP := 4.0              ## m: the gap a rival keeps to the car it passes
-const PASS_APPROACH := 35.0        ## m: the distance a rival drives up to the car it passes
 const TIGHT_CLOSING := 3.0         ## m/s: the speed a rival closes up to the car in front with
 const RUBBER_OFF := 0.9          ## the rubber band is off in the last share of the race
 const SLIPSTREAM_BONUS := 0.04   ## the share of the top speed a car in the slipstream gets
@@ -65,6 +63,8 @@ var top_factor: float = 1.0
 var cruise_factor: float = 1.0
 ## The braking the AI plans with (m/s^2).
 var brake_accel: float = 11.0
+## True while the rival may pass the car in front (the grid hold is over).
+var pass_enabled: bool = true
 ## The speed the rival aims for this tick (m/s).
 var target: float = 0.0
 ## The speed the rival would drive if the way were clear (m/s): the corner limit, its top
@@ -129,25 +129,40 @@ func update(delta: float, car: ArcadeCar, ctx: RivalContext, offset: float, spee
 		# The rival is overtaking: it may be a little faster than the car it passes, but
 		# it does not drive into its back.
 		target = minf(target, pass_speed + PASS_MARGIN_SPEED)
-	_drive_inputs(speed)
+	var gap := INF
+	var tight := false
 	if blocked_distance < INF:
 		# The car in front sets the pace: the rival keeps its distance with the model of
 		# the car following, so it does not drive into the back of it.
-		var gap := maxf(blocked_distance - CAR_LENGTH, 0.1)
+		gap = maxf(blocked_distance - CAR_LENGTH, 0.1)
 		# A rival that is faster than the car in front closes up to it: that is the
 		# distance a pass starts from. It closes slowly: a rival that drives into the
 		# back of a slow car cannot stop in time.
-		var tight := potential > blocked_speed + PASS_CLOSING
+		# The overtake counts only when the rival may pass: the rivals keep the column
+		# of their grid slot for the first metres of a race, and the back rows of the
+		# grid may not push the front rows. A rival that may not pass follows the car
+		# in front, and the overtake model would ask it for the 39 m of a pass that is
+		# not allowed: on the grid the back rows braked to a standstill behind it.
+		tight = pass_enabled and potential > blocked_speed
 		if tight:
 			target = minf(target, blocked_speed + TIGHT_CLOSING)
+		# A rival brakes for the car in front only while it is closing on it. A car that
+		# falls behind does not need to slow down: braking for a car that pulls away
+		# costs the rival the gap it never gets back, and on the grid it was the reason
+		# the back rows crawled away behind the row in front.
+		var closing := speed - blocked_speed
+		if gap < EMERGENCY_GAP and closing > 0.0:
+			# The car in front is too close: the rival brakes hard, whatever the model says.
+			var pace := blocked_speed - EMERGENCY_RATE * (EMERGENCY_GAP - gap)
+			target = minf(target, maxf(pace, MIN_FOLLOW_SPEED))
+	# The throttle and the brake follow the target: the target of the overtake and the
+	# emergency brake have to be known before the inputs are made, or they are dead.
+	_drive_inputs(speed)
+	if blocked_distance < INF:
 		var accel := _follow_acceleration(speed, blocked_speed, gap, blocked_speed, tight)
 		if accel < 0.0:
 			brake = maxf(brake, clampf(-accel / BRAKE_GAIN, BRAKE_MIN, 1.0))
 			throttle = 0.0
-		if gap < EMERGENCY_GAP:
-			# The car in front is too close: the rival brakes hard, whatever the model says.
-			var pace := blocked_speed - EMERGENCY_RATE * (EMERGENCY_GAP - gap)
-			target = minf(target, maxf(pace, MIN_FOLLOW_SPEED))
 
 
 ## The share of the top speed the slipstream of the car in front adds.
@@ -199,17 +214,25 @@ func _drive_inputs(speed: float) -> void:
 ##
 ## The model of the car following with the values of a race car: the gap the rival wants
 ## grows with the speed and with the speed it closes on the car in front.
+##
+## A rival that is overtaking (tight) does not brake for the car in front: it is changing
+## lanes, and the clearance of the pass is the job of the pass logic. Without that the
+## model of the car following holds every follower at the speed of the car in front and
+## the field never overtakes: it runs as a train for the whole race.
+##
+## A rival that is not closing on the car in front does not brake for it either: the gap
+## grows on its own, and a brake there only makes the rival fall further behind. That is
+## what held the back rows of the grid back at the start: they braked for a car that was
+## pulling away, crawled off the line and left the field 60 m apart.
 func _follow_acceleration(speed: float, leader_speed: float, gap: float, v0: float,
 		tight: bool = false) -> float:
 	var closing := maxf(speed - leader_speed, 0.0)
 	var wanted := FOLLOW_S0 + speed * FOLLOW_T \
 			+ speed * closing / (2.0 * sqrt(FOLLOW_A * FOLLOW_B))
-	if tight:
-		# The rival is faster: it drives up to the car in front to pass it, but it
-		# keeps the safe distance of the model.
-		wanted = maxf(wanted, PASS_APPROACH + CAR_LENGTH)
 	var free := 1.0 - pow(clampf(speed / maxf(v0, 1.0), 0.0, 4.0), FOLLOW_V)
 	var interaction := pow(wanted / gap, 2.0)
+	if tight or speed <= leader_speed:
+		interaction = 0.0
 	return FOLLOW_A * (free - interaction)
 
 
