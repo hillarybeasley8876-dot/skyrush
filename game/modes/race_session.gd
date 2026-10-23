@@ -32,6 +32,8 @@ var records: GameRecords = null
 var route_id: String = ""
 ## True when the route is a sprint (an open racing line).
 var sprint: bool = false
+## True when the time of the player is a new record (the results screen shows it).
+var new_record: bool = false
 
 var _gate_builder := RaceGates.new()
 var _results := RaceResults.new()
@@ -61,6 +63,7 @@ func setup(new_route: RaceRoute, new_laps: int, level: StringName, new_player: V
 	_countdown_number = 3
 	_countdown_left = 0.0
 	elapsed = 0.0
+	new_record = false
 	_player_home_at = -1.0
 	_field_home_at = -1.0
 	_hold_player_on_grid()
@@ -226,7 +229,9 @@ func _finish_racer(racer: RaceRacer) -> void:
 	if racer.is_player:
 		_player_home_at = elapsed
 		if records != null:
-			records.record_time(route_id, elapsed)
+			# The record is written before the results are built, so the flag is kept here:
+			# the time of the player is the record itself afterwards.
+			new_record = records.record_time(route_id, elapsed)
 		Events.toast.emit("完赛！ FINISH", &"great")
 	elif _rivals_left() == 0:
 		_field_home_at = elapsed
@@ -307,6 +312,7 @@ func _sync_results() -> void:
 	_results.elapsed = elapsed
 	_results.laps = laps
 	_results.sprint = sprint
+	_results.new_record = new_record
 	var line := _racing_line()
 	_results.line_length = line.length if line != null else 0.0
 	if rival_director != null:
@@ -316,6 +322,11 @@ func _sync_results() -> void:
 ## The time gap of a racer to the leader (the live order of the race).
 func gap_to_leader(racer: RaceRacer) -> float:
 	return _results.gap_to_leader(racer)
+
+
+## True when the time of the player is a new record.
+func is_new_record() -> bool:
+	return new_record
 
 
 ## The results of the race (the contract of `Events.race_finished`).

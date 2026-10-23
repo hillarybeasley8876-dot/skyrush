@@ -164,11 +164,22 @@ func _stop_session() -> void:
 	if session != null and is_instance_valid(session):
 		if session.has_method("build_results"):
 			last_results = session.call("build_results")
+		if session is PursuitSession:
+			# A pursuit that is left leaves no chase behind.
+			_stop_police()
 		session.queue_free()
 	session = null
 	var director := _rival_director()
 	if director != null and director.has_method("stop_race"):
 		director.call("stop_race")
+
+
+## The chase of a pursuit is over: the heat goes back to zero, the units leave the road and
+## the police can spawn again.
+func _stop_police() -> void:
+	var police := PoliceLink.director(get_tree())
+	PoliceLink.stop_pursuit(police)
+	PoliceLink.set_spawn_enabled(police, true)
 
 
 ## The session reported its results.

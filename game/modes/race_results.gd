@@ -22,6 +22,8 @@ var sprint: bool = false
 var line_length: float = 0.0
 ## The offset of every gate of the route on the racing line (m).
 var gate_offsets: PackedFloat32Array = PackedFloat32Array()
+## True when the time of the player is a new record.
+var new_record: bool = false
 
 
 ## The racers, the finished ones first and then by the distance covered.
@@ -58,7 +60,7 @@ func build() -> Array:
 		var finished := racer.is_finished()
 		var estimate := estimated_gap(racer)
 		var time := racer.finish_time if finished else elapsed + estimate
-		out.append({
+		var row := {
 			"name": racer.name,
 			"time": time,
 			"position": racer.position,
@@ -66,7 +68,11 @@ func build() -> Array:
 			"finished": finished,
 			"best_lap": racer.best_lap,
 			"gap": maxf(0.0, time - leader),
-		})
+		}
+		if racer.is_player:
+			# Only the row of the player carries the flag: the record is his time.
+			row["new_record"] = new_record
+		out.append(row)
 	return out
 
 

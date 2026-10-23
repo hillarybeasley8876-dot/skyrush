@@ -68,3 +68,17 @@ static func set_spawn_enabled(police: Node, enabled: bool) -> bool:
 	if not enabled and police.has_method(UNITS_METHOD):
 		police.call(UNITS_METHOD)
 	return true
+
+
+## Stops the pursuit: the heat goes back to zero and the units leave the road.
+##
+## The police unit is optional: without a director nothing happens.
+static func stop_pursuit(police: Node) -> bool:
+	if police == null:
+		return false
+	var pursuit: Object = police.get("pursuit")
+	if pursuit != null and pursuit.has_method("reset"):
+		pursuit.call("reset")
+	if police.has_method(UNITS_METHOD):
+		police.call(UNITS_METHOD)
+	return true
