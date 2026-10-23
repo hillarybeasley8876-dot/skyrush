@@ -1,0 +1,69 @@
+{
+  "id": "roads-lips",
+  "title": "The acceleration strip must not roof the ramp",
+  "brief": "briefs/improve/roads-lips.md",
+  "isolation": "worktree",
+  "sparse": [
+    "tools/",
+    "data/",
+    "ref/",
+    "briefs/",
+    "blender/",
+    "game/assets/textures/",
+    "game/assets/city/_tex/",
+    "game/world/data/",
+    "SPEC.md",
+    "ART.md",
+    "CONTRACTS.md",
+    "README.md"
+  ],
+  "owns": [
+    "blender/city/roads/attaches.py"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 250,
+  "timeoutMin": 180,
+  "accept": [
+    {
+      "name": "full Blender road build into the scratch directory",
+      "timeoutS": 1500,
+      "cmd": "python tools/gd.py blender run blender/city/roads/build_roads.py -- --city data/city/city.json --out F:/dev/skyrush-out/tmp/roads-lips/tiles --data F:/dev/skyrush-out/tmp/roads-lips/data",
+      "must": [
+        "DONE in"
+      ]
+    },
+    {
+      "name": "the ramp approaches have almost no surface steps",
+      "cmd": "python tools/city/check_path_blockers.py F:/dev/skyrush-out/tmp/roads-lips/tiles F:/dev/_scratch/attach_paths_v2 --lip 0.25 --max-lips 12 --max-bad 100000",
+      "must": [
+        "PATH_BLOCKERS OK"
+      ]
+    },
+    {
+      "name": "the chain joints have no steps",
+      "cmd": "python tools/city/check_path_blockers.py F:/dev/skyrush-out/tmp/roads-lips/tiles F:/dev/_scratch/chain_paths_v2 --lip 0.25 --max-lips 0 --max-bad 100000",
+      "must": [
+        "PATH_BLOCKERS OK"
+      ]
+    },
+    {
+      "name": "the joint surface stays",
+      "cmd": "python tools/city/check_surface_coverage.py F:/dev/skyrush-out/tmp/roads-lips/tiles F:/dev/skyrush-out/tmp/roads-lips/data/lanes.json --prefix attach_ --tol 0.4 --max-bad 0 --max-area 2445000",
+      "must": [
+        "SURFACE_COVERAGE bad samples: 0"
+      ]
+    },
+    {
+      "name": "the chain connectors do not get worse",
+      "cmd": "python tools/city/check_surface_coverage.py F:/dev/skyrush-out/tmp/roads-lips/tiles F:/dev/skyrush-out/tmp/roads-lips/data/lanes.json --prefix chain_ --tol 0.4 --max-bad 40 --max-area 2445000",
+      "exit": 0
+    },
+    {
+      "name": "the lane graph is unchanged",
+      "cmd": "python tools/city/check_chain_links.py F:/dev/skyrush-out/tmp/roads-lips/data/lanes.json --quiet",
+      "must": [
+        "CHAIN_LINKS OK"
+      ]
+    }
+  ]
+}
