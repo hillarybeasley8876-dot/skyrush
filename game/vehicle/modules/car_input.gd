@@ -11,16 +11,25 @@ const DynamicsMod := preload("res://vehicle/modules/car_dynamics.gd")
 const ApiMod := preload("res://vehicle/modules/car_api.gd")
 const PlayerInputMod := preload("res://vehicle/player_input.gd")
 
+## The shortest time between two horns (s).
+const HORN_COOLDOWN := 0.25
+
 var boost: BoostMod = null
 var thruster: ThrusterMod = null
 var dynamics: DynamicsMod = null
 var api: ApiMod = null
 ## The forward impulse of an air mini boost (空喷), applied by the car body.
 var air_mini_impulse: float = 0.0
+## The seconds since the last horn: a horn is at least HORN_COOLDOWN apart.
+var _horn_clock: float = 1000.0
 
 
-## The nitro, the mini boosts, the roll, the flight exit and the reset.
+## The nitro, the mini boosts, the roll, the flight exit, the horn and the reset.
 func handle(vehicle: VehicleBase, s: PlayerInputMod.Snapshot) -> void:
+	_horn_clock += 1.0 / float(Engine.physics_ticks_per_second)
+	if s.horn_pressed and _horn_clock >= HORN_COOLDOWN:
+		_horn_clock = 0.0
+		Events.horn.emit(vehicle)
 	# The nitro: from a standstill the throttle and the nitro together buy a thruster launch.
 	# At speed the key is the nitro (the launch is a standing start, not a free boost).
 	if s.nitro_pressed:

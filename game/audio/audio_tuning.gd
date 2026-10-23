@@ -323,6 +323,9 @@ const POLICE_HORN_RANGE_M := 30.0
 const POLICE_HORN_MIX_DB := -6.0
 ## The traffic horn is played when the traffic unit asks for it.
 const TRAFFIC_HORN_MIX_DB := -6.0
+## The horn of the player's car (the double horn, a little higher than a bus).
+const PLAYER_HORN_MIX_DB := -4.0
+const PLAYER_HORN_PITCH := 1.15
 ## The radio squelch before and after a police radio line.
 const RADIO_SQUELCH_MIX_DB := -10.0
 

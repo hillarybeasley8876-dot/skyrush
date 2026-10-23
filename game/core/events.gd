@@ -28,6 +28,8 @@ signal barrel_roll(vehicle: VehicleBase, direction: int)
 ## quality: &"clean", &"wobble", &"crash".
 signal landed(vehicle: VehicleBase, airtime: float, impact_speed: float, quality: StringName)
 signal sky_lane_launch(vehicle: VehicleBase, lane: SkyLane)
+## The player pressed the horn (H / R3). The audio unit plays it; the traffic around may react to it.
+signal horn(vehicle: VehicleBase)
 signal flight_changed(vehicle: VehicleBase, active: bool, lane: SkyLane)
 signal n2_ring(vehicle: VehicleBase, lane: SkyLane)
 ## Traffic passed within 1.2 m at ≥ 60 km/h relative.

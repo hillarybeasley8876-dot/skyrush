@@ -73,6 +73,7 @@ func _connect_all() -> void:
 	Events.near_miss.connect(_on_near_miss)
 	Events.stunt.connect(_on_stunt)
 	Events.sky_lane_launch.connect(_on_sky_lane_launch)
+	Events.horn.connect(_on_horn)
 	Events.flight_changed.connect(_on_flight_changed)
 	Events.n2_ring.connect(_on_n2_ring)
 	Events.charge_started.connect(_on_charge_started)
@@ -241,6 +242,13 @@ func _on_near_miss(vehicle: VehicleBase, other: VehicleBase) -> void:
 
 func _on_stunt(kind: StringName, _points: int, _label: String) -> void:
 	_voice(STUNT_VOICES.get(kind, &""), Tuning.VOICE_PRIORITY_QUEUED)
+
+
+## The horn of the player's car: the double horn of a sports car, heard from the car.
+func _on_horn(vehicle: VehicleBase) -> void:
+	if vehicle == null or not is_instance_valid(vehicle):
+		return
+	_sfx_3d(&"horn_traffic_double", vehicle.global_position, Tuning.PLAYER_HORN_MIX_DB, Tuning.PLAYER_HORN_PITCH)
 
 
 func _on_sky_lane_launch(vehicle: VehicleBase, _lane: SkyLane) -> void:
