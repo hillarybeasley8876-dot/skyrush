@@ -17,6 +17,8 @@ const RouteGates := preload("res://world/api/route_gates.gd")
 ## have to be close: at a junction the curve cuts the corner, and a cut of more than two metres
 ## would put the line off the lane.
 const SLICE_STEP := 2.0
+## The step of the refinement of the offset of a gate on a lane (m).
+const REFINE := 0.5
 ## The width of a gate.
 const GATE_WIDTH := 24.0
 ## True when the last leg had to look for its lanes further away than GATE_RADIUS.
@@ -249,6 +251,11 @@ func _exit_offset(lane: LanePath, point: Vector3) -> float:
 ## The offset of the point of the lane closest to `point`, without a full curve search. The
 ## height counts: a lane that crosses itself (the Pudong loop) has two levels at one x/z, and
 ## the gate of the route is on the level of one of them.
+##
+## The lane is sampled every 8 m and the best sample is refined every REFINE metres over the 8 m
+## round it: two lanes that run beside each other (the two lanes of a tunnel) then give a gate the
+## same offset. With the coarse samples alone a leg ended up to 4 m past the gate on one lane and
+## the next leg started up to 4 m before it on the other, and the line stepped back at the gate.
 func _nearest_offset(lane: LanePath, point: Vector3) -> float:
 	if lane.curve == null:
 		return 0.0
@@ -258,13 +265,27 @@ func _nearest_offset(lane: LanePath, point: Vector3) -> float:
 	var steps := maxi(int(length / 8.0), 1)
 	for s in steps + 1:
 		var offset := length * float(s) / float(steps)
-		var sample := lane.curve.sample_baked(offset, true)
-		var distance := Vector2(sample.x - point.x, sample.z - point.z).length() \
-			+ absf(sample.y - point.y)
+		var distance := _offset_distance(lane, offset, point)
+		if distance < best_distance:
+			best_distance = distance
+			best = offset
+	var reach := length / float(steps)
+	var first := maxf(best - reach, 0.0)
+	var last := minf(best + reach, length)
+	var fine := maxi(int((last - first) / REFINE), 1)
+	for s in fine + 1:
+		var offset := first + (last - first) * float(s) / float(fine)
+		var distance := _offset_distance(lane, offset, point)
 		if distance < best_distance:
 			best_distance = distance
 			best = offset
 	return best
+
+
+## The plan distance plus the height difference between a point of the lane and `point`.
+func _offset_distance(lane: LanePath, offset: float, point: Vector3) -> float:
+	var sample := lane.curve.sample_baked(offset, true)
+	return Vector2(sample.x - point.x, sample.z - point.z).length() + absf(sample.y - point.y)
 
 
 func _lane_length(lane: LanePath) -> float:

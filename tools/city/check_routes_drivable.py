@@ -35,6 +35,11 @@ LEVEL = 3.0               # level_rules.LEVEL
 CELL = 32.0
 LONG_LEG = 800.0
 BAKE = 2.0                # the bake interval of the racing line (route_builder.SLICE_STEP, Curve3D.bake_interval)
+HAIRPIN_FREE = 100.0      # lane_path_finder.HAIRPIN_*: a short lane that turns by more than this many degrees costs extra
+HAIRPIN_COST = 600.0
+HAIRPIN_LANE_MAX = 200.0
+HAIRPIN_REACH = 4.0
+REFINE = 0.5              # route_builder._nearest_offset: the step of the refinement round the best sample
 
 
 class Lanes:
@@ -54,6 +59,7 @@ class Lanes:
                     for cz in range(int(min(a[2], b[2]) // CELL) - 1, int(max(a[2], b[2]) // CELL) + 2):
                         self.grid[(cx, cz)].append((i, k))
         self.next = [[self.index[n] for n in ln.get("next", []) if n in self.index] for ln in self.lanes]
+        self.hairpins = {}
 
     def length(self, i):
         return self.cum[i][-1]
@@ -92,14 +98,27 @@ class Lanes:
 
     def nearest_offset(self, i, p):
         """route_builder._nearest_offset: the lane is sampled every length/int(length/8) metres and the sample with the
-        smallest plan distance + height difference wins (a lane that crosses itself has two levels at one x/z)."""
+        smallest plan distance + height difference wins (a lane that crosses itself has two levels at one x/z); the winner is
+        refined every 0.5 m over the 8 m round it, so two lanes beside each other give a gate the same offset."""
         length = self.length(i)
         steps = max(int(length / 8.0), 1)
+
+        def score(off):
+            q = self.at(i, off)
+            return math.hypot(q[0] - p[0], q[2] - p[2]) + abs(q[1] - p[1])
+
         best, best_d = 0.0, float("inf")
         for s in range(steps + 1):
             off = length * s / steps
-            q = self.at(i, off)
-            d = math.hypot(q[0] - p[0], q[2] - p[2]) + abs(q[1] - p[1])
+            d = score(off)
+            if d < best_d:
+                best_d, best = d, off
+        centre, reach = best, length / steps
+        lo, hi = max(0.0, centre - reach), min(length, centre + reach)
+        n = max(int((hi - lo) / REFINE), 1)
+        for k in range(n + 1):
+            off = lo + (hi - lo) * k / n
+            d = score(off)
             if d < best_d:
                 best_d, best = d, off
         return best
@@ -134,10 +153,34 @@ def heading_to_forward(h):
     return (math.sin(r), -math.cos(r))
 
 
+def hairpin_cost(lanes, i):
+    """LanePathFinder._hairpin_cost: a short lane that turns by more than 100 degrees between its first and its last 4 m is a
+    hairpin (a U-turn through a junction) and costs up to 600 m of path, growing with the square of the turn."""
+    cached = lanes.hairpins.get(i)
+    if cached is not None:
+        return cached
+    cost = 0.0
+    length = lanes.length(i)
+    if 1.0 < length <= HAIRPIN_LANE_MAX:
+        reach = min(HAIRPIN_REACH, length * 0.5)
+        p0, p1 = lanes.at(i, 0.0), lanes.at(i, reach)
+        q0, q1 = lanes.at(i, length - reach), lanes.at(i, length)
+        head = (p1[0] - p0[0], p1[2] - p0[2])
+        tail = (q1[0] - q0[0], q1[2] - q0[2])
+        lh, lt = math.hypot(*head), math.hypot(*tail)
+        if lh > 0.01 and lt > 0.01:
+            angle = math.degrees(math.acos(max(-1.0, min(1.0, (head[0] * tail[0] + head[1] * tail[1]) / (lh * lt)))))
+            share = max(0.0, min(1.0, (angle - HAIRPIN_FREE) / (180.0 - HAIRPIN_FREE)))
+            cost = HAIRPIN_COST * share * share
+    lanes.hairpins[i] = cost
+    return cost
+
+
 def link_cost(lanes, i, n):
-    """LanePathFinder._link_cost: the plan gap between the end of lane i and the start of lane n, plus the length of n."""
+    """LanePathFinder._link_cost: the plan gap between the end of lane i and the start of lane n, plus the length of n and its
+    hairpin cost."""
     a, b = lanes.lanes[i]["points"][-1], lanes.lanes[n]["points"][0]
-    return math.hypot(a[0] - b[0], a[2] - b[2]) + lanes.length(n)
+    return math.hypot(a[0] - b[0], a[2] - b[2]) + lanes.length(n) + hairpin_cost(lanes, n)
 
 
 def shortest(lanes, sources, targets):

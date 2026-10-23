@@ -14,6 +14,19 @@ const JUNCTION_SEARCH := 40.0
 const GATE_RADIUS := 8.0
 ## The tangent of a lane has to agree with the gate by this much.
 const GATE_TANGENT := 0.3
+## A lane that turns by more than this many degrees between its first and its last metres is a
+## hairpin and costs extra (see _hairpin_cost).
+const HAIRPIN_FREE := 100.0
+## The extra metres of path a 180 degree hairpin costs.
+const HAIRPIN_COST := 600.0
+## Only lanes up to this long can be a hairpin.
+const HAIRPIN_LANE_MAX := 200.0
+## The first and the last metres of a lane that give its direction at the ends.
+const HAIRPIN_REACH := 4.0
+
+## The hairpin cost of the lanes seen so far (lane instance id -> metres).
+var _hairpins: Dictionary = {}
+
 ## The lane closest to a point.
 func closest_lane(lanes: Array[LanePath], point: Vector3) -> int:
 	var best := -1
@@ -213,7 +226,33 @@ func _link_cost(from: LanePath, to: LanePath) -> float:
 	var a := from.curve.get_point_position(from.curve.get_point_count() - 1)
 	var b := to.curve.get_point_position(0)
 	var turn := Vector2(a.x - b.x, a.z - b.z).length()
-	return maxf(turn, 0.0) + to.curve.get_baked_length()
+	return maxf(turn, 0.0) + to.curve.get_baked_length() + _hairpin_cost(to)
+
+
+## The extra cost of a lane that turns back on itself: a movement through a junction that
+## turns by more than a right angle is a hairpin (a U-turn onto the other carriageway), and a
+## racing line that takes one cannot be driven. The cost is zero up to HAIRPIN_FREE degrees and
+## grows with the square of the turn to HAIRPIN_COST metres of path at 180 degrees, so a hairpin
+## is only taken when the way round it is longer than that. Only short lanes count (a spiral
+## ramp turns by far more than 180 degrees over a few hundred metres and is not a hairpin).
+func _hairpin_cost(lane: LanePath) -> float:
+	var key := lane.get_instance_id()
+	if _hairpins.has(key):
+		return _hairpins[key]
+	var cost := 0.0
+	var length := lane.curve.get_baked_length()
+	if length > 1.0 and length <= HAIRPIN_LANE_MAX:
+		var reach := minf(HAIRPIN_REACH, length * 0.5)
+		var head := lane.curve.sample_baked(reach, true) - lane.curve.sample_baked(0.0, true)
+		var tail := lane.curve.sample_baked(length, true) - lane.curve.sample_baked(length - reach, true)
+		head.y = 0.0
+		tail.y = 0.0
+		if head.length_squared() > 0.0001 and tail.length_squared() > 0.0001:
+			var angle := rad_to_deg(head.angle_to(tail))
+			var share := clampf((angle - HAIRPIN_FREE) / (180.0 - HAIRPIN_FREE), 0.0, 1.0)
+			cost = HAIRPIN_COST * share * share
+	_hairpins[key] = cost
+	return cost
 
 
 ## The lane sequence that leads to `index`.
