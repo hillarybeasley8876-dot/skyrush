@@ -1,11 +1,12 @@
 extends RefCounted
 ## Builds the sky lanes (飞行航道) from the city.json sky_lanes: the SkyLane contract node with
-## its curve, the launch pad, the hologram ring gates every `ring_spacing` metres and the
-## overhead gantry 300 m before the pad.
+## its curve, the launch pad, the hologram ring gates every `ring_spacing` metres, the obstacles
+## of the lane (drones, billboards, crane arms) and the overhead gantry 300 m before the pad.
 
 const ProcMeshes := preload("res://world/loader/proc_meshes.gd")
 const MeshMerger := preload("res://world/build/mesh_merger.gd")
 const PropLibrary := preload("res://world/loader/prop_library.gd")
+const SkyObstacles := preload("res://world/build/sky_obstacles.gd")
 const Spline := preload("res://world/api/spline_util.gd")
 const Heading := preload("res://world/api/heading.gd")
 
@@ -45,6 +46,7 @@ func _build_lane(spec: Dictionary, parent: Node3D) -> SkyLane:
 	lane.add_child(pad)
 	parent.add_child(lane)
 	_build_rings(lane, points)
+	SkyObstacles.new().build(lane)
 	_build_gantry(lane, spec, points, parent)
 	return lane
 
