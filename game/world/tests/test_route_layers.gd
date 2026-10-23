@@ -36,6 +36,9 @@ const LEG_KEYS := ["unroutable_legs", "backwards_legs", "relaxed_legs", "partial
 var _failures := 0
 var _checks := 0
 var _grid: Dictionary = {}
+## The racing lines of the routes, written to SKYRUSH_ROUTE_DUMP (a file path) when it is set: the lead compares
+## them with the Python replica (tools/city/check_routes_drivable.py).
+var _dump: Dictionary = {}
 
 
 func _ready() -> void:
@@ -66,6 +69,11 @@ func _run() -> void:
 
 
 func _finish() -> void:
+	var dump_path := OS.get_environment("SKYRUSH_ROUTE_DUMP")
+	if dump_path != "":
+		var out := FileAccess.open(dump_path, FileAccess.WRITE)
+		if out != null:
+			out.store_string(JSON.stringify(_dump))
 	if _failures == 0:
 		print("ROUTE LAYERS TESTS OK (%d checks)" % _checks)
 	else:
@@ -180,6 +188,11 @@ func _check_route(route: RaceRoute) -> void:
 		return
 	var points := PackedVector3Array(line.get_baked_points())
 	var gates := route.checkpoints
+	if OS.get_environment("SKYRUSH_ROUTE_DUMP") != "":
+		var flat: Array = []
+		for p in points:
+			flat.append([snappedf(p.x, 0.01), snappedf(p.y, 0.01), snappedf(p.z, 0.01)])
+		_dump[id] = flat
 	# the part of the line that belongs to the legs between the gates (a circuit adds a closing leg).
 	# A gate is looked for in the next WINDOW line points only; a gate the line misses by more than
 	# MISS metres gets index -1 and does not move the cursor.

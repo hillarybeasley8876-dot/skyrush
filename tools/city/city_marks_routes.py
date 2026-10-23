@@ -64,7 +64,9 @@ FINISH_MARGIN = 60.0
 def _lane_centre(road, s, direction):
     """The lane centre point and heading at the distance `s`."""
     count = road.lanes_fwd if direction > 0 else road.lanes_back
-    index = max(0, count // 2 - 1)
+    # the lane in the middle of the carriageway (the left of the two middle lanes when the count is even): the gate is then within
+    # a lane width of every lane of its direction and all of them can serve it
+    index = max(0, (count - 1) // 2)
     lines = [line for line, d in lane_centres(road) if d == direction]
     if len(lines) > index:
         line = lines[index]

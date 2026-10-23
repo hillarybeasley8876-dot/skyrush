@@ -24,11 +24,19 @@ var _index_of: Dictionary = {}
 
 ## The links already set on the lanes (the straight continuation inside a road) are kept; the
 ## declared links of the roads unit and the junction links are added on top of them.
+##
+## When the roads unit declares links (it does: a connector lane for every movement of every
+## junction and for every ramp attach, and the lanes meet within half a metre) the graph is
+## complete, and the links derived from the positions of the lanes below are not added. They are
+## the fallback for a lanes.json without links: on the real city they added 170,000 links to the
+## 16,000 declared ones, 25,000 of them joining an end to a start more than 60 m away (up to 2 km),
+## and a car or a racing line that took one jumped.
 func link(lanes: Array[LanePath], graph: LaneGraphBuilder, junctions: Array, grid: LaneSpatial = null) -> void:
 	_index_of.clear()
 	for i in graph.ids.size():
 		_index_of[graph.ids[i]] = i
-	_link_declared(lanes, graph)
+	if _link_declared(lanes, graph):
+		return
 	_link_junctions(lanes, graph, junctions, grid)
 	_link_turns(lanes, graph, junctions, grid)
 	_link_proximity(lanes, grid)

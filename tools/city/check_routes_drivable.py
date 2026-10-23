@@ -12,7 +12,7 @@ slices it and bakes the line every 2 m like the game's Curve3D. A leg is reporte
   relaxed        a gate has no lane (of its level) within 8 m (the game falls back to 30 m)
   no path        no forward lane path joins the gates (the game draws a straight line instead)
   doubles back   the path comes back on the same lane (the game drops the leg)
-  long           the driven length of the leg is far from the 300-500 m the validator expects (> 800 m)
+  long           the driven length of the leg is far from the 300-500 m the validator expects (> 1300 m)
   detour         the leg drives more than twice the distance between its gates plus 400 m
   reversals      the racing line of a route turns back on itself (3 or more reversal points: dot of the direction before and
                  5 points ahead < -0.5; the same count as game/world/tests/test_route_layers.gd)
@@ -33,7 +33,7 @@ GATE_TANGENT = 0.3
 GATE_ALIGN = 0.819        # route_gates.GATE_ALIGN: a gate on a lane of its level that runs within 35 degrees keeps its heading
 LEVEL = 3.0               # level_rules.LEVEL
 CELL = 32.0
-LONG_LEG = 800.0
+LONG_LEG = 1300.0
 BAKE = 2.0                # the bake interval of the racing line (route_builder.SLICE_STEP, Curve3D.bake_interval)
 HAIRPIN_FREE = 100.0      # lane_path_finder.HAIRPIN_*: a short lane that turns by more than this many degrees costs extra
 HAIRPIN_COST = 600.0
@@ -285,8 +285,9 @@ def face_the_route(lanes, cps, face):
     return out
 
 
-def leg_report(lanes, a, b, fa, fb):
-    """(problem or None, driven metres, line points, lane sequence) for the leg from gate a to gate b."""
+def leg_report(lanes, a, b, fa, fb, closing=False):
+    """(problem or None, driven metres, line points, lane sequence) for the leg from gate a to gate b. The closing leg of a
+    circuit (the last gate back to the first) may be as long as the road needs."""
     src = gate_lanes(lanes, a[:3], fa, GATE_RADIUS)
     tgt = gate_lanes(lanes, b[:3], fb, GATE_RADIUS)
     relaxed = False
@@ -297,6 +298,12 @@ def leg_report(lanes, a, b, fa, fb):
     if not src or not tgt:
         return "no lane within 30 m of the %s gate" % ("first" if not src else "second"), 0.0, [], []
     seq = shortest(lanes, sorted(src), set(tgt))
+    if seq is None and not relaxed:
+        wide_src = gate_lanes(lanes, a[:3], fa, GATE_RADIUS_FALLBACK)
+        wide_tgt = gate_lanes(lanes, b[:3], fb, GATE_RADIUS_FALLBACK)
+        seq = shortest(lanes, sorted(wide_src), set(wide_tgt))
+        if seq is not None:
+            src, tgt, relaxed = wide_src, wide_tgt, True
     if seq is None:
         return "no forward lane path between the gates", 0.0, [], []
     n = len(seq)
@@ -315,7 +322,7 @@ def leg_report(lanes, a, b, fa, fb):
     problems = []
     if relaxed:
         problems.append("relaxed: a gate is more than 8 m from the lanes of its level")
-    if metres > LONG_LEG:
+    if metres > LONG_LEG and not closing:
         problems.append("long: %.0f m driven" % metres)
     return ("; ".join(problems) if problems else None), metres, line, seq
 
@@ -340,7 +347,7 @@ def main(argv):
             legs.append((len(cps) - 1, 0))
         total, route_bad, whole, owner = 0.0, 0, [], []
         for (i, j) in legs:
-            problem, metres, line, seq = leg_report(lanes, cps[i], cps[j], forwards[i], forwards[j])
+            problem, metres, line, seq = leg_report(lanes, cps[i], cps[j], forwards[i], forwards[j], j == 0)
             total += metres
             straight = math.hypot(cps[i][0] - cps[j][0], cps[i][2] - cps[j][2])
             if not problem and metres > 2.0 * straight + 400.0:

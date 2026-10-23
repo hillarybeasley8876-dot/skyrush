@@ -13,7 +13,7 @@ const CityData := preload("res://world/loader/city_data.gd")
 ## The folder of the cache.
 const CACHE_DIR := "user://world_cache"
 ## The version of the cache: it is bumped when the shape of the payload changes.
-const VERSION := 14
+const VERSION := 15
 
 
 ## The key of the cache: the hash of the three data files.

@@ -194,6 +194,15 @@ func _path_between(lanes: Array[LanePath], from: Transform3D, to: Transform3D,
 	if sources.is_empty() or targets.is_empty():
 		return out
 	var sequence := finder.find_multi(lanes, sources, targets)
+	if sequence.is_empty() and not _relaxed:
+		# No path between the lanes within GATE_RADIUS of the gates: the lane that is connected may
+		# lie just outside it (a gate at the side of a wide carriageway). The wider search finds a
+		# real lane path; the leg is reported as relaxed.
+		var wide_sources := finder.gate_lanes(lanes, grid, from, GATE_RADIUS_FALLBACK)
+		var wide_targets := finder.gate_lanes(lanes, grid, to, GATE_RADIUS_FALLBACK)
+		sequence = finder.find_multi(lanes, wide_sources, wide_targets)
+		if not sequence.is_empty():
+			_relaxed = true
 	var partial := false
 	if sequence.is_empty():
 		# There is no forward path: the leg is reported, not drawn backwards. A line that
