@@ -22,15 +22,18 @@ def century_ave():
 
 def lujiazui_ring_rd():
     """Lujiazui Ring Road, closed loop around the Lujiazui core."""
-    plan = [(727.6, -498.9), (803.2, -630.7), (1070.1, -838.9), (1196.0, -682.5),
+    plan = [(730.6, -498.9), (803.2, -630.7), (1070.1, -838.9), (1196.0, -682.5),
             (1263.1, -578.0), (1312.0, -422.4), (1349.0, -230.3),
             (1362.5, -28.9), (1333.0, 2.5), (786.2, -103.7), (730.1, -192.9),
-            (717.4, -277.1), (707.2, -412.2), (727.6, -498.9)]
+            (717.4, -277.1), (710.2, -412.2), (730.6, -498.9)]
     return Road("lujiazui_ring_rd", "陆家嘴环路", "Lujiazui Ring Rd", "surface",
                 plan, [("start", 0.0, 0.0), ("end", 0.0, 0.0)],
                 lanes_fwd=3, lanes_back=3, lane_width=3.75, median=1.0,
                 shoulder=0.5, sidewalk=3.0, speed_kmh=60,
-                style={"parapet": "none", "lamps": "side", "trees": "plane"})
+                style={"parapet": "none", "lamps": "side", "trees": "plane"},
+                notes="The west side of the loop stands 3 m east of the old "
+                      "line, so it grazes the mouth of the Yan'an tunnel no "
+                      "more.")
 
 
 def pudong_south_rd():
@@ -98,13 +101,15 @@ def lujiabang_rd():
 
 def lujiazui_w_rd():
     """Lujiazui West Rd, the western side of the Lujiazui peninsula (6.3)."""
-    plan = [(560.0, -700.0), (600.0, -480.0), (640.0, -260.0), (700.0, -40.0),
+    plan = [(560.0, -700.0), (540.0, -480.0), (640.0, -260.0), (700.0, -40.0),
             (760.0, 140.0)]
     return Road("lujiazui_w_rd", "陆家嘴西路", "Lujiazui West Rd", "surface", plan,
                 [("start", 0.0, 0.0), ("end", 0.0, 0.0)],
                 lanes_fwd=2, lanes_back=2, lane_width=3.75, median=0.0,
                 shoulder=0.5, sidewalk=3.0, speed_kmh=50,
-                style={"parapet": "none", "lamps": "side", "trees": "plane"})
+                style={"parapet": "none", "lamps": "side", "trees": "plane"},
+                notes="The road crosses the Yan'an tunnel 60 m further west, "
+                      "where the tunnel is deep enough under it.")
 
 
 def dongchang_rd():

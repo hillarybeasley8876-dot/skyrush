@@ -20,6 +20,7 @@ import city_landmarks
 import city_marks
 import city_rules
 import city_snap
+import city_trim
 import citylib
 from city_road import Road
 from city_water import (CREEK, HUANGPU, _clip_rect, _creek_polygon,
@@ -307,6 +308,13 @@ def build_streets(main_roads):
     dead_ends = _repair_ends(streets, main_roads, add)
     for st in streets:
         st.build()
+    # the streets that run under a low ramp are cut: the ramp can neither
+    # be raised nor the street lowered, so the street gives way.  The cut
+    # has to come after the snapping and the repair, or the snapper joins
+    # the cut ends back across the ramp.
+    streets = city_trim.trim_under_decks(
+        streets, main_roads,
+        only_decks=("nanpu_spiral_lower", "nanpu_pudong_loop"))
     return streets, dead_ends
 
 
