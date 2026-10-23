@@ -35,7 +35,7 @@ CONNECTIONS = [
     ("g50_west", "attach_end", "yanan_elevated", "attach_start",
      (-1990.0, 728.0)),
     ("yanan_elevated", "attach_end", "yanan_rd_surface", None,
-     (-287.0, 144.0)),
+     (-515.66, 219.57)),
     ("inner_ring", "attach_start", "ns_elevated", "attach_end",
      (-1122.0, 1510.0)),
     ("nanpu_spiral_upper", "attach_start", "inner_ring", "attach_end",

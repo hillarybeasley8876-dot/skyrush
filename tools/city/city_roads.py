@@ -74,15 +74,14 @@ def yanan_elevated():
     plan = [(-1990.0, 728.0), (-1798.0, 728.0), (-1740.0, 728.0),
             (-1568.0, 725.0), (-1434.0, 730.0), (-1395.0, 732.0),
             (-1316.0, 711.0), (-1216.0, 664.0), (-1040.0, 581.0),
-            (-666.0, 235.0), (-560.0, 185.0), (-460.0, 165.0), (-380.0, 152.0),
-            (-320.0, 146.0), (-287.0, 144.0)]
+            (-666.0, 235.0), (-580.0, 229.0), (-515.66, 219.57)]
     anchors = [
         ("start", 0.0, 0.0),
         ("p", -1660.0, 728.0, 10.0, 0.0),      # Y 10 (see notes)
         ("near", PILLAR[0], PILLAR[1], -150.0, 9.0, 0.0),
         ("near", PILLAR[0], PILLAR[1], 0.0, 9.0, 0.0),
         ("near", PILLAR[0], PILLAR[1], 150.0, 9.0, 0.0),
-        ("p", -666.0, 235.0, 10.0, 0.0),
+        ("near", -515.66, 219.57, -312.0, 10.0, 0.0),
         ("end", 0.0, 0.0),
     ]
     return Road("yanan_elevated", "延安高架路", "Yan'an Elevated Rd", "elevated",
@@ -94,7 +93,8 @@ def yanan_elevated():
                 notes="L2 (Y=9.0) for 300 m around the dragon pillar, Y=10 "
                       "elsewhere; the 0 -> 10 m climb needs 340 m, so the deck "
                       "is level 10 from x=-1660 (the dossier says -1740). The "
-                      "east end descends to grade at (-287, 144) over 410 m.")
+                      "east end descends to grade at (-515.66, 219.57) over "
+                      "312 m.")
 
 
 
@@ -110,9 +110,8 @@ def yanan_rd_surface():
                 lanes_fwd=3, lanes_back=3, lane_width=3.75, median=1.0,
                 shoulder=0.5, sidewalk=3.0, speed_kmh=60,
                 style=surface_style("magnolia", "plane"),
-                notes="Runs under the Yan'an elevated from x=-1700 eastward and "
-                      "peels off south of the descending deck before the "
-                      "merge at (-287, 144).")
+                notes="Runs under the Yan'an elevated from x=-1700 eastward; "
+                      "the descending deck lands on it at (-515.66, 219.57).")
 
 
 def yanan_frontage_south():
@@ -260,16 +259,18 @@ def nanpu_spiral_lower():
     r_end = math.hypot(merge[0] - SPIRAL_C[0], merge[1] - SPIRAL_C[1])
     plan = _spiral_points(SPIRAL_C, start, a_end, SP_LOWER_R, r_end, 50)
     return Road("nanpu_spiral_lower", "南浦大桥下层环道", "Nanpu Spiral Lower Loop",
-                "ramp", plan, [("start", 0.0, 0.0), ("end", p[1], 0.0)],
+                "ramp", plan,
+                [("start", 0.0, 0.0), ("s", 330.0, 8.2, 0.0265),
+                 ("end", p[1], 0.0)],
                 lanes_fwd=2, lanes_back=0, lane_width=3.75, median=0.0,
                 shoulder=1.0, speed_kmh=40,
                 style={"parapet": "planter", "lamps": "barrier",
                        "soffit_led": "#3D7BFF", "trees": "none"},
                 max_grade=0.038,
-                notes="R=100 m, 3/4 turn counter-clockwise, Y 0 -> 12; the "
-                      "radius spirals out to %.1f m over the last third of "
-                      "the turn and merges onto the L3 loop's inner edge, "
-                      "along its direction." % r_end)
+                notes="R=100 m, 3/4 turn counter-clockwise, Y 0 -> 12 (8.2 m "
+                      "at station 330); the radius spirals out to %.1f m over "
+                      "the last third of the turn and merges onto the L3 "
+                      "loop's inner edge, along its direction." % r_end)
 
 
 def nanpu_spiral_upper():
