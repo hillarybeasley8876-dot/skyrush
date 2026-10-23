@@ -1,0 +1,53 @@
+{
+  "id": "modes-status",
+  "title": "The modes emit their status for the HUD (Events.mode_status)",
+  "brief": "briefs/improve/modes-status.md",
+  "isolation": "worktree",
+  "owns": [
+    "game/modes/"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 250,
+  "timeoutMin": 150,
+  "accept": [
+    {
+      "name": "modes scripts load clean",
+      "cmd": "python tools/gd.py check --only=res://modes/",
+      "must": [
+        "re:CHECK \\d+ files, 0 failed, 0 engine errors"
+      ],
+      "timeoutS": 1200
+    },
+    {
+      "name": "the mode status test passes",
+      "cmd": "python tools/gd.py test res://modes/tests/test_status.gd",
+      "must": [
+        "MODE STATUS TESTS OK"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "the test fails on the old code",
+      "cmd": "python tools/mutation_check.py --test res://modes/tests/test_status.gd --files auto",
+      "must": [
+        "MUTATION_CHECK OK"
+      ],
+      "timeoutS": 1500
+    },
+    {
+      "name": "the modes test folder passes",
+      "cmd": "python tools/run_tests.py --filter res://modes/ --jobs 2 --out F:/dev/skyrush-out/tmp/modes-status/tests",
+      "must": [
+        "re:, 0 failed or timed out"
+      ],
+      "timeoutS": 2400
+    }
+  ],
+  "readonly": [
+    "game/modes/tests/test_gate_layers.gd",
+    "game/modes/tests/test_hygiene.gd",
+    "game/modes/tests/test_mode_switch.gd",
+    "game/modes/tests/test_modes.gd",
+    "game/modes/tests/test_pursuit_mode.gd"
+  ]
+}
