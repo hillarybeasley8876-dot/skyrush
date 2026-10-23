@@ -109,6 +109,12 @@ func _build_map() -> void:
 		{"kind": &"landmark", "position": Vector3(-120, 0, 330), "label": "龙柱"},
 	]
 	hud.demo_pois = pois
+	# The HOP prompt watches the toll plaza of the demo (the demo has no world of its own).
+	var sites: Array[Vector3] = []
+	for poi in pois:
+		if StringName(poi.get("kind", &"")) == &"toll":
+			sites.append(poi.get("position", Vector3.ZERO))
+	hud.hop_hint.set_sites(sites)
 
 
 ## The route of the demo race: a loop with eight gates, so the minimap shows the line of the
