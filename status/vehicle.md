@@ -337,3 +337,36 @@ straight line (it circled before the fix).
   (`--rearcam`) and a side camera (`--sidecam`) for reference.
 * **audio:** a stunt `&"airtime"` (voice 超长滞空！) is mapped, but no unit emits it. The vehicle
   unit reports the airtime of every landing in `Events.landed(vehicle, airtime, impact, quality)`.
+
+## 2026-10-24: the car that flew (kerbs, walls, out of bounds)
+
+The owner saw the Roadster lying on its side against a building at 174 km/h, "floating". Reproduced and measured in the real
+city (random drives, and 40 passes at 190-245 km/h over the planter kerb at (-199, 126)): three causes, three rules. The new
+car is not the cause (the old one flew the same), its wider track only made the first one likelier.
+
+* **The wheels counted walls as road.** A probe that hit a facade, a ceiling or the back face of a surface gave the
+  suspension a contact (up to 60 kN per wheel) and the upright torque aligned the car to the wall.
+  `SuspensionTuning.MIN_GROUND_NORMAL_Y = 0.35` (slope 70 deg): a contact whose normal points less up is no ground.
+  Test: `test_wall_not_ground.gd`. (The wheel track of the new Roadster, 1.95 m against 1.56 m, puts the probes 7 cm inside
+  the box, 19 cm before: they reached walls sooner.)
+* **A kerb at the height of the box launched the car.** The wheels are probes, so a 15-17 cm kerb meets the lower front edge
+  of the collision box (it starts 0.22 m above the road, the downforce presses the car 5-6 cm down at top speed). The grazing
+  contact gives the solver an ambiguous normal and it turned a third of the speed into vertical speed in one tick (31 m/s,
+  pitch 85 deg, 25-30 m high, 30 launches in 40 passes over the planter kerb). The solver spike guard (`impact.gd`,
+  `_guard_solver_spike`): when a car that stands on its wheels (two or more) and touches something with its BOX is given
+  more than `ImpactTuning.SOLVER_SPIKE = 6` m/s of speed AWAY from the ground (along the normal of the ground under its wheels:
+  the kerb gave 10 m/s in the first tick, 31 in the third), the guard holds for `SOLVER_HOLD = 0.3` s: that speed is cut to
+  `SOLVER_KICK_UP = 1.5` m/s and the spin to `SOLVER_SPIN = 3.5` rad/s. A car that drives on its wheels has no box contact, so
+  the tests that throw the car up with `linear_velocity` and a ramp are not touched (the speed of a car on a ramp runs
+  along the ramp, not away from it); the hop is exempt (`dynamics.own_kick()`); a car in a sky lane resets the impact module
+  every tick. Result: 0 launches in 40 passes (worst pitch 13 deg), a 17 cm kerb at 240 km/h is a 0.6 m hop. Tests:
+  `test_kerb_graze.gd`. (`damage/tests/test_budget.gd` spawned its eight cars in ONE spot and got its damage from the push
+  that threw them apart: they are side by side now.)
+* **Tried and dropped: raising the box to 0.30 m.** It cleared the 15 cm kerbs, but the floor of the box is what stops the
+  car after a hard landing (a landing from a Big Hop rebounds 0.03-0.1 m with it, 0.3 m and 0.2 s of air without it): the landing
+  mini boost test failed. The guard does the job without touching the landing.
+* **Out of bounds.** `spawn_placer.closest_lane` assigned `range()` to an `Array[int]`: a script error whenever the car was
+  further than 96 m from every lane, so the put-back after a fall placed it at 1 m over the spot where it fell. Fixed, with a
+  check in `test_world_api.gd`.
+* Not done: the Bund street runs within a car width of the landmark colliders in ~750 of 152 000 lane samples (the old
+  and the new car alike).

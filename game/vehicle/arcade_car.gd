@@ -290,6 +290,8 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	var dt: float = state.step
 	if sky.flying:
 		flight.tick(state, dt, _in_steer, _in_throttle, _in_brake)
+		# The speed of the lane is not a contact: the impact module starts again when the lane ends.
+		impact.reset()
 		cpu_usec = Time.get_ticks_usec() - t0
 		return
 	# The height of the ground under the car. The ray has to be cast inside the physics step:
@@ -314,7 +316,7 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	if thruster.hovering != _prev_hovering:
 		_prev_hovering = thruster.hovering
 		Events.hover_changed.emit(self, thruster.hovering)
-	impact.tick(dt, self, state, spec.mass, drift)
+	impact.tick(dt, self, state, spec.mass, drift, dynamics.ground_normal(), dynamics.own_kick())
 	power.tick(dt, _in_throttle)
 	gravity_scale = AirTuning.AIR_GRAVITY_SCALE if dynamics.air_gravity else 1.0
 	readout.write_telemetry(telemetry, state.transform, state.linear_velocity)

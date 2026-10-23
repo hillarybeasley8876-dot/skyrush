@@ -83,7 +83,10 @@ func update_probe(anchor_world: Vector3, body_up: Vector3) -> void:
 	if probe == null:
 		return
 	probe.force_shapecast_update()
-	if not probe.is_colliding():
+	# A wall, a ceiling or the back of a surface is not ground (SuspensionTuning.MIN_GROUND_NORMAL_Y).
+	var standing: bool = probe.is_colliding() \
+			and probe.get_collision_normal(0).y >= SuspensionTuning.MIN_GROUND_NORMAL_Y
+	if not standing:
 		contact = false
 		compression = 0.0
 		load = 0.0

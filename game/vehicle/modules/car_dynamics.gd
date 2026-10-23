@@ -164,6 +164,23 @@ func apply(state: PhysicsDirectBodyState3D, dt: float) -> void:
 	air.apply(state, basis, up, velocity, dt)
 
 
+## The normal of the ground under the car: the mean of the contact normals of the wheels that touch it, or zero when
+## fewer than two wheels do (the car is in the air or on one wheel).
+func ground_normal() -> Vector3:
+	if grounded < 2:
+		return Vector3.ZERO
+	var n: Vector3 = Vector3.ZERO
+	for w in wheels:
+		if w.contact:
+			n += w.contact_normal
+	return n.normalized() if n.length() > 0.001 else Vector3.ZERO
+
+
+## True while the car's own hop is under way (its impulse is not a solver spike).
+func own_kick() -> bool:
+	return air.hop_flight or air.hopped
+
+
 ## The share of the driven wheels that touch the ground: the motor can only push through them.
 func _drive_contact_scale() -> float:
 	var driven: int = 0

@@ -87,6 +87,14 @@ func _check_api(world: WorldBase) -> void:
 		_ok(xform != Transform3D.IDENTITY, "get_spawn_transform(%s)" % kind)
 	_check(world.nearest_road_transform(Vector3(0, 0, 0)) != Transform3D.IDENTITY,
 		"nearest_road_transform")
+	# A point far from every lane (further than the 96 m of the lane index: the sea, the edge of the city):
+	# the answer is a lane of the city, not the point itself lifted to 1 m. The out-of-bounds recovery of the
+	# modes asks exactly this when a car has fallen far from the roads.
+	var far := Vector3(7000.0, -40.0, 7000.0)
+	var back := world.nearest_road_transform(far)
+	var moved := Vector2(back.origin.x - far.x, back.origin.z - far.z).length()
+	_check(moved > 1000.0 and absf(back.origin.y) < 100.0,
+		"nearest_road_transform answers with a lane when the point is far from every lane (%.0f m away, y %.1f)" % [moved, back.origin.y])
 	_ok(not world.get_lane_paths().is_empty(), "get_lane_paths")
 	_check(not world.get_route_ids().is_empty(), "get_route_ids")
 	var route := world.get_route(world.get_route_ids()[0])

@@ -28,8 +28,12 @@ var impact: float = 0.0
 var glance_torque: float = 0.0
 ## True while the glance assist is running.
 var glancing: bool = false
+## How many solver spikes the guard has cut (a test reads it).
+var spikes: int = 0
 
 var _prev_velocity: Vector3 = Vector3.ZERO
+## The seconds the solver spike guard still holds after a spike.
+var _spike_hold: float = 0.0
 var _last_report: Dictionary = {}
 var _glance_timer: float = 0.0
 var _glance_torque: float = 0.0
@@ -41,7 +45,7 @@ var _clock: float = 0.0
 ## state: the physics state of the body.
 ## drift: the drift module (a hard hit cancels the drift reward), may be null.
 func tick(dt: float, car: VehicleBase, state: PhysicsDirectBodyState3D, mass: float,
-		drift: DriftMod) -> void:
+		drift: DriftMod, ground_normal: Vector3 = Vector3.ZERO, own_kick: bool = false) -> void:
 	_clock += dt
 	hit = false
 	other = null
@@ -52,6 +56,7 @@ func tick(dt: float, car: VehicleBase, state: PhysicsDirectBodyState3D, mass: fl
 		glancing = _glance_timer > 0.0
 		glance_torque = _glance_torque if glancing else 0.0
 	var velocity: Vector3 = state.linear_velocity
+	velocity = _guard_solver_spike(state, velocity, ground_normal, own_kick, dt)
 	var dv: Vector3 = velocity - _prev_velocity
 	# The velocity before this step: the hit is measured with it, not with what is left after
 	# the bounce.
@@ -116,6 +121,32 @@ func tick(dt: float, car: VehicleBase, state: PhysicsDirectBodyState3D, mass: fl
 	_prune_reports()
 
 
+## The solver spike guard (ImpactTuning.SOLVER_SPIKE): a car that stands on its wheels moves along the ground; the speed it
+## has AWAY from the ground (along the normal of the ground under its wheels) is a bounce of a few m/s. When the solver
+## gives it a spike of more than SOLVER_SPIKE (the edge of a kerb gave 10 m/s in the first tick and 31 m/s in the third) the
+## guard holds for SOLVER_HOLD seconds: the speed away from the ground is cut to SOLVER_KICK_UP and the spin is limited. The
+## small pushes of two cars that overlap are left alone. A ramp is not touched: the speed of a car on a ramp runs along
+## the ramp, not away from it. Only a car that touches something with its BOX is looked at (the wheels are probes: a car
+## that drives on them has no contact). `ground_normal` is zero when fewer than two wheels touch the ground (a car in the
+## air is not looked at: a landing stops a fall, a lane has its own speed) and `own_kick` is true while the car's own hop is
+## under way. Returns the velocity.
+func _guard_solver_spike(state: PhysicsDirectBodyState3D, velocity: Vector3, ground_normal: Vector3,
+		own_kick: bool, dt: float) -> Vector3:
+	_spike_hold = maxf(_spike_hold - dt, 0.0)
+	if own_kick or ground_normal == Vector3.ZERO or state.get_contact_count() == 0:
+		return velocity
+	var away: float = velocity.dot(ground_normal)
+	if away > ImpactTuning.SOLVER_SPIKE:
+		_spike_hold = ImpactTuning.SOLVER_HOLD
+	if _spike_hold <= 0.0 or away <= ImpactTuning.SOLVER_KICK_UP:
+		return velocity
+	velocity -= ground_normal * (away - ImpactTuning.SOLVER_KICK_UP)
+	state.linear_velocity = velocity
+	state.angular_velocity = state.angular_velocity.limit_length(ImpactTuning.SOLVER_SPIN)
+	spikes += 1
+	return velocity
+
+
 ## Removes the contacts that were not seen for a while.
 func _prune_reports() -> void:
 	var stale: Array = []
@@ -166,6 +197,7 @@ func _apply_glance_yaw(state: PhysicsDirectBodyState3D, tangent: Vector3) -> voi
 ## Clears the hit history (a respawn).
 func reset() -> void:
 	_prev_velocity = Vector3.ZERO
+	_spike_hold = 0.0
 	_last_report.clear()
 	_glance_timer = 0.0
 	_glance_torque = 0.0

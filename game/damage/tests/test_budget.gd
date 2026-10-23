@@ -139,12 +139,13 @@ func costs_of(rounds: Array[Array]) -> Array[int]:
 
 ## A fresh car for a hit: the real Roadster, the car with the most meshes. The cars of
 ## every round are the same, so the best cost of a hit is a fair measure of the code.
-func _make_car(_index: int) -> VehicleBase:
+func _make_car(index: int) -> VehicleBase:
 	var car := (load("res://vehicle/player_car.tscn") as PackedScene).instantiate() as VehicleBase
 	car.set("player_controlled", false)
 	car.add_to_group(&"vehicles")
 	add_child(car)
-	car.global_transform = Transform3D(Basis.IDENTITY, Vector3(0.0, 0.05, 120.0))
+	# side by side: eight cars in one spot push each other apart with the speed of a crash
+	car.global_transform = Transform3D(Basis.IDENTITY, Vector3(float(index) * 6.0 - 21.0, 0.05, 120.0))
 	return car
 
 

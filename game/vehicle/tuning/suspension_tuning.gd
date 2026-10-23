@@ -45,6 +45,12 @@ const PROBE_RADIUS := 0.06
 
 const PROBE_CAST := 0.90
 
+## The steepest surface a tyre can stand on: the contact normal has to point up at least this much
+## (0.35 = a slope of 70 degrees). A wall, a ceiling or the back face of a surface is not ground. Without
+## the rule a car that leans against a building has its wheels on the wall: the suspension pushes it
+## along the wall, the upright torque aligns it to the wall and it drives up the facade.
+const MIN_GROUND_NORMAL_Y := 0.35
+
 ## The gravity of the world (m/s^2): the static sag of a car is mass * g / 4 / k.
 const GRAVITY := 9.81
 

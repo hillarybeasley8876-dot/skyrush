@@ -173,7 +173,9 @@ func _check_sweep(t: T) -> void:
 	var strip := PoliceSpikeStrip.new()
 	t.tree.root.add_child(strip)
 	strip.setup(Vector3.BACK)
-	for local_x: float in [-4.5, -3.0, -1.5, 1.5, 3.0, 4.5]:
+	# The strip is 7 m long and the trigger is the box of the car: a car whose centre is 4.5 m from the middle
+	# of the strip touches its end with its flank when it is 2.1 m wide (the Roadster), so "beside" is 5 m.
+	for local_x: float in [-5.0, -3.0, -1.5, 1.5, 3.0, 5.0]:
 		t.director.debuff.clear()
 		t.player.reset_to(t.straight_start(-500.0))
 		strip.global_position = t.player.global_position + Vector3(0.0, 0.0, local_x)

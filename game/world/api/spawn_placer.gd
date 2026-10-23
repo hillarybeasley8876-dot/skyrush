@@ -118,7 +118,11 @@ func closest_lane(pos: Vector3) -> Dictionary:
 	if index != null:
 		candidates = index.candidates(pos, 96.0)
 	if candidates.is_empty():
-		candidates = range(lanes.size())
+		# Further than 96 m from every lane (the river, the edge of the city): every lane is a candidate.
+		# (`range()` is an untyped Array: assigning it to the Array[int] is a script error that made the
+		# whole function return nothing, so a car that was lost far from the roads was never put back.)
+		for lane_number in lanes.size():
+			candidates.append(lane_number)
 	for candidate in candidates:
 		var lane := lanes[candidate]
 		if lane.curve == null:
