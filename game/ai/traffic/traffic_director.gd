@@ -256,18 +256,11 @@ func _player_forward() -> Vector3:
 ##
 ## The player is not always exactly on a lane (it flies, hops or drives on the pavement), so the
 ## closest lane is asked for: the traffic belongs to the road the player is on, not to the lane
-## the player was on a moment ago.
+## the player was on a moment ago. The lane of the player is only kept while the player is on
+## its level (see TrafficLevel.player_road).
 func _player_road() -> String:
-	var lane := _player_lane
-	if lane < 0 or lane >= ctx.graph.lanes.size():
-		return ""
-	var position := _player_position()
-	if ctx.graph.position_at(lane, _player_s).distance_to(position) > PLAYER_ROAD_RADIUS:
-		lane = grid.nearest_lane(position, PLAYER_ROAD_RADIUS)
-		if lane < 0:
-			return ""
-	var lane_path := ctx.graph.lanes[lane]
-	return "" if lane_path == null else String(lane_path.road_id)
+	return TrafficLevel.player_road(ctx.graph, grid, _player_lane, _player_s, _player_position(),
+			PLAYER_ROAD_RADIUS)
 
 
 ## The distance the cars of the road around the player should keep (m).
