@@ -1,0 +1,61 @@
+{
+  "id": "traffic-layers-2",
+  "title": "The traffic index and the player road respect the level (second round)",
+  "brief": "briefs/improve/traffic-layers-2.md",
+  "isolation": "worktree",
+  "owns": [
+    "game/ai/traffic/"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 250,
+  "timeoutMin": 150,
+  "accept": [
+    {
+      "name": "traffic scripts and scenes load clean",
+      "cmd": "python tools/gd.py check --only=res://ai/traffic/",
+      "must": [
+        "re:CHECK \\d+ files, 0 failed, 0 engine errors"
+      ],
+      "timeoutS": 1200
+    },
+    {
+      "name": "the traffic layer 2 test passes",
+      "cmd": "python tools/gd.py test res://ai/traffic/tests/test_layers_2.gd",
+      "must": [
+        "TRAFFIC LAYER 2 TESTS OK"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "the test fails on the old code",
+      "cmd": "python tools/mutation_check.py --test res://ai/traffic/tests/test_layers_2.gd --files auto",
+      "must": [
+        "MUTATION_CHECK OK"
+      ],
+      "timeoutS": 1500
+    },
+    {
+      "name": "the traffic tests do not get worse",
+      "cmd": "python tools/run_tests.py --filter res://ai/traffic/ --jobs 3 --out F:/dev/skyrush-out/tmp/traffic-layers-2/tests --allow-fail test_lanes_world",
+      "must": [
+        "RUN_TESTS_RATCHET OK"
+      ],
+      "timeoutS": 3000
+    }
+  ],
+  "readonly": [
+    "game/ai/traffic/tests/lanes_world_probe.gd",
+    "game/ai/traffic/tests/test_collision_teleport.gd",
+    "game/ai/traffic/tests/test_idm.gd",
+    "game/ai/traffic/tests/test_junctions.gd",
+    "game/ai/traffic/tests/test_lamps.gd",
+    "game/ai/traffic/tests/test_lanes_world.gd",
+    "game/ai/traffic/tests/test_layers.gd",
+    "game/ai/traffic/tests/test_mobil.gd",
+    "game/ai/traffic/tests/test_paint.gd",
+    "game/ai/traffic/tests/test_player_hits_traffic.gd",
+    "game/ai/traffic/tests/test_spawn_ring.gd",
+    "game/ai/traffic/tests/test_wreck.gd",
+    "game/ai/traffic/tests/traffic_test_road.gd"
+  ]
+}

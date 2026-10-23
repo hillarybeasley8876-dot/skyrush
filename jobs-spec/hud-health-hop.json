@@ -1,0 +1,53 @@
+{
+  "id": "hud-health-hop",
+  "title": "The HUD shows the car's health and the HOP hint before a roadblock or toll plaza",
+  "brief": "briefs/improve/hud-health-hop.md",
+  "isolation": "worktree",
+  "owns": [
+    "game/ui/hud/"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 250,
+  "timeoutMin": 150,
+  "accept": [
+    {
+      "name": "hud scripts load clean",
+      "cmd": "python tools/gd.py check --only=res://ui/hud/",
+      "must": [
+        "re:CHECK \\d+ files, 0 failed, 0 engine errors"
+      ],
+      "timeoutS": 1200
+    },
+    {
+      "name": "the health and hop test passes",
+      "cmd": "python tools/gd.py test res://ui/hud/tests/test_health_hop.gd",
+      "must": [
+        "HUD HEALTH HOP TESTS OK"
+      ],
+      "timeoutS": 900
+    },
+    {
+      "name": "the test fails on the old code",
+      "cmd": "python tools/mutation_check.py --test res://ui/hud/tests/test_health_hop.gd --files auto",
+      "must": [
+        "MUTATION_CHECK OK"
+      ],
+      "timeoutS": 1500
+    },
+    {
+      "name": "the hud tests do not get worse",
+      "cmd": "python tools/run_tests.py --filter res://ui/hud/ --jobs 2 --out F:/dev/skyrush-out/tmp/hud-health-hop/tests --allow-fail test_hud_perf",
+      "must": [
+        "RUN_TESTS_RATCHET OK"
+      ],
+      "timeoutS": 2400
+    }
+  ],
+  "readonly": [
+    "game/ui/hud/tests/test_hud.gd",
+    "game/ui/hud/tests/test_hud_layout.gd",
+    "game/ui/hud/tests/test_hud_perf.gd",
+    "game/ui/hud/tests/test_mode_status.gd",
+    "game/ui/hud/tests/test_route_marker.gd"
+  ]
+}
