@@ -4,8 +4,10 @@ extends RefCounted
 ## the hit is detected from the velocity change per tick (dossier 6.5) and the contact list
 ## supplies the other body, the point and the normal.
 ##
-## The impulse that goes to the damage unit is mass * v_n with the PRE hit velocity, so it is the
-## real momentum change and not what is left after the bounce.
+## The impulse that goes to the damage unit is mass * the change of the speed of the car in
+## the step of the hit, so it is the real momentum change and not the closing speed of the two
+## cars: a car that meets a slow car head-on only loses the part of the speed that the other
+## car did not take.
 
 const BodyTuning := preload("res://vehicle/tuning/body_tuning.gd")
 const ImpactTuning := preload("res://vehicle/tuning/impact_tuning.gd")
@@ -15,7 +17,7 @@ const DriftMod := preload("res://vehicle/modules/drift.gd")
 var hit: bool = false
 ## The other body of the hit.
 var other: Node3D = null
-## Collision impulse in N*s (mass * the normal closing speed).
+## The momentum the hit took from the car (N*s).
 var impulse: float = 0.0
 ## World point and normal of the contact.
 var point: Vector3 = Vector3.ZERO
@@ -85,7 +87,12 @@ func tick(dt: float, car: VehicleBase, state: PhysicsDirectBodyState3D, mass: fl
 		return
 	hit = true
 	other = collider as Node3D
-	impulse = mass * v_n
+	# The impulse the hit took from the car: the momentum that was really transferred. It is
+	# the change of the speed of the car in the step of the hit and not the closing speed of
+	# the two cars: a car that is pushed along keeps its speed, and the closing speed would
+	# score the hit like a head-on (a car that meets a slow car head-on would pay for the
+	# speed of the other car).
+	impulse = mass * dv.length()
 	point = contact_point
 	normal = contact_normal
 	impact = ratio
@@ -95,6 +102,10 @@ func tick(dt: float, car: VehicleBase, state: PhysicsDirectBodyState3D, mass: fl
 	# keeps (1 - 0.45 * impact) and bounces off at 0.25.
 	if not (collider is RigidBody3D):
 		_apply_wall_response(state, contact_normal, v_rel, ratio)
+		# The response just changed the speed of the car. The next tick must not read that
+		# change as a new hit: the rule of a graze would be applied to the crash and would
+		# give the speed back (the car would drive away from the wall faster than it hit it).
+		_prev_velocity = state.linear_velocity
 	# One report per contact pair every IMPACT_COOLDOWN seconds.
 	if other != null:
 		var key: int = other.get_instance_id()

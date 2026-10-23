@@ -253,15 +253,21 @@ func _pre_velocity_of(other: Node3D) -> Vector3:
 
 
 # --- the collision -------------------------------------------------------------------------------
-func _on_vehicle_collided(vehicle: VehicleBase, other: Node3D, _impulse: float,
+func _on_vehicle_collided(vehicle: VehicleBase, other: Node3D, impulse: float,
 		point: Vector3, normal: Vector3) -> void:
 	var t0 := Time.get_ticks_usec()
-	_resolve_collision(vehicle, other, point, normal)
+	_resolve_collision(vehicle, other, impulse, point, normal)
 	hit_usec = Time.get_ticks_usec() - t0
 
 
 ## The collision of two bodies: the classification, the damage and the takedown credit.
-func _resolve_collision(vehicle: VehicleBase, other: Node3D, point: Vector3,
+##
+## The severity of the hit is the momentum the hit took from the car (the impulse of the
+## vehicle unit): the speed the car lost in the crash. The closing speed of the two cars
+## would count the speed of the other car as if it were the loss of this one: a player that
+## meets a slow patrol car head-on at 160 km/h would pay for a 190 km/h crash, although it
+## only lost the part of the speed that the patrol did not take.
+func _resolve_collision(vehicle: VehicleBase, other: Node3D, impulse: float, point: Vector3,
 		normal: Vector3) -> void:
 	if vehicle == null or other == null or normal.length() < 0.01:
 		return
@@ -277,8 +283,8 @@ func _resolve_collision(vehicle: VehicleBase, other: Node3D, point: Vector3,
 		_track(other_car)
 	var own_velocity := _pre_velocity(vehicle)
 	var v_rel := own_velocity - _pre_velocity_of(other)
-	var v_n := Rules.closing_speed(v_rel, normal)
-	if v_n <= 0.0:
+	var closing := Rules.closing_speed(v_rel, normal)
+	if closing <= 0.0:
 		return
 	var impact := Rules.impact_ratio(v_rel, normal)
 	var self_state := _registry.state_of(vehicle)
@@ -293,17 +299,44 @@ func _resolve_collision(vehicle: VehicleBase, other: Node3D, point: Vector3,
 	# The vertical takedown: one car lands on the roof of the other. The rule is symmetric:
 	# the car below is wrecked whatever its HP is (dossier 7.3: 999 HP).
 	if other_car != null and Rules.is_vertical(normal, v_rel):
-		_impact.vertical_takedown(vehicle, other_car, normal, point, v_n)
+		_impact.vertical_takedown(vehicle, other_car, normal, point, closing)
 		return
 	# The traffic glance: the player loses 1 HP and the panel is not dented (dossier 7.2).
 	if impact < Rules.GRAZE_IMPACT and other_car != null and vehicle == Game.player \
 			and other_car.team == VehicleBase.Team.TRAFFIC:
 		vehicle.apply_damage(Rules.GRAZE_HP, point, other)
 		return
-	_impact.hit(vehicle, other, normal, point, v_n, impact, v_rel, elapsed, own_velocity)
+	# The severity of the hit: the speed it took from each of the two cars. The momentum of
+	# the hit is measured by the vehicle unit and sent with the event: the two cars share it
+	# (the momentum the one loses is the momentum the other takes), so the same number
+	# measures the hit for both of them.
+	var severity := _severity(vehicle, impulse, closing)
+	_impact.hit(vehicle, other, normal, point, closing, impact, v_rel, elapsed, own_velocity,
+			severity)
 	if other_car != null:
-		_impact.hit(other_car, vehicle, -normal, point, v_n, impact, -v_rel, elapsed,
-				_pre_velocity(other_car))
+		var other_severity := _severity(other_car, impulse, closing)
+		_impact.hit(other_car, vehicle, -normal, point, closing, impact, -v_rel, elapsed,
+				_pre_velocity(other_car), other_severity)
+
+
+## The severity of a hit for one car: how hard the hit was for it (m/s).
+##
+## It is the smaller of the two measures of the hit:
+##   * the closing speed of the two cars (the dossier §7.2): the cars cannot approach each
+##     other faster than that,
+##   * the momentum the hit transferred, divided by the mass of the car: the speed the car
+##     lost in the crash. The vehicle unit measures that momentum and sends it with the
+##     event (the third law: the momentum the one car loses is the momentum the other
+##     takes, so the same number measures the hit for both of them).
+##
+## The closing speed alone is not enough: it counts the speed of the other car as if it
+## were the loss of this one. A player that meets a slow patrol car head-on at 160 km/h
+## would pay for a 190 km/h crash, although it only lost the part of the speed that the
+## patrol did not take.
+func _severity(car: VehicleBase, impulse: float, closing: float) -> float:
+	if car == null or impulse <= 0.0:
+		return closing
+	return minf(closing, impulse / maxf(car.mass, 1.0))
 
 
 # --- the tiers and the wreck ----------------------------------------------------------------------
