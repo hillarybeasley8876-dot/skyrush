@@ -8,17 +8,24 @@ extends RefCounted
 ## lane and tells it with a toast.
 ##
 ## The rules:
-##   - the player is lost when it is more than LOST_DISTANCE metres from the nearest lane (the
-##     world weighs the height of a lane, so a deck 10 m above does not win over the street the
-##     player is on, and the tunnel 28 m below is a road like any other);
+##   - the player is lost when it is more than LOST_DISTANCE metres from the nearest lane and either
+##     LOST_HEIGHT metres above or below the road level (the river, the kill floor) or LOST_FAR metres
+##     away in the plan (the world weighs the height of a lane, so a deck 10 m above does not win over
+##     the street the player is on, and the tunnel 28 m below is a road like any other; a plaza is not
+##     "lost");
 ##   - it is put back after LOST_SECONDS of being continuously lost; the timer restarts when the
 ##     player is found again;
 ##   - the timer does not count while the player flies in a sky lane, while it has been in the
 ##     air for less than AIRBORNE_GRACE seconds (a long jump over the river is fine) or while it
 ##     waits on the grid of a race (the player is frozen).
 
-## The distance from the nearest lane above which the player counts as lost.
+## The distance from the nearest lane above which the player CAN count as lost. It is not enough on its own: a plaza
+## or a park of the city is open ground more than 15 m from every lane and a car may drive over it. The player is lost
+## when it is that far from the road AND (it is more than LOST_HEIGHT above or below the road level: in the river, under
+## the map, on a roof) OR it is LOST_FAR metres from the road in the plan (the edge of the city).
 const LOST_DISTANCE := 15.0
+const LOST_HEIGHT := 2.5
+const LOST_FAR := 120.0
 ## The seconds of being lost before the player is put back on the road.
 const LOST_SECONDS := 3.0
 ## The airtime a jump may last before the player counts as lost.
@@ -60,7 +67,9 @@ func update(delta: float, player: VehicleBase, world: WorldBase) -> bool:
 ## Measures the distance to the nearest lane (four times a second at most).
 func _measure(player: VehicleBase, world: WorldBase) -> void:
 	_road = world.nearest_road_transform(player.global_position)
-	if player.global_position.distance_to(_road.origin) > LOST_DISTANCE:
+	var away := player.global_position - _road.origin
+	var plan := Vector2(away.x, away.z).length()
+	if away.length() > LOST_DISTANCE and (absf(away.y) > LOST_HEIGHT or plan > LOST_FAR):
 		if not is_lost:
 			lost_time = 0.0
 		is_lost = true
