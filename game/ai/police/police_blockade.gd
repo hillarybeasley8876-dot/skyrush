@@ -275,6 +275,10 @@ func _site_on_route(player: VehicleBase, lane: int, lane_s: float) -> Dictionary
 		if site.basis.z.dot(direction) < SITE_FACING:
 			continue
 		var distance := site.origin.distance_to(route[index])
+		# The site has to be on the level of the route: a site on the street under the deck
+		# the player drives on is not a roadblock for him.
+		if absf(site.origin.y - route[index].y) > PolicePursuit.LEVEL:
+			continue
 		if distance < best_distance:
 			best_distance = distance
 			best = site

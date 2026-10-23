@@ -87,6 +87,9 @@ func station_spot(player: VehicleBase) -> Dictionary:
 
 
 ## A spot on an oncoming lane: the unit comes towards the player and does not have to turn.
+##
+## The lane has to be on the level of the player: a unit that spawns on the street under the
+## deck the player drives on can never reach him.
 func oncoming_spot(player: VehicleBase, _lane: int, _lane_s: float) -> Dictionary:
 	var graph := ctx.graph
 	if graph == null or graph.lane_count() == 0:
@@ -100,6 +103,9 @@ func oncoming_spot(player: VehicleBase, _lane: int, _lane_s: float) -> Dictionar
 		if graph.tangent_at(i, middle).dot(forward) > ONCOMING_DOT:
 			continue
 		var pos := graph.position_at(i, middle)
+		# The lane of the spot has to be on the level of the player.
+		if absf(pos.y - player.global_position.y) > PolicePursuit.LEVEL:
+			continue
 		# The spot has to be AHEAD of the player: the unit comes towards him.
 		if (pos - player.global_position).dot(forward) <= 0.0:
 			continue
@@ -216,13 +222,19 @@ func head_on_limit(player: VehicleBase) -> float:
 
 
 ## The lane that runs against the player next to `point` (-1 when there is none).
+##
+## The lane has to be on the level of the point: the lane on the deck above (or on the street
+## below) is not the lane the head-on unit comes along.
 func oncoming_lane_at(point: Vector3, forward: Vector3) -> int:
 	var graph := ctx.graph
 	if graph == null:
 		return -1
 	for candidate in grid.lanes_near(point, HEAD_ON_LANE_RADIUS):
 		var s := graph.closest_offset(candidate, point)
-		if graph.position_at(candidate, s).distance_to(point) > HEAD_ON_LANE_RADIUS:
+		var closest := graph.position_at(candidate, s)
+		if closest.distance_to(point) > HEAD_ON_LANE_RADIUS:
+			continue
+		if absf(closest.y - point.y) > PolicePursuit.LEVEL:
 			continue
 		if graph.tangent_at(candidate, s).dot(forward) > ONCOMING_DOT:
 			continue

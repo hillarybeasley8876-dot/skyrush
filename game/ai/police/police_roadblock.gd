@@ -45,13 +45,17 @@ const PARKED_DEPTH := 30.0
 var cars: Array[PoliceCar] = []
 ## The strip in front of the closed block.
 var strips: Array[PoliceSpikeStrip] = []
-## True once the player has driven past the block.
+## True once the player has driven past the block on the level of the block.
 var passed: bool = false
 ## The width of the carriageway the block was built for (m).
 var width: float = 0.0
 
+## The seconds since the player went past the block (the block leaves the road then).
 var _passed_time: float = 0.0
+## The closest the player came to the block (m).
 var _closest: float = INF
+## The closest the player came to the block on the level of the block (m).
+var _level_closest: float = INF
 var _car_used: Array[bool] = []
 ## The dressing of the block (the barriers, the cones and the sign board).
 var props: PoliceRoadblockProps = PoliceRoadblockProps.new()
@@ -119,6 +123,7 @@ func setup(xform: Transform3D, _across: Vector3, carriageway: float, heat: int,
 	passed = false
 	_passed_time = 0.0
 	_closest = INF
+	_level_closest = INF
 
 
 ## The lateral positions of the cars: they fill the carriageway, with one gap up to heat 3.
@@ -216,6 +221,9 @@ func active_strips() -> Array[PoliceSpikeStrip]:
 
 
 ## The tick of the block: the cars flash, the strip unrolls and the block leaves when it is done.
+##
+## Only a player on the level of the block meets it: a player who drives over the block on the
+## deck above it has not passed the block on the street.
 func tick(dt: float, player: VehicleBase) -> void:
 	for car in cars:
 		car.tick(dt)
@@ -225,9 +233,16 @@ func tick(dt: float, player: VehicleBase) -> void:
 		return
 	var distance := global_position.distance_to(player.global_position)
 	_closest = minf(_closest, distance)
-	if not passed and _closest < PASSED_DISTANCE and distance > PASSED_DISTANCE * 1.6:
+	# The player meets the block on its level: the distance of the meeting is only a meeting
+	# when the player is not ten metres above or below the block.
+	var on_level := absf(player.global_position.y - global_position.y) <= PolicePursuit.LEVEL
+	if on_level:
+		_level_closest = minf(_level_closest, distance)
+	if not passed and _level_closest < PASSED_DISTANCE and distance > PASSED_DISTANCE * 1.6:
 		passed = true
-	if passed:
+	# The block leaves the road when the player has gone past it: a block on the street must
+	# not stay there when the player drove over it on the deck.
+	if _closest < PASSED_DISTANCE and distance > PASSED_DISTANCE * 1.6:
 		_passed_time += dt
 
 
@@ -248,5 +263,8 @@ func on_collision(vehicle: VehicleBase, other: Node3D, closing: float) -> void:
 
 
 ## True when the block may be removed.
+##
+## The block leaves the road when the player has gone past it (the flag `passed` says whether
+## he met it on its level).
 func is_expired() -> bool:
-	return passed and _passed_time > PASSED_TIMEOUT
+	return _passed_time > PASSED_TIMEOUT
