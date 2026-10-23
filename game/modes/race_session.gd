@@ -111,11 +111,11 @@ func _process(delta: float) -> void:
 			_check_finished()
 
 
-## The status of the race for the HUD: the lap and the place of the player, the laps of this
-## race and the number of racers.
+## The status of the race for the HUD: the lap, the place, the route and the next gate.
 func _push_status(delta: float) -> void:
 	_results.racers = racers
-	_status.push(&"race", _results.live_status(laps), delta)
+	var data := _results.live_status(laps, route_id, _results.player_next_gate(), gates.size())
+	_status.push(&"race", data, delta)
 
 
 ## Holds the player on its grid slot through the countdown (the menu may unfreeze it).

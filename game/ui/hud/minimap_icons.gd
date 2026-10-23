@@ -109,6 +109,25 @@ func draw_blips(item: CanvasItem, blips: PackedVector3Array, project: Callable,
 			item.draw_circle(sp, 3.0, Palette.AMBER)
 
 
+## The next gate of the race: a pulsing amber diamond at the gate.
+func draw_gate(item: CanvasItem, sp: Vector2) -> void:
+	var pulse := fmod(float(Time.get_ticks_msec()) * 0.004, 1.0)
+	var r := 5.0 + 2.0 * pulse
+	# A dark rim, so the marker reads over the bright line of the route.
+	_diamond(item, sp, r + 1.5, PLAYER_OUTLINE)
+	_diamond(item, sp, r, Color(Palette.AMBER.r, Palette.AMBER.g, Palette.AMBER.b, 0.6 + 0.4 * pulse))
+
+
+## A diamond of the radius r at the point.
+func _diamond(item: CanvasItem, sp: Vector2, r: float, color: Color) -> void:
+	_blip.resize(4)
+	_blip[0] = sp + Vector2(0.0, -r)
+	_blip[1] = sp + Vector2(r, 0.0)
+	_blip[2] = sp + Vector2(0.0, r)
+	_blip[3] = sp + Vector2(-r, 0.0)
+	item.draw_colored_polygon(_blip, color)
+
+
 ## The player: an arrow with a dark outline and a 40 degree view cone. Both are drawn from the
 ## constant arrays under a transform, so nothing is allocated.
 func draw_player(item: CanvasItem, centre: Vector2) -> void:

@@ -5,10 +5,11 @@ extends Node
 ## --sixteen10 (16:10).
 
 const HudScene := preload("res://ui/hud/hud.tscn")
+const HudScript := preload("res://ui/hud/hud.gd")
 const Backdrop := preload("res://ui/hud/demo/demo_backdrop.gd")
 const DemoSteps := preload("res://ui/hud/demo/demo_steps.gd")
 
-var hud: CanvasLayer
+var hud: HudScript
 var car: VehicleBase
 var tele: CarTelemetry
 var _t: float = 0.0
@@ -28,11 +29,12 @@ func _ready() -> void:
 	back.set_anchors_preset(Control.PRESET_FULL_RECT)
 	back_layer.add_child(back)
 
-	hud = HudScene.instantiate() as CanvasLayer
+	hud = HudScene.instantiate() as HudScript
 	add_child(hud)
 
 	_make_cars()
 	_build_map()
+	_build_route()
 	_steps = DemoSteps.build(self)
 
 
@@ -107,6 +109,43 @@ func _build_map() -> void:
 		{"kind": &"landmark", "position": Vector3(-120, 0, 330), "label": "龙柱"},
 	]
 	hud.demo_pois = pois
+
+
+## The route of the demo race: a loop with eight gates, so the minimap shows the line of the
+## route and the next gate of the player.
+func _build_route() -> void:
+	var route := RaceRoute.new()
+	route.id = &"demo_loop"
+	route.title = "演示环线"
+	route.laps = 3
+	route.racing_line = _loop_curve()
+	var length := route.racing_line.get_baked_length()
+	for i in 8:
+		var p := route.racing_line.sample_baked(length * float(i) / 8.0, true)
+		route.checkpoints.append(Transform3D(Basis.IDENTITY, p))
+	hud.events.demo_route = route
+
+
+## A rounded rectangle loop around the map of the demo.
+func _loop_curve() -> Curve3D:
+	var half := Vector2(380.0, 240.0)
+	var radius := 90.0
+	var curve := Curve3D.new()
+	curve.bake_interval = 4.0
+	var corners := [Vector2(half.x, -half.y), Vector2(half.x, half.y),
+		Vector2(-half.x, half.y), Vector2(-half.x, -half.y)]
+	var centres := [Vector2(half.x - radius, -half.y + radius),
+		Vector2(half.x - radius, half.y - radius),
+		Vector2(-half.x + radius, half.y - radius),
+		Vector2(-half.x + radius, -half.y + radius)]
+	var starts := [-PI * 0.5, 0.0, PI * 0.5, PI]
+	for i in 4:
+		var c: Vector2 = centres[i]
+		for s in 9:
+			var a: float = starts[i] + PI * 0.5 * float(s) / 8.0
+			curve.add_point(Vector3(c.x + cos(a) * radius, 0.0, c.y + sin(a) * radius))
+	curve.add_point(curve.get_point_position(0))
+	return curve
 
 
 func _reset_state() -> void:

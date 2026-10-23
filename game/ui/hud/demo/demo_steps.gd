@@ -24,9 +24,11 @@ static func build(demo: Node) -> Array:
 	_add(steps, 3.0, func() -> void:
 		Events.race_started.emit()
 		Events.boost_started.emit(car, &"launch"))
-	# The race that runs: three laps, the player is 1st of two cars.
+	# The race that runs: three laps, the player is 1st of two cars. The route and the next gate
+	# of the player go on the minimap.
 	_add(steps, 3.1, func() -> void:
-		Events.mode_status.emit(&"race", {"lap": 2, "laps": 3, "position": 1, "racers": 2}))
+		Events.mode_status.emit(&"race", {"lap": 2, "laps": 3, "position": 1, "racers": 2,
+			"route": "demo_loop", "next_gate": 2, "gates": 8}))
 	_add(steps, 3.8, func() -> void: Events.stunt.emit(&"fly_over_gas", 800, "飞跃加油站!"))
 	_add(steps, 4.4, func() -> void: Events.toast.emit("压线操作", &"info"))
 	_add(steps, 5.0, func() -> void: Events.drift_ended.emit(car, 3.2, true, 100.0))

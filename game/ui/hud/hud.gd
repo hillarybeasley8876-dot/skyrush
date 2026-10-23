@@ -104,6 +104,7 @@ func _ready() -> void:
 	events.hud_root = root
 	events.race_panel = race_panel
 	events.mode_readout = mode_status
+	events.minimap = minimap
 	events.connect_all()
 
 
