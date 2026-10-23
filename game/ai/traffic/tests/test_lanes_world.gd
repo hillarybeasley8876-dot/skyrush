@@ -254,6 +254,8 @@ func _report_spawn_cost(name: String) -> void:
 ## The load average of the machine: the cost of a tick only means something on a machine that
 ## is not busy with the work of the other units (-1 when it cannot be read).
 func _load_average() -> float:
+	if OS.get_name() == "Windows":
+		return -1.0   # there is no uptime command: asking for it is an engine error
 	var out: Array = []
 	OS.execute("uptime", [], out)
 	for line in out:
