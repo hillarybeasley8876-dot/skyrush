@@ -27,6 +27,8 @@ const TakedownBanner := preload("res://ui/hud/takedown_banner.gd")
 const CountdownLabel := preload("res://ui/hud/countdown_label.gd")
 const FlightCluster := preload("res://ui/hud/flight_cluster.gd")
 const ModeStatusReadout := preload("res://ui/hud/mode_status_readout.gd")
+const HealthBar := preload("res://ui/hud/health_bar.gd")
+const HopHint := preload("res://ui/hud/hop_hint.gd")
 
 ## The flight gauges only appear after this much airtime (brief: airborne > 0.3 s).
 const FLIGHT_AIRTIME := 0.3
@@ -59,6 +61,10 @@ var countdown: CountdownLabel
 var flight: FlightCluster
 ## The readout of the mode status (the score, the takedown goal, the countdown).
 var mode_status: ModeStatusReadout
+## The health of the car (the bar under the clusters).
+var health_bar: HealthBar
+## The prompt to hop over a roadblock / toll plaza.
+var hop_hint: HopHint
 ## The full-screen dim of the BUSTED screen (dossier §8.4).
 var busted_dim: ColorRect
 
@@ -145,6 +151,18 @@ func _build() -> void:
 	UI.place(flight, 0, 0, 1, 1)
 	root.add_child(flight)
 
+	# The health of the car: a thin bar in the bottom centre, between the two clusters (the N2
+	# cluster is on the left, the speed cluster on the right).
+	health_bar = HealthBar.new()
+	UI.place(health_bar, 0.5, 1.0, 0.5, 1.0, -110.0, -76.0, 110.0, -48.0)
+	root.add_child(health_bar)
+
+	# The prompt to hop over a roadblock / toll plaza: centred in the upper third, under the
+	# score readout and over the toasts.
+	hop_hint = HopHint.new()
+	UI.place(hop_hint, 0.5, 0.09, 0.5, 0.09, -180.0, 0.0, 180.0, 96.0)
+	root.add_child(hop_hint)
+
 	# The BUSTED dim covers the panels and the clusters, but NOT the toasts, the banner and the
 	# countdown: a red 被捕 BUSTED has to stay readable (dossier §8.4).
 	busted_dim = ColorRect.new()
@@ -185,6 +203,8 @@ func _process(delta: float) -> void:
 		events.race_time += delta
 	speed_cluster.update_values(t.speed_kmh, t.motor_load, t.boost_kind != &"", t.battery)
 	nitro_cluster.update_values(t.n2, t.n2_pending, t.mini_window, t.hop_charge)
+	health_bar.set_health(t.health_norm)
+	_update_hop(t, delta)
 	timer_panel.update_values(events.race_time, events.best_lap, events.lap, events.laps,
 		events.race_running)
 	_update_timer_layout()
@@ -202,6 +222,17 @@ func _telemetry() -> CarTelemetry:
 	if Game.player != null:
 		return Game.player.telemetry
 	return null
+
+
+## The prompt to hop over a roadblock / toll plaza. The sites of the world are read once (the
+## world builds them asynchronously) and the prompt scans the cached list five times a second.
+func _update_hop(t: CarTelemetry, delta: float) -> void:
+	hop_hint.sync_world()
+	var player := Game.player
+	if player == null:
+		hop_hint.hide_hint()
+		return
+	hop_hint.update_state(t, player.global_position, player.get_forward(), delta)
 
 
 ## Outside a race there is no clock, so the time panel is hidden and the map moves up.
