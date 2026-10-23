@@ -395,7 +395,10 @@ def _chain_connector(first, second):
         if not out or (p - out[-1]).length >= CHAIN_MIN:
             out.append(p)
     if not out or (out[-1] - p3).length > 1e-4:
-        out.append(p3)     # the curve ends at the start of the next lane
+        if len(out) > 1 and (out[-1] - p3).length < CHAIN_MIN:
+            out[-1] = p3   # the last sample is too close to the end: the end replaces it (the points keep their spacing)
+        else:
+            out.append(p3)     # the curve ends at the start of the next lane
     return [[round(p.x, 2), round(p.z, 2), round(-p.y, 2)] for p in out]
 
 

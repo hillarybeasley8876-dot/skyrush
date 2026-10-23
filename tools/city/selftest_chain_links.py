@@ -1,7 +1,8 @@
 """Selftest of check_chain_links: build a plausible fix of the lane graph in Python and run the checker on it.
 
-    python F:/dev/skyrush/tools/city/selftest_chain_links.py <lanes.json>
+    python tools/city/selftest_chain_links.py <lanes.json>
 
+The chain links of the given graph are removed first (break_chains), so any lanes.json works, repaired or not.
 Expects: the repaired graph passes; three broken variants fail with the right rule letter.
 """
 import copy
@@ -106,8 +107,32 @@ def run(doc):
     return res.returncode, res.stdout
 
 
+def break_chains(doc):
+    """A copy of the graph without the chain links: the chain connectors are gone and no lane of one road continues
+    directly into a lane of another road that starts within 6 m (junction movements, j_ lanes, are kept)."""
+    doc = copy.deepcopy(doc)
+    lanes = doc["lanes"]
+    gone = {l["id"] for l in lanes if l["id"].startswith("chain_")}
+    lanes[:] = [l for l in lanes if l["id"] not in gone]
+    by_id = {l["id"]: l for l in lanes}
+    for u in lanes:
+        if u.get("connector"):
+            continue
+        e = u["points"][-1]
+        keep = []
+        for n in u.get("next", []):
+            v = by_id.get(n)
+            direct = (v is not None and not v.get("connector") and v["road"] != u["road"]
+                      and math.hypot(v["points"][0][0] - e[0], v["points"][0][2] - e[2]) <= 6.0
+                      and abs(v["points"][0][1] - e[1]) <= 1.5)
+            if n not in gone and not direct:
+                keep.append(n)
+        u["next"] = keep
+    return doc
+
+
 def main():
-    doc = json.load(open(sys.argv[1], encoding="utf-8"))
+    doc = break_chains(json.load(open(sys.argv[1], encoding="utf-8")))
     ok = True
     code, out = run(repair(doc))
     print("repaired graph:", out.strip().splitlines()[-1])
