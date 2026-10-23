@@ -189,12 +189,50 @@ def split_by_gaps(road, idx, gaps):
     return out
 
 
+def split_by_kind(road, idx, gaps, side):
+    """The runs of path indices that are not in a gap, each with its kind.
+
+    A run is "kerb" where a lane of the city runs under the edge of the deck:
+    the parapet is low there, so the car of that lane passes it.  Everywhere
+    else the parapet is the full one.
+    """
+    gap = gaps.get(side, ())
+    kerb = gaps.get(side + "_kerb", ())
+    out = []
+    cur = []
+    kind = None
+    for i in idx:
+        s = road.dist[i]
+        if any(a <= s <= b for (a, b) in gap):
+            if len(cur) > 1:
+                out.append((cur, kind))
+            cur = []
+            kind = None
+            continue
+        k = "kerb" if any(a <= s <= b for (a, b) in kerb) else "full"
+        if kind is None:
+            kind = k
+        elif k != kind:
+            if len(cur) > 1:
+                out.append((cur, kind))
+            cur = []
+            kind = k
+        cur.append(i)
+    if len(cur) > 1:
+        out.append((cur, kind))
+    return out
+
+
 def build_parapets(road, idx, builder, lay, gaps=None):
     """The parapet on both edges of the deck.
 
     A ramp that leaves the road needs the parapet to give way: it would wall
     the ramp off.  The gaps are per side: only the side the ramp is on gives
     way, and the collider of the parapet is cut on the same gaps.
+
+    Where a lane of the city runs under the edge of the deck the parapet is
+    low: the car of that lane has to pass it, and the deck is fenced all the
+    same.
     """
     style = road.style.get("parapet", "planter")
     if style == "none":
@@ -203,10 +241,13 @@ def build_parapets(road, idx, builder, lay, gaps=None):
     for side in ("fwd", "back"):
         mirror = side == "back"
         edge = lay["asphalt_fwd"] if side == "fwd" else lay["asphalt_back"]
-        prof = [(edge - x if mirror else edge + x, z)
-                for (x, z) in (reversed(profiles.parapet_profile()) if mirror
-                               else profiles.parapet_profile())]
-        for run in split_by_gaps(road, idx, gaps.get(side, ())):
+        for run, kind in split_by_kind(road, idx, gaps, side):
+            base = (profiles.low_parapet_profile() if kind == "kerb"
+                    else profiles.parapet_profile())
+            if mirror:
+                prof = [(edge - x, z) for (x, z) in reversed(base)]
+            else:
+                prof = [(edge + x, z) for (x, z) in base]
             _sweep(builder, PARAPET, prof, [road.path[i] for i in run], closed=False)
 
 
@@ -229,10 +270,16 @@ def build_details(road, tileset, lay, gaps=None):
     They are built in one pass over the whole road (not per tile run), so a
     joint or a pot is never built twice at a tile border.
     """
+    gaps = gaps or {}
+    # the planter row stands on the parapet: where the parapet is low there is
+    # no room for it
+    low = dict(gaps)
+    for side in ("fwd", "back"):
+        low[side] = list(gaps.get(side, ())) + list(gaps.get(side + "_kerb", ()))
     build_joints(road, tileset, lay)
     build_scuppers(road, tileset, lay)
-    planters.build_pots(road, tileset, lay, gaps)
-    planters.build_strip(road, tileset, lay, gaps)
+    planters.build_pots(road, tileset, lay, low)
+    planters.build_strip(road, tileset, lay, low)
 
 
 def build_joints(road, tileset, lay):
@@ -308,6 +355,42 @@ def build_bridge_edges(road, idx, builder, lay):
 
 TAPER_LENGTH = 150.0   # the acceleration lane before the attach
 TAPER_WIDTH = 6.0      # the widening at the nose (150 m at 1:25)
+STRIP_CLEAR = 4.0      # the fence of a strip keeps this far away from a ramp
+
+
+def strip_rows(city, ramp, at_end):
+    """The rows of the acceleration strip of one attach.
+
+    The strip is the deck of the parent widened over the last 150 m before the
+    attach (1:25), so the traffic of the ramp has a lane to speed up in.  Every
+    row is (station, inner edge, outer edge, width) of the parent.
+    """
+    attach = ramp.data.get("attach_end" if at_end else "attach_start")
+    parent = city.by_id.get(attach["road"])
+    if parent is None:
+        return None, [], 0.0
+    lay_parent = profiles.layout(parent)
+    r_index = len(ramp.path) - 1 if at_end else 0
+    r_pt = ramp.path[r_index]
+    _dist, pidx = parent.nearest(r_pt)
+    s_attach = parent.dist[pidx]
+    # the ramp runs along the parent's right or its left: the widening is on
+    # that side and it ends at the attach in the traffic's direction
+    p_r = parent.frames[pidx][1]
+    if (r_pt - parent.path[pidx]).dot(p_r) > 0.0:
+        edge, out = lay_parent["asphalt_fwd"], 1.0
+    else:
+        edge, out = lay_parent["asphalt_back"], -1.0
+    rows = []
+    for i in range(len(parent.path)):
+        d = (parent.dist[i] - s_attach) * out
+        if d > 0.0 or d < -TAPER_LENGTH:
+            continue
+        grow = TAPER_WIDTH * min(1.0, max(0.0, (d + TAPER_LENGTH) / TAPER_LENGTH))
+        p = parent.path[i]
+        r = parent.frames[i][1]
+        rows.append((parent.dist[i], p + r * edge, p + r * (edge + out * grow), grow))
+    return parent, rows, out
 
 
 def build_acceleration(city, road, tileset, lay):
@@ -324,49 +407,145 @@ def build_acceleration(city, road, tileset, lay):
         attach = road.data.get(key)
         if not attach:
             continue
-        parent = city.by_id.get(attach["road"])
-        if parent is None:
-            continue
-        r_index = len(road.path) - 1 if at_end else 0
-        r_pt = road.path[r_index]
-        _dist, pidx = parent.nearest(r_pt)
-        s_attach = parent.dist[pidx]
-        # the ramp runs along the parent's right or its left: the widening is on
-        # that side and it ends at the attach in the traffic's direction
-        lay_parent = profiles.layout(parent)
-        p_r = parent.frames[pidx][1]
-        if (r_pt - parent.path[pidx]).dot(p_r) > 0.0:
-            edge, out, sign = lay_parent["asphalt_fwd"], 1.0, 1.0
-        else:
-            edge, out, sign = lay_parent["asphalt_back"], -1.0, -1.0
-        rows = []
-        for i in range(len(parent.path)):
-            d = (parent.dist[i] - s_attach) * sign
-            if d > 0.0 or d < -TAPER_LENGTH:
-                continue
-            grow = TAPER_WIDTH * min(1.0, max(0.0, (d + TAPER_LENGTH) / TAPER_LENGTH))
-            p = parent.path[i]
-            r = parent.frames[i][1]
-            inner = p + r * edge
-            outer = p + r * (edge + out * grow)
-            rows.append((inner, outer, p.z))
-        if len(rows) < 2:
+        parent, rows, _out = strip_rows(city, road, at_end)
+        if parent is None or len(rows) < 2:
             continue
         # The strip runs along the ramp's lane at the parent's height: where
         # the two overlap in plan the strip would roof the ramp's lane, so
-        # the quad gets no collider there.  The asphalt stays: only the
-        # collider is dropped.
-        clear = lay["asphalt_half"] + collision.CORRIDOR_MARGIN
+        # the quad gets no collider there.  Only a step is dropped: a strip
+        # that stands more than a car's height above the ramp's lane is a
+        # roof the car passes under.  The asphalt stays: only the collider
+        # is dropped.
         grid = collision.lane_grid(city)
         for i in range(len(rows) - 1):
-            inner0, outer0, _z0 = rows[i]
-            inner1, outer1, _z1 = rows[i + 1]
+            _st, inner0, outer0, _g0 = rows[i]
+            _st, inner1, outer1, _g1 = rows[i + 1]
             mid = (inner0 + inner1) * 0.5
             quad = [inner0, outer0, outer1, inner1]
-            collide = not (collision.over_corridor(road, quad, clear)
-                           or collision.roofs_lane(quad, grid))
+            collide = not collision.roofs_lane(quad, grid, (), collision.CAR_HALF_LEN)
             collision.pave(tileset.builder_at(mid), inner0, outer0, outer1, inner1,
                            collide=collide)
+
+
+def build_strip_parapets(city, road, tileset, lay):
+    """The parapet on the outer edge of the acceleration strips of a road.
+
+    The strip is the deck of the parent widened over the last 150 m before the
+    attach, so its outer edge is the edge of the deck there: it needs a
+    parapet like the deck's own edge, or the strip is a lane that ends in
+    thin air.  The strips of one road can overlap (two ramps attach on the
+    same side), so the fence follows the outermost edge of all of them.  It
+    stops where the deck of a ramp stands there: from that point on the
+    ramp's own parapet is the fence.
+    """
+    if not road.elevated:
+        return
+    sides = {"fwd": [], "back": []}
+    for ramp in city.roads:
+        if ramp.kind != "ramp":
+            continue
+        for at_end, key in ((True, "attach_end"), (False, "attach_start")):
+            attach = ramp.data.get(key)
+            if not attach or attach.get("road") != road.id:
+                continue
+            parent, rows, out = strip_rows(city, ramp, at_end)
+            if parent is None or len(rows) < 2:
+                continue
+            sides["fwd" if out > 0.0 else "back"].append((ramp, rows, parent))
+    for side, lst in sides.items():
+        edge = (lay["asphalt_fwd"] if side == "fwd" else lay["asphalt_back"])
+        out = 1.0 if side == "fwd" else -1.0
+        cross = _crossings(city, lst, edge, out)
+        for path in _strip_fences(lst, cross):
+            builder = tileset.builder_at(path[0])
+            prof = profiles.parapet_profile()
+            if side == "back":
+                prof = [(-x, z) for (x, z) in reversed(prof)]
+            builder.add(PARAPET, meshkit.sweep(bmesh.new(), prof, path, closed_profile=False))
+            collision.build_edge_barrier(builder, path, side == "back")
+
+
+def _crossings(city, lst, edge, out):
+    """The stations where the traffic of an attach crosses the outer edge of
+    the acceleration strips of one side.
+
+    The fence of the strip has to give way there: the traffic of the attach
+    crosses the strip on its way from the road to the ramp.
+    """
+    out_st = []
+    for (lane, lo, hi, cells) in collision.lane_index(city):
+        if not lane.get("connector"):
+            continue
+        for (ramp, rows, parent) in lst:
+            if ramp.id != lane.get("road"):
+                continue
+            for p in lane["points"]:
+                q = Vector((p[0], -p[2], p[1]))
+                lateral, station, height = collision.plan_offset(parent, q)
+                grow = _grow_at(rows, station)
+                if grow is None:
+                    continue
+                if abs(lateral - (edge + out * grow)) < 2.0:
+                    out_st.append(station)
+    return out_st
+
+
+def _grow_at(rows, station):
+    """The width of the strip at a station of its road."""
+    for (st, _inner, _outer, grow) in rows:
+        if abs(st - station) < 3.0:
+            return grow
+    return None
+
+
+def _strip_fences(lst, cross=()):
+    """The fences along the outer edges of the acceleration strips of one side.
+
+    The widest strip wins at every station, so the fence never stands in the
+    paved area of another strip.  Where the deck of a ramp stands there, the
+    ramp's own parapet is the fence and the fence of the strip stops.  The
+    fence gives way where the traffic of the attach crosses it.
+    """
+    ramps = [ramp for (ramp, _rows, _parent) in lst]
+    best = {}
+    for (ramp, rows, _parent) in lst:
+        for (st, _inner, outer, grow) in rows:
+            key = round(st, 2)
+            if key not in best or grow > best[key][0]:
+                best[key] = (grow, outer)
+    runs = []
+    cur = []
+    last = None
+    for st in sorted(best):
+        outer = best[st][1]
+        if _over_any(ramps, outer) or any(abs(st - c) < 2.0 for c in cross):
+            if len(cur) > 1:
+                runs.append(cur)
+            cur = []
+            last = st
+            continue
+        if last is not None and st - last > 20.0:
+            if len(cur) > 1:
+                runs.append(cur)
+            cur = []
+        cur.append(outer)
+        last = st
+    if len(cur) > 1:
+        runs.append(cur)
+    return runs
+
+
+def _over_any(ramps, outer):
+    """True when the outer edge of a strip comes too close to a ramp.
+
+    The fence of the strip may not stand in the lane of a ramp: the ramp's own
+    parapet is the fence from that point on.  The distance is generous, so the
+    fence stops well before the ramp and never in front of a car.
+    """
+    for ramp in ramps:
+        if collision.over_corridor(ramp, [outer], STRIP_CLEAR):
+            return True
+    return False
 
 
 def build_cable_anchors(road, tileset, lay):
