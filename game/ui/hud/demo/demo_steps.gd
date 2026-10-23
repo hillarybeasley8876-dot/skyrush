@@ -5,6 +5,9 @@ extends RefCounted
 ## takedown streaks (x2 and x5), a traffic takedown, the heat levels 1..5, the pursuit phases
 ## (chase / search / cooldown / busted / escaped), the race finish, the pause, the flight gauges
 ## and the armed Big Hop.
+##
+## The mode status is fired too: the race that runs (three laps), the goal and the countdown of
+## the pursuit and the score of the free roam at the end.
 
 const LOOP_TIME := 27.0
 
@@ -21,6 +24,9 @@ static func build(demo: Node) -> Array:
 	_add(steps, 3.0, func() -> void:
 		Events.race_started.emit()
 		Events.boost_started.emit(car, &"launch"))
+	# The race that runs: three laps, the player is 1st of two cars.
+	_add(steps, 3.1, func() -> void:
+		Events.mode_status.emit(&"race", {"lap": 2, "laps": 3, "position": 1, "racers": 2}))
 	_add(steps, 3.8, func() -> void: Events.stunt.emit(&"fly_over_gas", 800, "飞跃加油站!"))
 	_add(steps, 4.4, func() -> void: Events.toast.emit("压线操作", &"info"))
 	_add(steps, 5.0, func() -> void: Events.drift_ended.emit(car, 3.2, true, 100.0))
@@ -43,15 +49,24 @@ static func build(demo: Node) -> Array:
 	_add(steps, 12.6, func() -> void: Events.takedown.emit(car, &"police"))
 	# The pursuit: heat 1 -> 3 -> 5, chase, search, cooldown, busted, escaped.
 	_add(steps, 13.2, func() -> void: Events.heat_changed.emit(1))
+	_add(steps, 13.4, func() -> void:
+		Events.mode_status.emit(&"pursuit", {"takedowns": 1, "target": 3, "time_left": 90.0}))
 	_add(steps, 13.8, func() -> void: Events.pursuit_state_changed.emit(&"chase"))
 	_add(steps, 14.6, func() -> void: Events.heat_changed.emit(3))
+	_add(steps, 15.4, func() -> void:
+		Events.mode_status.emit(&"pursuit", {"takedowns": 2, "target": 3, "time_left": 62.0}))
 	_add(steps, 15.4, func() -> void: Events.heat_changed.emit(5))
 	_add(steps, 16.2, func() -> void: Events.pursuit_state_changed.emit(&"search"))
 	_add(steps, 17.4, func() -> void: Events.pursuit_state_changed.emit(&"cooldown"))
+	_add(steps, 17.8, func() -> void:
+		Events.mode_status.emit(&"pursuit", {"takedowns": 3, "target": 3, "time_left": 30.0}))
 	_add(steps, 18.8, func() -> void: Events.pursuit_state_changed.emit(&"busted"))
 	_add(steps, 19.8, func() -> void: Events.pursuit_state_changed.emit(&"escaped"))
+	_add(steps, 20.0, func() -> void: Events.mode_status.emit(&"none", {}))
 	_add(steps, 20.6, func() -> void: Events.race_finished.emit([
 		{"name": "Roadster", "time": 118.4, "position": 1, "is_player": true}]))
+	# The race is over: the free roam shows the score of the run.
+	_add(steps, 20.8, func() -> void: Events.mode_status.emit(&"free", {"score": 24850}))
 	_add(steps, 21.4, func() -> void: Events.game_paused.emit(true))
 	_add(steps, 22.0, func() -> void: Events.game_paused.emit(false))
 	return steps

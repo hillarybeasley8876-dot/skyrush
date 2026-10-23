@@ -30,6 +30,8 @@ var _row_bars: Array[HBoxContainer] = []
 var _last_player: int = -1
 var _last_count: int = -1
 var _last_ids: PackedInt64Array = PackedInt64Array()
+## True while the place comes from the mode status (it wins over the standings).
+var _place_locked: bool = false
 
 
 func _ready() -> void:
@@ -83,9 +85,10 @@ func set_standings(standings: Array[Dictionary]) -> void:
 	_last_ids = ids
 
 	var total := standings.size()
-	_rank_text = _rank_text_for(player_index + 1)
-	_total_text = "/%d" % total
-	_zh_text = "第%d名" % (player_index + 1)
+	if not _place_locked:
+		_rank_text = _rank_text_for(player_index + 1)
+		_total_text = "/%d" % total
+		_zh_text = "第%d名" % (player_index + 1)
 
 	for i in MAX_ROWS:
 		var row := _row_bars[i]
@@ -107,6 +110,29 @@ func set_standings(standings: Array[Dictionary]) -> void:
 		_row_badges[i].add_theme_stylebox_override("panel", _badge_style(is_player))
 	_layout()
 	queue_redraw()
+
+
+## The place of the player, from the mode status: the modes unit knows the position of the race,
+## so it wins over the standings (which are only the fallback). racers: the number of cars.
+func set_place(position: int, racers: int) -> void:
+	if position <= 0:
+		clear_place()
+		return
+	var rank := _rank_text_for(position)
+	var zh := "第%d名" % position
+	var total := "" if racers <= 0 else "/%d" % racers
+	if _place_locked and rank == _rank_text and total == _total_text and zh == _zh_text:
+		return
+	_rank_text = rank
+	_total_text = total
+	_zh_text = zh
+	_place_locked = true
+	queue_redraw()
+
+
+## The standings decide the place again (there is no mode status).
+func clear_place() -> void:
+	_place_locked = false
 
 
 ## The panel grows with its content.

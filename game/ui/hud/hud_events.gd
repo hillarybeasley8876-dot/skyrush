@@ -6,14 +6,22 @@ const Palette := preload("res://ui/theme/skyrush_palette.gd")
 const ToastStack := preload("res://ui/hud/toast_stack.gd")
 const TakedownBanner := preload("res://ui/hud/takedown_banner.gd")
 const CountdownLabel := preload("res://ui/hud/countdown_label.gd")
+const RacePanel := preload("res://ui/hud/race_panel.gd")
+const ModeStatusReadout := preload("res://ui/hud/mode_status_readout.gd")
 
 ## Widgets the handlers write into (set by the HUD when it builds its tree).
 var toasts: ToastStack = null
 var banner: TakedownBanner = null
 var countdown: CountdownLabel = null
 var hud_root: Control = null
-## The race panel, so the takedown banner can dock below it.
-var race_panel: Control = null
+## The race panel: the takedown banner docks below it and the place comes from the mode status.
+var race_panel: RacePanel = null
+## The readout of the mode status (the score, the takedown goal, the countdown).
+var mode_readout: ModeStatusReadout = null
+
+## The state of the running mode, from the bus (`Events.mode_status`).
+var status_kind: StringName = &"none"
+var status: Dictionary = {}
 
 ## Race / pursuit state.
 var heat: int = 0
@@ -60,6 +68,7 @@ func connect_all() -> void:
 	Events.heat_changed.connect(_on_heat_changed)
 	Events.pursuit_state_changed.connect(_on_pursuit_state_changed)
 	Events.game_paused.connect(_on_game_paused)
+	Events.mode_status.connect(_on_mode_status)
 
 
 func is_player(vehicle: VehicleBase) -> bool:
@@ -239,6 +248,27 @@ func _on_pursuit_state_changed(state: StringName) -> void:
 			toasts.push("成功逃脱！", "ESCAPED", Palette.GREEN)
 		&"busted":
 			toasts.push("被捕", "BUSTED", Palette.RED)
+
+
+## The state of the running mode, from the bus. The HUD draws it and nothing else: the laps of
+## the race that runs, the place of the player and the readout (the score, the goal, the clock).
+func _on_mode_status(kind: StringName, data: Dictionary) -> void:
+	status_kind = kind
+	status = data.duplicate()
+	if kind == &"race":
+		var total := int(data.get("laps", 0))
+		if total > 0:
+			laps = total
+		var current := int(data.get("lap", 0))
+		if current > 0:
+			lap = current
+		if race_panel != null:
+			race_panel.set_place(int(data.get("position", 0)), int(data.get("racers", 0)))
+	elif race_panel != null:
+		# Without a race the standings decide the place again.
+		race_panel.clear_place()
+	if mode_readout != null:
+		mode_readout.set_status(kind, data)
 
 
 func _on_game_paused(paused: bool) -> void:
