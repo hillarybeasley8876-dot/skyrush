@@ -1,5 +1,6 @@
 extends RefCounted
 const LaneSpatial := preload("res://world/api/lane_spatial.gd")
+const LevelRules := preload("res://world/api/level_rules.gd")
 ## The shortest lane path between two points, over the `next_lanes` graph of the lanes.
 ## The search is a Dijkstra over the lanes: the cost of a lane is the distance from its closest
 ## point to the target, so the path follows the direction of the traffic and never reverses.
@@ -31,14 +32,16 @@ func closest_lane(lanes: Array[LanePath], point: Vector3) -> int:
 
 
 ## The lanes that can serve a gate: the ones within GATE_RADIUS of it whose direction agrees
-## with the gate (-Z). The gate of a route is often on the boundary between two lanes, so
-## every candidate is a possible start.
+## with the gate (-Z) AND that are on the level of the gate. The gate of a route is often on the
+## boundary between two lanes, so every candidate is a possible start.
 func gate_lanes(lanes: Array[LanePath], grid: LaneSpatial, gate: Transform3D,
 		radius: float = GATE_RADIUS) -> Array[int]:
 	var out: Array[int] = []
 	if grid == null:
 		return out
-	var near: Dictionary = grid.query(gate.origin, radius)
+	# A gate on the Nanpu bridge (y 42.5) lies at the same x/z as the street under it and as
+	# the ramp below that: only the lanes of the level of the gate may serve it.
+	var near: Dictionary = grid.query(gate.origin, radius, gate.origin.y, LevelRules.LEVEL)
 	var forward := -gate.basis.z
 	for index in near.keys():
 		var info: Dictionary = near[index]

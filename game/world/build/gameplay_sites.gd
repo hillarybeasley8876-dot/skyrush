@@ -10,6 +10,7 @@ const BreakerSites := preload("res://world/build/breaker_sites.gd")
 const CitySites := preload("res://world/build/city_sites.gd")
 const GasStation := preload("res://world/build/gas_station.gd")
 const LaneSpatial := preload("res://world/api/lane_spatial.gd")
+const LevelRules := preload("res://world/api/level_rules.gd")
 
 const CHARGE_GLB := "res://assets/props/sites/charge_station.glb"
 const BILLBOARD_GLB := "res://assets/props/street/billboard_pole.glb"
@@ -252,7 +253,9 @@ func _build_roadblock(parent: Node3D, poi: Dictionary, grid: LaneSpatial) -> voi
 	var position := _position(poi)
 	var tangent := Vector3.FORWARD
 	if grid != null:
-		var near: Dictionary = grid.query(position, 20.0)
+		# The lanes of the level of the site only: the roadblock on the spiral (y 26) must not
+		# be put on the street lane under it.
+		var near: Dictionary = grid.query(position, 20.0, position.y, LevelRules.LEVEL)
 		var best := -1
 		var best_distance := INF
 		for index in near.keys():

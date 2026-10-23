@@ -11,6 +11,7 @@ extends RefCounted
 const LanePathFinder := preload("res://world/api/lane_path_finder.gd")
 const Heading := preload("res://world/api/heading.gd")
 const LaneSpatial := preload("res://world/api/lane_spatial.gd")
+const LevelRules := preload("res://world/api/level_rules.gd")
 
 ## The distance between two rows of the grid.
 const GRID_ROW := 8.0
@@ -113,7 +114,9 @@ static func _anchor_transform(raw: Variant) -> Variant:
 static func _columns(lanes: Array[LanePath], grid: LaneSpatial, anchor: Transform3D) -> Array[int]:
 	if grid == null:
 		return []
-	var near: Dictionary = grid.query(anchor.origin, SEARCH_RADIUS)
+	# The lanes of the level of the anchor only: the start of a route on the deck must not be
+	# placed on the frontage street under it.
+	var near: Dictionary = grid.query(anchor.origin, SEARCH_RADIUS, anchor.origin.y, LevelRules.LEVEL)
 	var forward := -anchor.basis.z
 	var candidates: Array[Dictionary] = []
 	for index in near.keys():

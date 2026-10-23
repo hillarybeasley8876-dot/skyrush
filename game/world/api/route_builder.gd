@@ -4,13 +4,14 @@ extends RefCounted
 ## the checkpoints, so the rival AI drives on real lanes and the line never reverses.
 ##
 ## A leg whose gates are not on the lane network falls back to a smooth line through its two
-## gates; the other legs of the route keep their lane path.
+## gates; the legs that could not be driven are reported in the meta data of the route.
 
 const Spline := preload("res://world/api/spline_util.gd")
 const Heading := preload("res://world/api/heading.gd")
 const LanePathFinder := preload("res://world/api/lane_path_finder.gd")
 const StartGrid := preload("res://world/api/start_grid.gd")
 const LaneSpatial := preload("res://world/api/lane_spatial.gd")
+const RouteGates := preload("res://world/api/route_gates.gd")
 
 ## The points of a lane slice are this far apart. The line is a smooth curve, so the points
 ## have to be close: at a junction the curve cuts the corner, and a cut of more than two metres
@@ -24,10 +25,14 @@ var _relaxed := false
 var _backwards := false
 ## True when the last leg could not reach its target on the lanes at all.
 var _partial := false
+## The legs of the last route that are not on the lane network.
+var _unroutable_legs: Array[int] = []
+## The legs of the last route whose gates are more than GATE_RADIUS from the lanes.
+var _relaxed_legs: Array[int] = []
 ## The legs of the last route that run against the traffic.
 var _backwards_legs: Array[int] = []
-## How far the lanes of a gate are looked for.
-const GATE_RADIUS := 8.0
+## The legs of the last route that cannot reach their gate on the lane network.
+var _partial_legs: Array[int] = []
 ## The radius that is used when the gates of a leg are not on the lanes (the data of the city
 ## is then wrong; the leg is reported).
 const GATE_RADIUS_FALLBACK := 30.0
@@ -49,9 +54,16 @@ func _build_route(spec: Dictionary, lanes: Array[LanePath], grid: LaneSpatial) -
 	route.laps = int(spec.get("laps", 1))
 	route.checkpoints = _checkpoints(spec.get("checkpoints", []))
 	route.set_meta("circuit", _is_circuit(spec))
-	_face_the_route(route.checkpoints)
-	route.grid = StartGrid.build(lanes, grid, spec.get("grid", []), route.checkpoints)
+	RouteGates.face_the_route(route.checkpoints, lanes, grid)
 	route.racing_line = _racing_line(route.checkpoints, lanes, spec, grid)
+	RouteGates.face_the_line(route.checkpoints, route.racing_line)
+	RouteGates.face_ahead(route.checkpoints)
+	route.grid = StartGrid.build(lanes, grid, spec.get("grid", []), route.checkpoints)
+	# The legs of the route that could not be driven on the lane network are reported in the
+	# meta data of the route: the tests and the tools read them.
+	route.set_meta("unroutable_legs", _unroutable_legs)
+	route.set_meta("relaxed_legs", _relaxed_legs)
+	route.set_meta("partial_legs", _partial_legs)
 	route.set_meta("backwards_legs", _backwards_legs)
 	if route.checkpoints.size() > 0:
 		route.gate_width = GATE_WIDTH
@@ -68,25 +80,6 @@ func _checkpoints(raw: Variant) -> Array[Transform3D]:
 	return out
 
 
-## The lane that comes before every lane (the slots of the grid walk back along the road).
-func _previous_lanes(lanes: Array[LanePath]) -> Dictionary:
-	var out: Dictionary = {}
-	for i in lanes.size():
-		for next_index in lanes[i].next_lanes:
-			if next_index < 0 or next_index >= lanes.size():
-				continue
-			if out.has(next_index):
-				continue
-			if lanes[next_index].road_id != lanes[i].road_id:
-				continue
-			out[next_index] = i
-	return out
-
-
-func _slot(anchor: Transform3D, offset: Vector3) -> Transform3D:
-	return Transform3D(anchor.basis, anchor.origin + offset)
-
-
 func _transform(entry: Array) -> Transform3D:
 	var heading := 0.0
 	if entry.size() >= 4:
@@ -101,52 +94,63 @@ func _racing_line(checkpoints: Array[Transform3D], lanes: Array[LanePath],
 	var curve := Curve3D.new()
 	curve.bake_interval = 2.0
 	curve.set_up_vector_enabled(false)
+	_unroutable_legs = []
+	_relaxed_legs = []
+	_backwards_legs = []
+	_partial_legs = []
 	if checkpoints.size() < 2 or lanes.is_empty():
 		return curve
 	var finder := LanePathFinder.new()
 	var points := PackedVector3Array()
-	var unroutable: Array[int] = []
-	var relaxed_legs: Array[int] = []
-	var backwards_legs: Array[int] = []
-	var partial_legs: Array[int] = []
 	for i in range(checkpoints.size() - 1):
 		_relaxed = false
 		_backwards = false
 		_partial = false
 		var part := _path_between(lanes, checkpoints[i], checkpoints[i + 1], finder, grid)
 		if _relaxed:
-			relaxed_legs.append(i)
+			_relaxed_legs.append(i)
 		if _backwards:
-			backwards_legs.append(i)
+			_backwards_legs.append(i)
 		if _partial:
-			partial_legs.append(i)
+			_partial_legs.append(i)
 		if part.is_empty():
 			# The gates of this leg are not on one connected lane path: the leg falls back to a
 			# smooth line through its two gates; the other legs keep their lane path.
-			unroutable.append(i)
+			_unroutable_legs.append(i)
 			part = _leg_line(checkpoints[i], checkpoints[i + 1])
 		points.append_array(part)
 	if _is_circuit(spec) and points.size() > 2:
+		_relaxed = false
+		_backwards = false
+		_partial = false
 		var closing := _path_between(lanes, checkpoints[checkpoints.size() - 1], checkpoints[0],
 			finder, grid)
+		var closing_index := checkpoints.size() - 1
+		if _relaxed:
+			_relaxed_legs.append(closing_index)
+		if _backwards:
+			_backwards_legs.append(closing_index)
+		if _partial:
+			_partial_legs.append(closing_index)
 		if closing.is_empty():
-			unroutable.append(checkpoints.size() - 1)
+			_unroutable_legs.append(closing_index)
 			closing = _leg_line(checkpoints[checkpoints.size() - 1], checkpoints[0])
 		points.append_array(closing)
-	if not unroutable.is_empty():
+	var route_id := str(spec.get("id", "route"))
+	var result := Spline.make_curve(_unique(points))
+	if not _unroutable_legs.is_empty():
 		print("[world] route %s: %d legs are not on the lane network (gates %s)" % [
-			str(spec.get("id", "route")), unroutable.size(), str(unroutable)])
-	if not relaxed_legs.is_empty():
+			route_id, _unroutable_legs.size(), str(_unroutable_legs)])
+	if not _relaxed_legs.is_empty():
 		print("[world] route %s: the gates of the legs %s are more than %d m from the lanes"
-			% [str(spec.get("id", "route")), str(relaxed_legs), GATE_RADIUS])
-	if not backwards_legs.is_empty():
+			% [route_id, str(_relaxed_legs), RouteGates.GATE_RADIUS])
+	if not _backwards_legs.is_empty():
 		print("[world] route %s: the legs %s have no forward path on the lane network"
-			% [str(spec.get("id", "route")), str(backwards_legs)])
-	if not partial_legs.is_empty():
+			% [route_id, str(_backwards_legs)])
+	if not _partial_legs.is_empty():
 		print("[world] route %s: the legs %s cannot reach their gate on the lane network"
-			% [str(spec.get("id", "route")), str(partial_legs)])
-	_backwards_legs = backwards_legs
-	return Spline.make_curve(_unique(points))
+			% [route_id, str(_partial_legs)])
+	return result
 
 
 ## The points of a line without the doubles: two identical control points make the curve
@@ -168,23 +172,6 @@ func _leg_line(from: Transform3D, to: Transform3D) -> PackedVector3Array:
 	return Spline.catmull_rom(points, 8)
 
 
-## Turns the gates that do not face the next checkpoint towards it: 21 of the 55 gates of
-## city.json carry a heading that points away from the route (a request to city_layout).
-func _face_the_route(checkpoints: Array[Transform3D]) -> void:
-	for i in checkpoints.size():
-		var next := i + 1
-		if next >= checkpoints.size():
-			if checkpoints.size() < 2:
-				continue
-			next = 0
-		var forward := -checkpoints[i].basis.z
-		var to_next := checkpoints[next].origin - checkpoints[i].origin
-		if forward.dot(to_next) > 0.0:
-			continue
-		var basis := Basis.looking_at(to_next, Vector3.UP)
-		checkpoints[i] = Transform3D(basis, checkpoints[i].origin)
-
-
 ## A circuit is a race with more than one lap.
 func _is_circuit(spec: Dictionary) -> bool:
 	return str(spec.get("kind", "")) == "race" or int(spec.get("laps", 1)) > 1
@@ -194,8 +181,8 @@ func _is_circuit(spec: Dictionary) -> bool:
 func _path_between(lanes: Array[LanePath], from: Transform3D, to: Transform3D,
 		finder: LanePathFinder, grid: LaneSpatial) -> PackedVector3Array:
 	var out := PackedVector3Array()
-	var sources := finder.gate_lanes(lanes, grid, from, GATE_RADIUS)
-	var targets := finder.gate_lanes(lanes, grid, to, GATE_RADIUS)
+	var sources := finder.gate_lanes(lanes, grid, from, RouteGates.GATE_RADIUS)
+	var targets := finder.gate_lanes(lanes, grid, to, RouteGates.GATE_RADIUS)
 	if sources.is_empty() or targets.is_empty():
 		# The gates of this leg are not on the lanes: the lanes are looked for further away.
 		sources = finder.gate_lanes(lanes, grid, from, GATE_RADIUS_FALLBACK)
@@ -259,7 +246,9 @@ func _exit_offset(lane: LanePath, point: Vector3) -> float:
 	return _nearest_offset(lane, point)
 
 
-## The offset of the point of the lane closest to `point`, without a full curve search.
+## The offset of the point of the lane closest to `point`, without a full curve search. The
+## height counts: a lane that crosses itself (the Pudong loop) has two levels at one x/z, and
+## the gate of the route is on the level of one of them.
 func _nearest_offset(lane: LanePath, point: Vector3) -> float:
 	if lane.curve == null:
 		return 0.0
@@ -270,7 +259,8 @@ func _nearest_offset(lane: LanePath, point: Vector3) -> float:
 	for s in steps + 1:
 		var offset := length * float(s) / float(steps)
 		var sample := lane.curve.sample_baked(offset, true)
-		var distance := Vector2(sample.x - point.x, sample.z - point.z).length()
+		var distance := Vector2(sample.x - point.x, sample.z - point.z).length() \
+			+ absf(sample.y - point.y)
 		if distance < best_distance:
 			best_distance = distance
 			best = offset
@@ -300,8 +290,8 @@ func _slice(lane: LanePath, from: float, to: float) -> PackedVector3Array:
 	var length := lane.curve.get_baked_length()
 	if length < 0.01:
 		return out
-	var start := fposmod(from, length)
-	var end := fposmod(to, length)
+	var start := _offset_on(length, from)
+	var end := _offset_on(length, to)
 	var spans: Array[Vector2] = []
 	if end >= start:
 		spans.append(Vector2(start, end))
@@ -313,3 +303,12 @@ func _slice(lane: LanePath, from: float, to: float) -> PackedVector3Array:
 		for s in steps + 1:
 			out.append(lane.curve.sample_baked(span.x + (span.y - span.x) * float(s) / float(steps), true))
 	return out
+
+
+## The offset on a lane of a given length: the end of a lane is the length of the curve and not
+## the offset 0, or the slice of a lane that ends at its end would wrap around and drive the
+## lane a second time.
+static func _offset_on(length: float, offset: float) -> float:
+	if offset >= length - 0.001:
+		return length
+	return fposmod(offset, length)
