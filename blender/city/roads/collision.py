@@ -19,13 +19,17 @@ CONCRETE_NAME = "concrete-colonly"
 STEEL_NAME = "steel-colonly"
 SURFACE_DROP = 0.015     # the collider sits just under the visible asphalt
 BARRIER_INSET = 0.04     # inset so the collider never z-fights the render mesh
+BARRIER_TOP = 0.60       # how high the collider of a parapet reaches above the deck
+BARRIER_DEPTH = 0.60     # how far it reaches below the deck
 RIBBON_SHIFT = 1.0       # the connector strip is a step ahead of its lane
 CORRIDOR_MARGIN = 0.5    # a deck keeps its collider this far off the ramp's lane
 LANE_CLEAR = 1.2         # a deck keeps this much room from the lane under it
 CAR_HALF = 0.95          # the half width of the car that drives on the lane
-ROOF_MIN = 0.05          # a step: a surface this far above a lane is in the way
-ROOF_MAX = 1.3           # a roof: a surface higher than this is passed under
+CAR_HALF_LEN = 2.1       # the half length of that car: its footprint is long
+ROOF_MIN = 0.25          # a step: a surface this far above a lane is in the way
+ROOF_MAX = 0.9           # a roof: a surface higher than this is passed under
 LEDGE_MIN = 0.25         # a surface this far above a lane stands in its way
+LEDGE_MAX = 1.3          # a surface higher than this is a roof the car passes under
 
 _LANE_GRAPH = {}         # id(city) -> the lane graph of the city: built once
 _LANE_INDEX = {}         # id(city) -> the lanes with their height and cells
@@ -97,7 +101,30 @@ def _cap_ends(bm):
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
 
 
-def build_barriers(road, idx, builder, lay, side):
+def _parapet_collider(kind="full"):
+    """The closed collider of a parapet: a solid wall on the line of the parapet.
+
+    It stands 0.6 m above the deck and reaches 0.6 m below it.  The height
+    matters: a collider that is a low kerb is no fence at all, a car rides over
+    it, and it does not stop a car that drifts over the edge of the deck.  The
+    visible parapet is 1.0 m high, so the collider is its lower part.
+
+    A "kerb" parapet is the low one, where a lane of the city runs under the
+    edge of the deck: the car of that lane passes it, so the collider is low
+    and narrow and stands clear of the traffic.  A "shallow" parapet is the
+    full one with its collider cut short at the bottom of the visible parapet:
+    the car goes under the parapet there, so a collider that reached further
+    down would be a wall where there is no fence to see.
+    """
+    if kind == "kerb":
+        return [(0.02, 0.15), (0.07, 0.42), (0.26, 0.42),
+                (0.26, profiles.PARAPET_BOTTOM)]
+    bottom = -BARRIER_DEPTH if kind == "full" else profiles.PARAPET_BOTTOM
+    return [(0.04, 0.44), (0.24, BARRIER_TOP), (0.46, BARRIER_TOP),
+            (0.46, bottom)]
+
+
+def build_barriers(road, idx, builder, lay, side, kind="full"):
     """The closed collider of the parapet on one side of the deck.
 
     It follows the real profile, inset by 4 cm so the render mesh always wins the
@@ -108,8 +135,24 @@ def build_barriers(road, idx, builder, lay, side):
     path = [road.path[i] for i in idx]
     mirror = side == "back"
     edge = lay["asphalt_fwd"] if side == "fwd" else lay["asphalt_back"]
-    parapet = _inset(profiles.parapet_profile(), BARRIER_INSET, drop=-0.60)
+    parapet = _parapet_collider(kind)
     prof = [(edge - x if mirror else edge + x, z) for (x, z) in parapet]
+    bm = meshkit.sweep(bmesh.new(), prof, path)
+    _cap_ends(bm)
+    builder.add_named(CONCRETE_NAME, bm)
+
+
+def build_edge_barrier(builder, path, mirror=False):
+    """The closed collider of a parapet that follows a given polyline.
+
+    The outer edge of an acceleration strip is a deck edge like any other: it
+    gets the same wall, on the same line as the visible parapet.
+    """
+    if len(path) < 2:
+        return
+    prof = _parapet_collider()
+    if mirror:
+        prof = [(-x, z) for (x, z) in prof]
     bm = meshkit.sweep(bmesh.new(), prof, path)
     _cap_ends(bm)
     builder.add_named(CONCRETE_NAME, bm)
@@ -182,8 +225,14 @@ def build(road, idx, builder, lay=None, excluded=None, gaps=None):
         build_median(road, sub, builder, lay)
     for side in ("fwd", "back"):
         cut = excluded | _gap_indices(road, idx, gaps.get(side, ()))
+        # where a lane of the city runs under the edge of the deck the parapet
+        # stands, but it is low or its collider is cut short: a collider that
+        # reached into the traffic would be a wall with no fence to see
+        kinds = {"kerb": _gap_indices(road, idx, gaps.get(side + "_kerb", ())),
+                 "shallow": _gap_indices(road, idx, gaps.get(side + "_shallow", ()))}
         for sub in _split(idx, cut):
-            build_barriers(road, sub, builder, lay, side)
+            for piece, kind in _split_kinds(sub, kinds):
+                build_barriers(road, piece, builder, lay, side, kind)
             build_bridge(road, sub, builder, lay, side)
         # The median barrier of the deck stands in the middle of the deck, so
         # only the traffic of an attach that crosses it cuts it.  It is swept
@@ -264,11 +313,12 @@ def lane_index(city):
 
 
 def lanes_of(city):
-    """The lanes of the city in Blender space: [(road id, [points]), ...].
+    """The lanes of the city in Blender space: [(lane, [points]), ...].
 
     The points of the lane graph are in the game's coordinates, so they are
     turned into the Blender frame here: every helper of this module works in
-    Blender.
+    Blender.  The lane itself comes with them, so a caller can tell the lanes
+    of a road from the connector lanes of that road.
     """
     out = _LANES.get(id(city))
     if out is not None:
@@ -277,13 +327,13 @@ def lanes_of(city):
     for lane in lane_graph_of(city)["lanes"]:
         pts = [Vector((p[0], -p[2], p[1])) for p in lane["points"]]
         if len(pts) > 1:
-            out.append((lane.get("road", ""), pts))
+            out.append((lane, pts))
     _LANES[id(city)] = out
     return out
 
 
 def lane_grid(city):
-    """The lane points of the city in a grid: {(cell): [(road id, point), ...]}.
+    """The lane points of the city in a grid: {(cell): [(lane, point), ...]}.
 
     The city has hundreds of thousands of lane points, so a deck that stands
     over one of them is found through the grid and not by walking every lane.
@@ -292,22 +342,27 @@ def lane_grid(city):
     if grid is not None:
         return grid
     grid = {}
-    for (road, pts) in lanes_of(city):
+    for (lane, pts) in lanes_of(city):
         for p in pts:
             key = (int(p.x // _POINT_CELL), int(p.y // _POINT_CELL))
-            grid.setdefault(key, []).append((road, p))
+            grid.setdefault(key, []).append((lane, p))
     _LANE_GRID[id(city)] = grid
     return grid
 
 
-def _quad_points(quad, grid):
-    """The lane points that can lie in the plan of a quad."""
+def _quad_points(quad, grid, margin=0.0):
+    """The lane points that can lie in the plan of a quad.
+
+    With a margin the cells around the quad are searched as well: a lane
+    that runs past the quad is a lane the car of that lane drives on.
+    """
     x0 = min(p.x for p in quad)
     x1 = max(p.x for p in quad)
     y0 = min(p.y for p in quad)
     y1 = max(p.y for p in quad)
-    for cx in range(int(x0 // _POINT_CELL), int(x1 // _POINT_CELL) + 1):
-        for cy in range(int(y0 // _POINT_CELL), int(y1 // _POINT_CELL) + 1):
+    pad = int(margin // _POINT_CELL) + 1
+    for cx in range(int(x0 // _POINT_CELL) - pad, int(x1 // _POINT_CELL) + pad + 1):
+        for cy in range(int(y0 // _POINT_CELL) - pad, int(y1 // _POINT_CELL) + pad + 1):
             for item in grid.get((cx, cy), ()):
                 yield item
 
@@ -320,19 +375,75 @@ def _in_quad(quad, p):
     return all(s >= -1e-6 for s in signs) or all(s <= 1e-6 for s in signs)
 
 
-def roofs_lane(quad, grid):
+def _near_quad(quad, p, margin):
+    """True when a point lies in the plan of a quad or within `margin` of it.
+
+    The margin is the width of the car: a surface that stands a step above a
+    lane that runs past it is a step the car drives into, even when the lane
+    itself is not under the surface.
+    """
+    if _in_quad(quad, p):
+        return True
+    best = 1e18
+    for i in range(4):
+        a, b = quad[i], quad[(i + 1) % 4]
+        ex, ey = b.x - a.x, b.y - a.y
+        l2 = ex * ex + ey * ey
+        t = 0.0 if l2 < 1e-9 else max(0.0, min(1.0, ((p.x - a.x) * ex + (p.y - a.y) * ey) / l2))
+        dx, dy = p.x - (a.x + ex * t), p.y - (a.y + ey * t)
+        best = min(best, dx * dx + dy * dy)
+    return best <= margin * margin
+
+
+def _height_at(quad, p):
+    """The height of the surface of a quad at a point in its plan.
+
+    The quad is two triangles, and the height is read from the triangle that
+    covers the point; outside the quad the plane of the first triangle is
+    used, so the height of a step can be judged next to the lane as well.
+    """
+    for (a, b, c) in ((quad[0], quad[1], quad[2]), (quad[0], quad[2], quad[3])):
+        d = (b.y - c.y) * (a.x - c.x) + (c.x - b.x) * (a.y - c.y)
+        if abs(d) < 1e-9:
+            continue
+        w0 = ((b.y - c.y) * (p.x - c.x) + (c.x - b.x) * (p.y - c.y)) / d
+        w1 = ((c.y - a.y) * (p.x - c.x) + (a.x - c.x) * (p.y - c.y)) / d
+        w2 = 1.0 - w0 - w1
+        if w0 < -1e-6 or w1 < -1e-6 or w2 < -1e-6:
+            continue
+        return w0 * a.z + w1 * b.z + w2 * c.z
+    a, b, c = quad[0], quad[1], quad[2]
+    d = (b.y - c.y) * (a.x - c.x) + (c.x - b.x) * (a.y - c.y)
+    if abs(d) < 1e-9:
+        return max(q.z for q in quad)
+    w0 = ((b.y - c.y) * (p.x - c.x) + (c.x - b.x) * (p.y - c.y)) / d
+    w1 = ((c.y - a.y) * (p.x - c.x) + (a.x - c.x) * (p.y - c.y)) / d
+    return w0 * a.z + w1 * b.z + (1.0 - w0 - w1) * c.z
+
+
+def roofs_lane(quad, grid, skip=(), margin=CAR_HALF):
     """True when a quad stands over a lane as a step.
 
-    The top of the quad is more than LEDGE_MIN above a lane that runs under
-    it: the car on that lane drives into the quad.  A quad that is more than
-    ROOF_MAX above the lane is a roof the car passes under, so it keeps its
-    collider.
+    The surface of the quad is more than LEDGE_MIN above a lane that runs
+    under it: the car on that lane drives into the quad.  A quad that is more
+    than ROOF_MAX above the lane is a roof the car passes under, so it keeps
+    its collider.  The lane may run past the quad as well: the car is a car
+    wide and a car long, so a step within that footprint of the lane is a
+    step too.
+
+    The lanes of `skip` are ignored: the gore is the surface the traffic of
+    the attach drives on, so it stands over that traffic on purpose.
     """
-    top = max(p.z for p in quad)
-    for _road, p in _quad_points(quad, grid):
-        if top - p.z <= LEDGE_MIN:
+    high = max(q.z for q in quad)
+    for lane, p in _quad_points(quad, grid, margin):
+        if lane.get("id") in skip or lane.get("road") in skip:
             continue
-        if _in_quad(quad, p):
+        # a surface that hangs over the lane between LEDGE_MIN and LEDGE_MAX
+        # above it is a step the car drives into: the whole quad goes then
+        gap = high - p.z
+        if gap <= LEDGE_MIN or gap >= LEDGE_MAX:
+            continue
+        if _near_quad(quad, p, margin):
             return True
     return False
 
@@ -368,17 +479,22 @@ def pave(builder, pa, ra, rb, pb, collide=True):
 def roof_cut(city, ramp, parent, tileset, lay, near):
     """Narrow the carriageway collider where one deck roofs the other's lane.
 
-    A deck that stands a step or a roof above the lane of the other road
-    takes that lane away: the collider of its carriageway is pulled in to the
-    room the lane needs, so the car on the lane finds its own road again.
-    The road's own outer lane keeps the width a car needs, so the cut never
-    reaches the traffic of the road itself.
+    A deck that stands a step above the lane of the other road takes that
+    lane away: the collider of its carriageway is pulled in to the room the
+    lane needs, so the car on the lane finds its own road again.  The road's
+    own outer lane keeps the width a car needs, so the cut never reaches the
+    traffic of the road itself.
+
+    Only a step is cut away: a deck that stands more than ROOF_MAX above the
+    lane is a roof the car passes under (the surface colliders are one sided),
+    so it keeps its surface.  A cut there would leave a hole in the deck
+    above, and a hole in the deck is an open edge.
     """
     for (r, l, other) in ((parent, profiles.layout(parent), ramp.id),
                           (ramp, lay, parent.id)):
         cuts = {}
-        for (lroad, pts) in lanes_of(city):
-            if lroad != other:
+        for (lane, pts) in lanes_of(city):
+            if lane.get("road") != other:
                 continue
             for k, p in enumerate(pts):
                 if (p - near).length > 250.0:
@@ -557,4 +673,33 @@ def _split(idx, excluded):
             cur.append(i)
     if len(cur) > 1:
         out.append(cur)
+    return out
+
+
+def _split_kinds(idx, kinds):
+    """The path indices of `idx` in runs, each with the kind of parapet on it.
+
+    The two runs at a change share the sample where the parapet changes, so
+    the fence of the deck stays continuous.
+    """
+    out = []
+    cur = []
+    flag = None
+    for i in idx:
+        k = "full"
+        for name, marks in kinds.items():
+            if i in marks:
+                k = name
+                break
+        if flag is None:
+            flag = k
+        elif k != flag:
+            cur.append(i)
+            out.append((cur, flag))
+            cur = [i]
+            flag = k
+            continue
+        cur.append(i)
+    if len(cur) > 1:
+        out.append((cur, flag))
     return out

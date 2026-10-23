@@ -60,6 +60,9 @@ def build_road(city, road, tileset, records, paths=()):
         # the pots, the joints, the scuppers and the planted strip are built in
         # one pass over the road, so they are never built twice at a tile border
         deck.build_details(road, tileset, lay, gaps)
+        # the outer edge of the acceleration strips is a deck edge like any
+        # other: it gets a parapet like the deck's own edge
+        deck.build_strip_parapets(city, road, tileset, lay)
     if road.kind == "tunnel":
         for at_end in (True, False):
             builder = tileset.builder_at(road.path[0 if at_end else -1])

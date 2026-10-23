@@ -16,6 +16,11 @@ DRIP = 0.25           # outer lip of the deck slab
 GIRDER_DEPTH = 2.00
 FLANGE = 0.60         # bottom flange as a fraction of the deck width
 MEDIAN_H = 0.85       # median barrier height
+PARAPET_BOTTOM = -0.15  # the visible parapet reaches this far below the deck
+CAR_LIFT = 0.30      # the car rides this high above its lane
+CAR_ROOF = 1.30      # and its roof is this high above its lane
+LOW_PARAPET_H = 0.45   # the height of a parapet that a car passes under
+LOW_PARAPET_W = 0.28   # and its width at the base
 WHEEL_HALF = 0.45     # half width of a polished wheel-path band
 WHEEL_POS = 0.25      # wheel path at 1/4 and 3/4 of the lane
 EPS = 0.02            # colour transition width (keeps quads non-degenerate)
@@ -150,3 +155,17 @@ def parapet_profile():
     """
     return [(0.0, PARAPET_H - 0.14), (0.28, PARAPET_H), (PARAPET_W, PARAPET_H),
             (PARAPET_W, -0.15)]
+
+
+def low_parapet_profile():
+    """The parapet where a lane of the city runs under the edge of the deck.
+
+    A car is 1.30 m tall above its lane, and the lane that runs under the edge
+    of a deck is 0.6 m to 1.45 m below it: the full parapet would stand in the
+    traffic of that lane.  The parapet gets lower there: it still fences the
+    deck, and the car of the lane under the edge passes it.
+
+    Open profile: the base is buried in the deck slab.
+    """
+    return [(0.0, LOW_PARAPET_H - 0.05), (0.14, LOW_PARAPET_H),
+            (LOW_PARAPET_W, LOW_PARAPET_H), (LOW_PARAPET_W, PARAPET_BOTTOM)]
