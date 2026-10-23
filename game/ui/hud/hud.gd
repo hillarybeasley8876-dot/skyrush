@@ -26,6 +26,7 @@ const ToastStack := preload("res://ui/hud/toast_stack.gd")
 const TakedownBanner := preload("res://ui/hud/takedown_banner.gd")
 const CountdownLabel := preload("res://ui/hud/countdown_label.gd")
 const FlightCluster := preload("res://ui/hud/flight_cluster.gd")
+const ModeStatusReadout := preload("res://ui/hud/mode_status_readout.gd")
 
 ## The flight gauges only appear after this much airtime (brief: airborne > 0.3 s).
 const FLIGHT_AIRTIME := 0.3
@@ -56,6 +57,8 @@ var toasts: ToastStack
 var banner: TakedownBanner
 var countdown: CountdownLabel
 var flight: FlightCluster
+## The readout of the mode status (the score, the takedown goal, the countdown).
+var mode_status: ModeStatusReadout
 ## The full-screen dim of the BUSTED screen (dossier §8.4).
 var busted_dim: ColorRect
 
@@ -100,6 +103,7 @@ func _ready() -> void:
 	events.countdown = countdown
 	events.hud_root = root
 	events.race_panel = race_panel
+	events.mode_readout = mode_status
 	events.connect_all()
 
 
@@ -129,6 +133,12 @@ func _build() -> void:
 	minimap = MinimapPanel.new()
 	UI.place(minimap, 1, 0, 1, 0, -288, 212, -36, 464)
 	root.add_child(minimap)
+
+	# The readout of the mode status (the score of the free roam, the goal and the countdown of a
+	# pursuit). It is under the BUSTED dim, like the panels.
+	mode_status = ModeStatusReadout.new()
+	UI.place(mode_status, 0, 0, 1, 1)
+	root.add_child(mode_status)
 
 	flight = FlightCluster.new()
 	UI.place(flight, 0, 0, 1, 1)
@@ -199,7 +209,10 @@ func _update_timer_layout() -> void:
 		return
 	_timer_shown = events.race_running
 	if events.race_running:
-		events.laps = _route_laps()
+		# The mode status knows the laps of the race that runs; the first route of the world is
+		# only the fallback for a race without a status.
+		if events.status_kind != &"race":
+			events.laps = _route_laps()
 	timer_panel.visible = _timer_shown
 	if _timer_shown:
 		UI.place(timer_panel, 1, 0, 1, 0, -280, 36, -36, 196)
@@ -328,7 +341,7 @@ func _update_standings(delta: float) -> void:
 	if events.heat > 0:
 		pursuit_panel.visible = true
 		race_panel.visible = false
-	elif Game.mode == &"race":
+	elif Game.mode == &"race" or events.status_kind == &"race":
 		race_panel.visible = true
 		pursuit_panel.visible = false
 	else:

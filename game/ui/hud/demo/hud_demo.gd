@@ -112,6 +112,7 @@ func _build_map() -> void:
 func _reset_state() -> void:
 	Events.heat_changed.emit(0)
 	Events.pursuit_state_changed.emit(&"none")
+	Events.mode_status.emit(&"none", {})
 	Events.checkpoint_passed.emit(car, 0, 8)
 	Events.checkpoint_passed.emit(car, 1, 8)
 	Events.lap_completed.emit(car, 1, 48.32)
