@@ -1,0 +1,50 @@
+{
+  "id": "blocks-budget",
+  "title": "Bring the building tiles under their triangle budgets (23 of 63 are over)",
+  "brief": "briefs/improve/blocks-budget.md",
+  "isolation": "worktree",
+  "sparse": [
+    "tools/",
+    "data/",
+    "ref/",
+    "briefs/",
+    "blender/",
+    "game/assets/textures/",
+    "game/assets/city/_tex/",
+    "game/world/data/",
+    "SPEC.md",
+    "ART.md",
+    "CONTRACTS.md",
+    "README.md"
+  ],
+  "owns": [
+    "blender/city/buildings/"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 300,
+  "timeoutMin": 240,
+  "accept": [
+    {
+      "name": "build the over-budget tiles and four control tiles",
+      "timeoutS": 2700,
+      "cmd": "python tools/gd.py blender run blender/city/buildings/build_city.py -- --city data/city/city.json --out F:/dev/skyrush-out/tmp/blocks-budget/blocks --only \"-1,-1;-1,-2;-1,0;-1,1;-1,2;-2,-1;-2,0;-2,1;-2,2;-3,-1;-3,2;-4,-1;-4,-2;-4,0;0,1;0,2;1,-1;1,-2;2,-1;2,-2;2,-3;2,0;3,-2;0,0;-3,0;3,1;1,1\"",
+      "must": [
+        "TOTAL tris"
+      ]
+    },
+    {
+      "name": "every tile is inside its budgets and not gutted",
+      "cmd": "python tools/city/check_blocks_budget.py F:/dev/skyrush-out/tmp/blocks-budget/blocks --ref F:/dev/skyrush-out/baselines/blocks_trial.json --only \"-1,-1;-1,-2;-1,0;-1,1;-1,2;-2,-1;-2,0;-2,1;-2,2;-3,-1;-3,2;-4,-1;-4,-2;-4,0;0,1;0,2;1,-1;1,-2;2,-1;2,-2;2,-3;2,0;3,-2;0,0;-3,0;3,1;1,1\"",
+      "must": [
+        "BLOCKS_BUDGET OK"
+      ]
+    },
+    {
+      "name": "the tiles that were under budget are unchanged",
+      "cmd": "python tools/city/check_blocks_untouched.py F:/dev/skyrush-out/tmp/blocks-budget/blocks --ref F:/dev/skyrush-out/baselines/blocks_trial.json --tiles \"0,0;-3,0;3,1;1,1\"",
+      "must": [
+        "BLOCKS_UNTOUCHED OK"
+      ]
+    }
+  ]
+}
