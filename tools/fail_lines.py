@@ -5,7 +5,7 @@
 
 Runs `tools/gd.py test <test>` and reads its output.  Every line that starts with FAIL must match one of the --allow
 regular expressions (re.search); lines that do not are printed as NEW FAIL.  At least --min-pass lines must start with PASS
-(a test that crashes at the start prints none).  Engine errors (lines starting with SCRIPT ERROR or "ERROR:") count as new
+(a test that crashes at the start prints none).  Engine errors (lines starting with SCRIPT ERROR or "ERROR:") and a test host timeout ("TEST TIMEOUT") count as new
 FAIL lines unless allowed.
 Prints FAIL_LINES OK (n allowed) or FAIL_LINES FAIL.  The exit code is 0 only for OK.
 Use it for tests that have known failures that are not the job's business: the job must not add a failing check and must
@@ -41,7 +41,7 @@ def main(argv):
     passes = sum(1 for line in out.splitlines() if line.startswith("PASS"))
     allowed, new = 0, []
     for line in out.splitlines():
-        if line.startswith(("FAIL", "SCRIPT ERROR", "ERROR:")):
+        if line.startswith(("FAIL", "SCRIPT ERROR", "ERROR:", "TEST TIMEOUT", "TEST ERROR")):
             if any(rx.search(line) for rx in allow):
                 allowed += 1
             else:
