@@ -55,6 +55,7 @@ const AirMod := preload("res://vehicle/modules/car_air.gd")
 const ReadoutMod := preload("res://vehicle/modules/car_readout.gd")
 const ApiMod := preload("res://vehicle/modules/car_api.gd")
 const RewardsMod := preload("res://vehicle/modules/rewards.gd")
+const StuntsMod := preload("res://vehicle/modules/stunts.gd")
 const PlayerInputMod := preload("res://vehicle/player_input.gd")
 const SetupMod := preload("res://vehicle/modules/car_setup.gd")
 const InputMod := preload("res://vehicle/modules/car_input.gd")
@@ -80,6 +81,8 @@ var air: AirMod = AirMod.new()
 var readout: ReadoutMod = ReadoutMod.new()
 var api: ApiMod = ApiMod.new()
 var rewards: RewardsMod = RewardsMod.new()
+## The stunts of the car: the long airtime, the barrel roll and the drift chain.
+var stunts: StuntsMod = StuntsMod.new()
 var input: PlayerInputMod = PlayerInputMod.new()
 ## Builds the body, the wheel probes and the module wiring from the spec.
 var setup: SetupMod = SetupMod.new()
@@ -143,12 +146,13 @@ func _ready() -> void:
 	actions.dynamics = dynamics
 	actions.api = api
 	events.setup(self, boost, power, drift, thruster, dynamics, rewards, api)
+	stunts.setup(self, sky, thruster)
 	setup.apply_spec(self)
 	setup.build_body(self)
 	setup.build_wheels(self)
 	wheels = setup.wheels
 	flight.setup(self, sky, drive, boost, readout, dynamics, api, thruster, wheels)
-	setup.wire()
+	setup.wire(self)
 	if _visual != null and _visual.has_method("setup"):
 		_visual.call("setup", spec, player_controlled)
 
@@ -219,6 +223,7 @@ func _physics_process(delta: float) -> void:
 	boost.self_refill(delta, dynamics.grounded > 0,
 			thruster.hovering or thruster.rolling or boost.kind != &"")
 	rewards.tick(delta)
+	stunts.tick(delta)
 	_update_probes()
 	if player_controlled or Game.player == self:
 		_sample_input()

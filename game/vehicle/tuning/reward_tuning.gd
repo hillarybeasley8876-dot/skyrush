@@ -26,3 +26,35 @@ const TRICK_N2 := 15.0
 
 ## A roll has to end this long before the touchdown to count as a clean trick.
 const TRICK_ROLL_CLEARANCE := 0.15
+
+
+# --- the stunts (SPEC section 3: the stunts give score and boost)
+
+## The N2 of the stunt kinds that pay out. The kinds that pay on their own (the trick, the
+## takedown, the escape, the breaker) are not in the table: they never pay twice.
+const STUNT_N2 := {
+	&"fly_over_gas": 40.0,
+	&"fly_over_toll": 40.0,
+	&"fly_over_traffic": 40.0,
+	&"fly_over_barrier": 40.0,
+	&"airtime": 20.0,
+	&"drift_chain": 20.0,
+}
+
+## A jump has to last this long to be a long airtime (滞空).
+const AIRTIME_MIN := 2.0
+
+## The score of a barrel roll (桶滚).
+const BARREL_ROLL_POINTS := 200
+
+## The score of a drift chain (连续漂移).
+const DRIFT_CHAIN_POINTS := 300
+
+## A drift has to last this long to count in a chain.
+const DRIFT_CHAIN_MIN_DURATION := 1.0
+
+## Two drifts of a chain may be this far apart (s).
+const DRIFT_CHAIN_WINDOW := 12.0
+
+## The number of the drifts of a chain.
+const DRIFT_CHAIN_COUNT := 3

@@ -107,7 +107,7 @@ func reset_state() -> void:
 
 
 ## Connects the modules to each other.
-func wire() -> void:
+func wire(body: VehicleBase) -> void:
 	drive.setup(spec)
 	drift.setup(spec.inertia.y)
 	boost.setup(spec.top_speed, BoostTuning.N2_SLOT)
@@ -141,4 +141,4 @@ func wire() -> void:
 	readout.dynamics = dynamics
 	readout.visual = visual
 	api.setup(boost, thruster, sky)
-	rewards.setup(boost)
+	rewards.setup(body, boost)

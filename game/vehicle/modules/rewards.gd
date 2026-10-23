@@ -8,6 +8,8 @@ const RewardTuning := preload("res://vehicle/tuning/reward_tuning.gd")
 const BoostMod := preload("res://vehicle/modules/boost.gd")
 
 var boost: BoostMod = null
+## The car this helper belongs to: only the player's car earns the rewards.
+var car: VehicleBase = null
 ## The takedown streak: how many takedowns in a row (the window is 10 s).
 var streak: int = 0
 ## The time of the last takedown.
@@ -16,8 +18,11 @@ var last_takedown: float = BodyTuning.TIME_NEVER
 var _clock: float = 0.0
 
 
-func setup(boost_module: BoostMod) -> void:
+func setup(vehicle: VehicleBase, boost_module: BoostMod) -> void:
+	car = vehicle
 	boost = boost_module
+	if not Events.stunt.is_connected(on_stunt):
+		Events.stunt.connect(on_stunt)
 
 
 ## Advances the streak timer.
@@ -48,13 +53,31 @@ func on_near_miss(vehicle: VehicleBase) -> void:
 
 ## A clean landing after a Big Hop or a barrel roll (dossier 5.2 and 5.4).
 ## The score goes through the stunt event, so the HUD shows it once ("+15").
-func on_trick(vehicle: VehicleBase) -> void:
+## A landing after a barrel roll keeps the N2 but shows no trick of its own: the roll has
+## already shown its pop-up, and the roll is worth more than the trick.
+func on_trick(vehicle: VehicleBase, from_roll: bool = false) -> void:
 	if boost == null or Game.player != vehicle:
 		return
 	grant(RewardTuning.TRICK_N2)
+	if from_roll:
+		return
 	Events.stunt.emit(&"trick", int(RewardTuning.TRICK_N2), "特技 TRICK!")
 
 
 ## Puts N2 into the tank.
 func grant(amount: float) -> void:
 	boost.n2 = minf(boost.n2 + amount, BoostTuning.N2_MAX)
+
+
+## A stunt of the player: the N2 of the table (SPEC section 3: the stunts give score and
+## boost). The kinds that pay on their own (the trick, the takedown, the escape) are not in
+## the table, so nothing is ever paid twice.
+func on_stunt(kind: StringName, _points: int, _label: String) -> void:
+	if boost == null or car == null or Game.player != car:
+		return
+	if not RewardTuning.STUNT_N2.has(kind):
+		return
+	var amount: float = RewardTuning.STUNT_N2[kind]
+	if amount <= 0.0:
+		return
+	grant(amount)
