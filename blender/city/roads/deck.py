@@ -10,7 +10,7 @@ import bmesh
 
 from mathutils import Vector
 
-from city.roads import meshkit, planters, profiles, tiles
+from city.roads import collision, meshkit, planters, profiles, tiles
 
 ASPHALT = "SH_wet_asphalt"
 STRUCT = "SH_concrete_pier"
@@ -29,6 +29,62 @@ LED_OFFSET = 0.15        # inboard of the deck edge
 LED_ENERGY = 4.5         # dossier §2.3 emission tier E3
 SCUPPER_SPACING = 15.0
 SCUPPER_SIZE = (0.25, 0.08, 0.18)
+CHEVRON_SPACING = 6.0
+CHEVRON_WIDTH = 0.45
+CHEVRON_SKEW = 0.45     # the 45 degree skew of the bars
+CUSHION_LENGTH = 3.2   # the crash cushion at the nose of the gore
+CUSHION_WIDTH = 1.6
+
+
+def build_chevrons(tileset, rows):
+    """The 45 degree bars of the gore: they stay inside the wedge."""
+    step = max(1, int(CHEVRON_SPACING / max(0.5, _wedge_length(rows) / max(1, len(rows) - 1))))
+    for i in range(0, len(rows) - 1, step):
+        (pa, ra, _d, along) = rows[i]
+        (pb, rb, _e, _b) = rows[i + 1]
+        if along.length < 0.2:
+            continue
+        along = along.normalized() * CHEVRON_WIDTH
+        across = ra - pa
+        if across.length < 0.6:
+            continue
+        # the bar is skewed by 45 degrees: it runs across the wedge and forward
+        skew = along.normalized() * CHEVRON_SKEW
+        width = across.normalized() * min(across.length - 0.4, 2.4)
+        bm = bmesh.new()
+        v0 = bm.verts.new(pa + skew * 0.5)
+        v1 = bm.verts.new(pa + width + skew * 0.5)
+        v2 = bm.verts.new(pb + width - skew * 0.5)
+        v3 = bm.verts.new(pb - skew * 0.5)
+        bm.faces.new((v0, v1, v2, v3))
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+        tileset.builder_at((pa + pb) * 0.5).add("SH_road_marking_white", bm)
+
+
+def _wedge_length(rows):
+    """The length of the gore's wedge."""
+    total = 0.0
+    for (pa, _ra, _d, _a), (pb, _rb, _e, _b) in zip(rows, rows[1:]):
+        total += (pb - pa).length
+    return total
+
+
+def build_cushion(tileset, rows):
+    """The crash cushion at the nose of the gore."""
+    if not rows:
+        return
+    pa, _ra, across, along = rows[0]
+    if along.length < 0.05:
+        return
+    along = along.normalized()
+    bm = bmesh.new()
+    v0 = bm.verts.new(pa + along * 0.2)
+    v1 = bm.verts.new(pa + across * CUSHION_WIDTH + along * 0.2)
+    v2 = bm.verts.new(pa + across * CUSHION_WIDTH - along * (CUSHION_LENGTH - 0.2))
+    v3 = bm.verts.new(pa - along * (CUSHION_LENGTH - 0.2))
+    bm.faces.new((v0, v1, v2, v3))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    tileset.builder_at(pa).add("SH_concrete_pier", bm)
 
 
 def section(half):
@@ -133,35 +189,41 @@ def split_by_gaps(road, idx, gaps):
     return out
 
 
-def build_parapets(road, idx, builder, lay, gaps=()):
+def build_parapets(road, idx, builder, lay, gaps=None):
     """The parapet on both edges of the deck.
 
     A ramp that leaves the road needs the parapet to give way: it would wall
-    the ramp off.
+    the ramp off.  The gaps are per side: only the side the ramp is on gives
+    way, and the collider of the parapet is cut on the same gaps.
     """
     style = road.style.get("parapet", "planter")
     if style == "none":
         return
+    gaps = gaps or {}
     for side in ("fwd", "back"):
         mirror = side == "back"
         edge = lay["asphalt_fwd"] if side == "fwd" else lay["asphalt_back"]
         prof = [(edge - x if mirror else edge + x, z)
                 for (x, z) in (reversed(profiles.parapet_profile()) if mirror
                                else profiles.parapet_profile())]
-        for run in split_by_gaps(road, idx, gaps):
+        for run in split_by_gaps(road, idx, gaps.get(side, ())):
             _sweep(builder, PARAPET, prof, [road.path[i] for i in run], closed=False)
 
 
-def build_median(road, idx, builder, lay):
-    """Median barrier on an elevated deck."""
+def build_median(road, idx, builder, lay, gaps=None):
+    """Median barrier on an elevated deck.
+
+    The traffic of a ramp attach crosses the median, so the barrier gives way
+    there: the same gaps cut the visible barrier and its collider.
+    """
     if lay["median_half"] <= 0.0:
         return
-    path = [road.path[i] for i in idx]
     prof = profiles.median_barrier_profile(lay["median_half"])
-    _sweep(builder, PARAPET, prof, path)
+    for run in split_by_gaps(road, idx, (gaps or {}).get("median", ())):
+        _sweep(builder, PARAPET, prof, [road.path[i] for i in run])
 
 
-def build_details(road, tileset, lay, gaps=()):
+def build_details(road, tileset, lay, gaps=None):
     """The expansion joints, the scuppers and the planted strip of a road.
 
     They are built in one pass over the whole road (not per tile run), so a
@@ -244,7 +306,80 @@ def build_bridge_edges(road, idx, builder, lay):
         _sweep(builder, LED_BRIDGE, led, path)
 
 
-def build(road, idx, builder, lay=None, gaps=()):
+TAPER_LENGTH = 150.0   # the acceleration lane before the attach
+TAPER_WIDTH = 6.0      # the widening at the nose (150 m at 1:25)
+
+
+def build_acceleration(city, road, tileset, lay):
+    """The acceleration lane: the parent's deck widens over the last 150 m.
+
+    The widening is 1:25 (6 m over 150 m), so the traffic of the ramp has a
+    lane to speed up in before it joins the parent.  It lies on the side of
+    the parent the ramp runs along and it ends at the attach, so it is also
+    drivable: it gets a collision surface of its own.
+    """
+    for at_end, key in ((True, "attach_end"), (False, "attach_start")):
+        attach = road.data.get(key)
+        if not attach:
+            continue
+        parent = city.by_id.get(attach["road"])
+        if parent is None:
+            continue
+        r_index = len(road.path) - 1 if at_end else 0
+        r_pt = road.path[r_index]
+        _dist, pidx = parent.nearest(r_pt)
+        s_attach = parent.dist[pidx]
+        # the ramp runs along the parent's right or its left: the widening is on
+        # that side and it ends at the attach in the traffic's direction
+        lay_parent = profiles.layout(parent)
+        p_r = parent.frames[pidx][1]
+        if (r_pt - parent.path[pidx]).dot(p_r) > 0.0:
+            edge, out, sign = lay_parent["asphalt_fwd"], 1.0, 1.0
+        else:
+            edge, out, sign = lay_parent["asphalt_back"], -1.0, -1.0
+        rows = []
+        for i in range(len(parent.path)):
+            d = (parent.dist[i] - s_attach) * sign
+            if d > 0.0 or d < -TAPER_LENGTH:
+                continue
+            grow = TAPER_WIDTH * min(1.0, max(0.0, (d + TAPER_LENGTH) / TAPER_LENGTH))
+            p = parent.path[i]
+            r = parent.frames[i][1]
+            inner = p + r * edge
+            outer = p + r * (edge + out * grow)
+            rows.append((inner, outer, p.z))
+        if len(rows) < 2:
+            continue
+        # every quad goes into the tile it lies on
+        for i in range(len(rows) - 1):
+            inner0, outer0, _z0 = rows[i]
+            inner1, outer1, _z1 = rows[i + 1]
+            mid = (inner0 + inner1) * 0.5
+            collision.pave(tileset.builder_at(mid), inner0, outer0, outer1, inner1)
+
+
+def build_cable_anchors(road, tileset, lay):
+    """`CableAnchor_*` sockets on both edges of a cable-stayed bridge deck."""
+    if not road.bridge:
+        return
+    offset = road.lanes_fwd * road.lane_width * 0.5 + road.median * 0.5 + 1.0
+    s = 0.0
+    while s <= road.length:
+        j = road.index_at(s)
+        p = road.path[j]
+        r = road.frames[j][1]
+        u = road.frames[j][2]
+        builder = tileset.builder_at(p)
+        for sign in (1.0, -1.0):
+            name = "CableAnchor_%s_%d" % (road.id, int(s))
+            builder.empty(name, p + r * (sign * offset) + u * 0.35, direction=u,
+                          props={"kind": "cable_anchor", "road": road.id,
+                                 "side": "right" if sign > 0 else "left",
+                                 "distance_m": round(s, 1)})
+        s += 9.6
+
+
+def build(road, idx, builder, lay=None, gaps=None):
     """All elevated geometry for the given path samples."""
     lay = lay or profiles.layout(road)
     build_asphalt(road, idx, builder, lay)
@@ -258,4 +393,4 @@ def build(road, idx, builder, lay=None, gaps=()):
         build_soffit(road, idx, builder, lay)
         build_led(road, idx, builder, lay)
     build_parapets(road, idx, builder, lay, gaps)
-    build_median(road, idx, builder, lay)
+    build_median(road, idx, builder, lay, gaps)

@@ -37,8 +37,11 @@ def build_road(city, road, tileset, records, paths=()):
     excluded = set()
     for junction in city.junctions_of(road):
         excluded |= junctions.trim_indices(city, road, junction, road.path)
-    # a ramp that leaves this road cuts a gap in its parapet and planter row
-    gaps = attaches.parapet_gaps(city, road)
+    # a ramp that leaves this road cuts a gap in its parapet and planter row,
+    # and the traffic of the city cuts the median where it crosses the road
+    gaps = {}
+    if road.elevated or lay["median_half"] > 0.0:
+        gaps = attaches.parapet_gaps(city, road)
     for (key, run) in tiles.tile_runs(road):
         builder = tileset.builder(key)
         if road.elevated:
@@ -52,7 +55,7 @@ def build_road(city, road, tileset, records, paths=()):
                 surface.build_edges(road, sub, builder, lay)
                 surface.build_median(road, sub, builder, lay)
             markings.build_lane_markings(road, lay, builder, sub)
-        collision.build(road, run, builder, lay, excluded)
+        collision.build(road, run, builder, lay, excluded, gaps)
     if road.elevated:
         # the pots, the joints, the scuppers and the planted strip are built in
         # one pass over the road, so they are never built twice at a tile border
@@ -70,9 +73,9 @@ def build_road(city, road, tileset, records, paths=()):
             idx = 0 if at_end else len(road.path) - 1
             attaches.build_gore(city, road, tileset, lay)
         # the parent road widens over the last 150 m: the acceleration lane
-        attaches.build_acceleration(city, road, tileset, lay)
+        deck.build_acceleration(city, road, tileset, lay)
     if road.bridge:
-        attaches.build_cable_anchors(road, tileset, lay)
+        deck.build_cable_anchors(road, tileset, lay)
 
 
 def main():

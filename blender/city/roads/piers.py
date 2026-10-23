@@ -1,9 +1,9 @@
 """T-piers: a single column with a hammerhead cap, half of them wrapped in ivy.
 
 Section (dossier §2.3): column 2.0 x 3.0 m with 0.4 m corner rounds standing on
-the GROUND, a 16 m hammerhead cap ACROSS the road (2.6 m wide along the road,
-2.0 m deep at the column tapering to 1.2 m at the tips) whose top is the girder
-underside, and portal frames where a road runs below.
+the GROUND, a 16 m hammerhead cap ACROSS the road (2.6 m wide along the road, 2.0 m deep
+at the column) whose top is the girder underside, and portal frames where a
+road runs below.
 """
 import math
 import random
@@ -11,11 +11,10 @@ import random
 import bmesh
 from mathutils import Vector
 
-from city.roads import levels, meshkit, profiles
+from city.roads import collision, levels, meshkit, profiles
 
 CONCRETE = "SH_concrete_pier"
 IVY = "Road_Ivy"
-COLLIDER = "concrete-colonly"
 
 COL_ACROSS = 2.0        # column, across the road
 COL_ALONG = 3.0         # column, along the road
@@ -24,7 +23,6 @@ CAP_LENGTH = 16.0       # cap, across the road
 CAP_WIDTH = 2.6         # cap, along the road
 CAP_DEPTH = 2.0         # cap depth at the column
 CAP_TIP = 1.2           # cap depth at the tips
-SHIFT_LIMIT = 16.0      # how far a column may move to clear a carriageway
 # the sideways steps of the search: a column has to clear the whole width of
 # the road it would stand in
 SHIFTS = (0.0, 2.0, -2.0, 4.0, -4.0, 6.0, -6.0, 8.0, -8.0, 10.0, -10.0,
@@ -104,12 +102,7 @@ def build_cap(bm, origin, right, tangent, zg):
 
 
 def build_portal(bm, origin, right, tangent, zg, span, across=True):
-    """Portal frame: two columns and a cross beam over the road below.
-
-    `across` is True when the road below runs parallel to this road: the
-    columns stand beside it. It is False when the road below crosses this one:
-    the columns stand before and after the crossing.
-    """
+    """Portal frame: two columns and a cross beam over the road below."""
     axis = right if across else tangent
     for s in (-1.0, 1.0):
         build_column(bm, origin + axis * (s * span * 0.5), right, tangent, GROUND_Z, zg - 1.2)
@@ -130,14 +123,32 @@ def build_portal(bm, origin, right, tangent, zg, span, across=True):
 
 def blocked_lane(paths, point, radius=CLEARANCE):
     """True when a column stands in a turning path of a junction."""
-    x, y = point.x, point.y
     r2 = radius * radius
-    for (px, pz) in paths:
-        dx = px - x
-        dy = pz - y
-        if dx * dx + dy * dy < r2:
-            return True
-    return False
+    return any((px - point.x) ** 2 + (pz - point.y) ** 2 < r2 for (px, pz) in paths)
+
+
+def plan_closest(road, point):
+    """(plan distance, index, t) of the closest point on a road's centre line.
+
+    `Road.closest` measures in 3D, so a pier 30 m above a road below it looks
+    30 m away from it and the column is placed in the lane below.
+    """
+    best = (1e18, 0, 0.0)
+    px, py = point.x, point.y
+    for i in range(len(road.path) - 1):
+        a = road.path[i]
+        ab = road.path[i + 1] - a
+        l2 = ab.x * ab.x + ab.y * ab.y
+        t = 0.0 if l2 < 1e-9 else max(0.0, min(1.0, ((px - a.x) * ab.x + (py - a.y) * ab.y) / l2))
+        d = math.hypot(px - (a.x + ab.x * t), py - (a.y + ab.y * t))
+        if d < best[0]:
+            best = (d, i, t)
+    return best
+
+
+def _road_height(road, idx, t):
+    """The height of a road's centre line at a point of its path."""
+    return road.path[idx].z + (road.path[idx + 1].z - road.path[idx].z) * t
 
 
 def blocked(city, point, ignore_road, zg, clearance=CLEARANCE):
@@ -146,12 +157,11 @@ def blocked(city, point, ignore_road, zg, clearance=CLEARANCE):
         if road.id == ignore_road:
             continue
         lay = profiles.layout(road)
-        dist, idx, t = road.closest(point)
+        dist, idx, t = plan_closest(road, point)
         if dist >= lay["asphalt_half"] + clearance:
             continue
         # the other road's surface must be between the ground and the girder
-        other_z = road.path[idx].z + (road.path[idx + 1].z - road.path[idx].z) * t
-        if GROUND_Z - 1.0 <= other_z <= zg:
+        if GROUND_Z - 1.0 <= _road_height(road, idx, t) <= zg:
             return True
     return False
 
@@ -163,40 +173,49 @@ def _lower_road(city, point, ignore_road, zg):
         if road.id == ignore_road:
             continue
         lay = profiles.layout(road)
-        dist, idx, t = road.closest(point)
+        dist, idx, t = plan_closest(road, point)
         if dist >= lay["asphalt_half"] + PORTAL_CLEARANCE:
             continue
-        other_z = road.path[idx].z + (road.path[idx + 1].z - road.path[idx].z) * t
-        if not (GROUND_Z - 1.0 <= other_z <= zg):
+        if not (GROUND_Z - 1.0 <= _road_height(road, idx, t) <= zg):
             continue
         if best is None or dist < best[0]:
-            best = (dist, road, idx)
+            best = (dist, road, idx, t)
     return best
 
 
-def _portal_ok(city, road, lower, zg):
-    """How a portal frame can span the road below: (across, span) or None.
+def _portal_ok(city, road, lower, zg, station):
+    """How a portal frame can span the road below: (across, half span) or None.
 
-    When the road below runs parallel to this road, the columns of the portal
-    stand beside it. When it crosses this one, the columns stand before and
-    after the crossing. Either way the beam is over the road below and its top
-    is the underside of the girder.
+    The columns stand beside the road below when the two run parallel, and
+    before and after it when they cross.  The span grows with the angle.
     """
-    _dist, other, idx = lower
+    _dist, other, idx, _t = lower
     t_other = other.frames[idx][0]
-    t_own = road.frames[road.index_at(0.0)][0]
+    t_own = road.frames[road.index_at(station)][0]
     angle = levels.angle_between(t_other, t_own)
     if other.path[idx].z > zg - 2.5:
         return None       # the road below is too high for a beam over it
     half = profiles.layout(other)["asphalt_half"]
-    span = 2.0 * (half + PORTAL_CLEARANCE)
+    clear = half + PORTAL_CLEARANCE
     if angle <= math.radians(PORTAL_PARALLEL):
-        return (True, span)
-    return (False, span)
+        return (True, clear / math.cos(angle))
+    return (False, clear / math.sin(angle))
+
+
+def _shift_limit(road):
+    """How far a column may move sideways and still stand under the deck."""
+    lay = profiles.layout(road)
+    return max(0.0, lay["half_width"] - COL_ACROSS * 0.5 - 0.25)
+
+
+def _placement(s, p, r, t, zg, portal, shift, span=0.0, across=True):
+    """One pier: where it stands, how tall it is and whether it is a portal."""
+    return {"s": s, "p": p, "r": r, "t": t, "zg": zg, "portal": portal,
+            "shift": shift, "span": span, "across": across}
 
 
 def pier_positions(city, road, paths=()):
-    """Pier placements: (distance, point, right, tangent, girder underside, portal)."""
+    """Pier placements: the piers of a road, in the order they stand."""
     out = []
     spacing = max(8.0, road.pier_spacing)
     s = spacing * 0.5
@@ -204,16 +223,13 @@ def pier_positions(city, road, paths=()):
     while s < road.length:
         if road.pier_allowed(s):
             place = _place(city, road, s, spacing, paths)
+            if place is None and s - last > MAX_GAP:
+                # the deck must never fly: a portal frame goes here even when it
+                # is tight
+                place = _forced(city, road, s, paths)
             if place is not None:
                 out.append(place)
                 last = s
-            elif s - last > MAX_GAP:
-                # the deck must never fly: a portal frame goes here even when it
-                # is tight
-                forced = _forced(city, road, s, paths)
-                if forced is not None:
-                    out.append(forced)
-                    last = s
         s += spacing
     return out
 
@@ -224,10 +240,60 @@ def _forced(city, road, s, paths=()):
     zg = road.path[road.index_at(s)].z - profiles.GIRDER_DEPTH
     if zg <= 1.5:
         return None
+    portal = _portal(city, road, s, p, r, t, zg, paths)
+    if portal is not None:
+        return portal
+    # no portal fits: a column that stands in no lane, even if it has to
+    # stand away from the deck
+    for shift in SHIFTS:
+        q = p + r * shift
+        if not blocked(city, q, road.id, zg) and not blocked_lane(paths, q):
+            return _placement(s, q, r, t, zg, False, shift)
+    return _placement(s, p, r, t, zg, False, 0.0)
+
+
+def _column_clear(city, road, q, zg, lower_id, paths):
+    """True when a column at `q` stands in no lane.
+
+    The road below is left out: the columns of a portal stand beside it on
+    purpose.  Every other road and every turning path of a junction counts:
+    a column in a lane is a wall across it.
+    """
+    for other in city.roads:
+        if other.id == road.id or other.id == lower_id:
+            continue
+        lay = profiles.layout(other)
+        dist, idx, t = plan_closest(other, q)
+        if dist >= lay["asphalt_half"] + CLEARANCE:
+            continue
+        if GROUND_Z - 1.0 <= _road_height(other, idx, t) <= zg:
+            return False
+    return not blocked_lane(paths, q)
+
+
+def _portal(city, road, s, p, r, t, zg, paths=()):
+    """A portal frame over the road below: the columns stand beside it.
+
+    The frame is centred on the road below, so the beam carries the deck, and
+    the columns are pushed further out until they stand in no lane at all.
+    """
     lower = _lower_road(city, p, road.id, zg)
     if lower is None:
         return None
-    return (s, p, r, t, zg, True, 0.0)
+    ok = _portal_ok(city, road, lower, zg, s)
+    if ok is None:
+        return None
+    across, half = ok
+    axis = r if across else t
+    _dist, other, idx, t_lower = lower
+    origin = other.path[idx].lerp(other.path[idx + 1], t_lower)
+    for extra in (0.0, 4.0, 8.0, 12.0, 16.0):
+        reach = half + extra
+        a = origin + axis * reach
+        b = origin - axis * reach
+        if _column_clear(city, road, a, zg, other.id, paths) and                 _column_clear(city, road, b, zg, other.id, paths):
+            return _placement(s, origin, r, t, zg, True, 0.0, 2.0 * reach, across)
+    return None
 
 
 def _place(city, road, s, spacing, paths=()):
@@ -235,8 +301,9 @@ def _place(city, road, s, spacing, paths=()):
 
     A column that stands in another road's carriageway blocks a driving lane,
     so the pier moves until it is clear; when it cannot, a portal frame spans
-    the road below. A pier is never dropped: the deck would fly.
+    the road below.  A pier is never dropped: the deck would fly.
     """
+    limit = _shift_limit(road)
     for along in (0.0, spacing * 0.25, -spacing * 0.25, spacing * 0.5, -spacing * 0.5):
         at = s + along
         if at <= 0.0 or at >= road.length or not road.pier_allowed(at):
@@ -246,23 +313,19 @@ def _place(city, road, s, spacing, paths=()):
         if zg <= 1.5:
             continue
         for shift in SHIFTS:
+            if abs(shift) > limit:
+                continue
             q = p + r * shift
             if not blocked(city, q, road.id, zg) and not blocked_lane(paths, q):
-                return (at, q, r, t, zg, False, shift)
-        lower = _lower_road(city, p, road.id, zg)
-        if lower is not None:
-            portal = _portal_ok(city, road, lower, zg)
-            if portal is not None:
-                return (at, p, r, t, zg, True, 0.0)
+                return _placement(at, q, r, t, zg, False, shift)
+        portal = _portal(city, road, at, p, r, t, zg, paths)
+        if portal is not None:
+            return portal
     return None
 
 
 def build_ivy(bm, origin, right, tangent, height, seed):
-    """Patchy ivy on a pier: leaf cards with an organic top edge.
-
-    The cards stand against the column and carry the alpha atlas of the ivy, so
-    the plant ends in a ragged edge instead of a box sleeve.
-    """
+    """Patchy ivy on a pier: leaf cards with an organic top edge."""
     rng = random.Random(seed)
     for _ in range(IVY_CARDS):
         angle = rng.random() * 2.0 * math.pi
@@ -298,19 +361,17 @@ def build_pier(bm, city, road, p, r, t, zg, portal, span=12.0, across=True):
 
 def build(city, road, tileset, records, paths=()):
     """Add the piers of a road to the tile builders; appends records for the data files."""
-    for (s, p, r, t, zg, portal, shift) in pier_positions(city, road, paths):
+    for place in pier_positions(city, road, paths):
+        s = place["s"]
+        p = place["p"]
+        r = place["r"]
+        t = place["t"]
+        zg = place["zg"]
+        portal = place["portal"]
+        span = place["span"]
+        across = place["across"]
         builder = tileset.builder_at(p)
         bm = bmesh.new()
-        span = 12.0
-        across = True
-        if portal:
-            lower = _lower_road(city, p, road.id, zg)
-            if lower is not None:
-                half = profiles.layout(lower[1])["asphalt_half"]
-                span = 2.0 * (half + PORTAL_CLEARANCE)
-                ok = _portal_ok(city, road, lower, zg)
-                if ok is not None:
-                    across, span = ok
         build_pier(bm, city, road, p, r, t, zg, portal, span, across)
         builder.add(CONCRETE, bm)
         if not portal and road.pier_spacing > 0:
@@ -319,7 +380,7 @@ def build(city, road, tileset, records, paths=()):
                 bmi = bmesh.new()
                 build_ivy(bmi, p, r, t, ivy_h, int(s * 7.0) + len(road.id))
                 builder.add(IVY, bmi)
-        _add_collider(builder, p, r, t, zg, portal, span, across)
+        collision.pier_column(builder, p, r, t, zg, portal, span, across)
         records.append({
             "road": road.id,
             "x": round(p.x, 2),
@@ -330,37 +391,8 @@ def build(city, road, tileset, records, paths=()):
             "distance_m": round(s, 1),
             "type": "portal" if portal else "t_pier",
             "height_m": round(zg, 2),
-            "shift_m": round(shift, 2),
+            "shift_m": round(place["shift"], 2),
             "span_m": round(span, 2) if portal else 0.0,
         })
 
 
-def _add_collider(builder, p, r, t, zg, portal, span=12.0, across=True):
-    """A closed convex collider for the column so cars cannot drive through it."""
-    bm = bmesh.new()
-    if portal:
-        axis = r if across else t
-        for s in (-1.0, 1.0):
-            _box(bm, p + axis * (s * span * 0.5), r, t, COL_ACROSS, COL_ALONG,
-                 GROUND_Z, zg - 1.2)
-    else:
-        _box(bm, p, r, t, COL_ACROSS, COL_ALONG, GROUND_Z, zg - CAP_DEPTH)
-    builder.add_named(COLLIDER, bm)
-
-
-def _box(bm, centre, right, tangent, across, along, z0, z1):
-    """A closed box in the road frame."""
-    hx, hy = along * 0.5, across * 0.5
-    corners = []
-    for a in (-hx, hx):
-        for b in (-hy, hy):
-            for c in (z0, z1):
-                p = centre + tangent * a + right * b
-                corners.append(Vector((p.x, p.y, c)))
-    idxs = [bm.verts.new(c) for c in corners]
-    faces = [(0, 1, 3, 2), (4, 6, 7, 5), (0, 4, 5, 1),
-             (2, 3, 7, 6), (0, 2, 6, 4), (1, 5, 7, 3)]
-    for f in faces:
-        bm.faces.new([idxs[i] for i in f])
-    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
-    return bm
