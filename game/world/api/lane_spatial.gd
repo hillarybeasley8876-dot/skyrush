@@ -6,6 +6,8 @@ extends RefCounted
 ## The grid answers "how far is this point from every lane around it" in a few microseconds,
 ## which is what the furniture filter needs to move a prop out of the carriageway.
 
+const LevelRules := preload("res://world/api/level_rules.gd")
+
 const CELL := 6.0
 ## The length of one segment of a lane.
 const SEGMENT := 8.0
@@ -150,8 +152,12 @@ func _add_segment(lane_index: int, a: Vector3, b: Vector3, offset: float) -> voi
 
 
 ## The lanes around the point: {lane index: {"distance", "point", "offset", "tangent"}}.
-func query(point: Vector3, radius: float) -> Dictionary:
+## When `y` is not NaN, only the lanes whose closest point is within `tol` metres of that height
+## count: the deck and the street below it lie at the same x/z, and a gate on the deck must not
+## be served by the street under it.
+func query(point: Vector3, radius: float, y := NAN, tol := LevelRules.LEVEL) -> Dictionary:
 	var out: Dictionary = {}
+	var by_level := not is_nan(y)
 	var span := maxi(int(floor(radius / CELL)), 1)
 	var cx := int(floor(point.x / CELL))
 	var cz := int(floor(point.z / CELL))
@@ -167,6 +173,10 @@ func query(point: Vector3, radius: float) -> Dictionary:
 				var closest := a.lerp(b, t)
 				var distance := Vector2(closest.x - point.x, closest.z - point.z).length()
 				if distance > radius:
+					continue
+				# The height test comes after the cheap plan test: the query runs thousands of
+				# times in a tick budget.
+				if by_level and absf(closest.y - y) > tol:
 					continue
 				var lane_index := _seg_lane[index]
 				if out.has(lane_index) and float(out[lane_index]["distance"]) <= distance:

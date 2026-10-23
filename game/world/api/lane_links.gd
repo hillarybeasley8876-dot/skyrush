@@ -1,9 +1,14 @@
 extends RefCounted
 const LaneSpatial := preload("res://world/api/lane_spatial.gd")
 const LaneGraphBuilder := preload("res://world/api/lane_graph.gd")
+const LevelRules := preload("res://world/api/level_rules.gd")
 ## Links the lanes into a drivable graph. Priority: the explicit `next` lists in the roads
 ## unit's lanes.json; otherwise links are derived from the city.json junctions (roads that meet)
 ## and from lanes whose ends come close to another road.
+##
+## Two lanes are only linked when the end of the first and the start of the second are on the
+## same level: a street and the deck above it lie at the same x/z, and the lane graph must not
+## join them (the racing line would jump between the levels).
 
 const JUNCTION_RADIUS := 45.0
 const PROXIMITY := 30.0
@@ -67,6 +72,8 @@ func _link_turns(lanes: Array[LanePath], graph: LaneGraphBuilder, junctions: Arr
 				var turn: float = _angle_between(a["heading"], b["heading"])
 				if turn > MAX_TURN:
 					continue  # a U-turn is not a turn
+				if not _same_level(lanes, int(a["index"]), int(b["index"])):
+					continue  # the two lanes are not on the same level
 				_add(lanes[int(a["index"])], int(b["index"]))
 
 
@@ -102,9 +109,9 @@ func _link_declared(lanes: Array[LanePath], graph: LaneGraphBuilder) -> bool:
 		var index := _index_of_id(graph, String(id))
 		if index < 0:
 			continue
-		for other in next_ids:
-			var other_index := _index_of_id(graph, String(other))
-			if other_index >= 0:
+		for other_id in next_ids:
+			var other_index := _index_of_id(graph, String(other_id))
+			if other_index >= 0 and _same_level(lanes, index, other_index):
 				_add(lanes[index], other_index)
 	return found
 
@@ -138,6 +145,10 @@ func _link_junctions(lanes: Array[LanePath], graph: LaneGraphBuilder, junctions:
 				var state := String(b["state"])
 				if state != "outgoing" and state != "through":
 					continue
+				# The roads of a junction can lie on different levels (a street and the deck
+				# above it): the link is only made when the lanes meet at one level.
+				if not _same_level(lanes, int(a["index"]), int(b["index"])):
+					continue
 				_add(lanes[int(a["index"])], int(b["index"]))
 
 
@@ -159,7 +170,8 @@ static func _junction_state(lane: LanePath, point: Vector3) -> String:
 
 
 ## Lanes that end next to the end of another lane are linked, so a route can turn where the
-## roads meet even when the junction is not in the city description.
+## roads meet even when the junction is not in the city description. The other lane has to be on
+## the level of the end: a street and the deck above it lie at the same x/z.
 func _link_proximity(lanes: Array[LanePath], grid: LaneSpatial) -> void:
 	if grid == null:
 		return
@@ -168,17 +180,37 @@ func _link_proximity(lanes: Array[LanePath], grid: LaneSpatial) -> void:
 		if lane.curve == null:
 			continue
 		var end_point := lane.curve.get_point_position(lane.curve.get_point_count() - 1)
-		for other in grid.query(end_point, PROXIMITY).keys():
+		var near: Dictionary = grid.query(end_point, PROXIMITY, end_point.y, LevelRules.LINK_LEVEL)
+		for other in near.keys():
 			if other == i:
 				continue
 			if _same_road(lanes, i, other):
 				continue
 			if lanes[i].next_lanes.has(other):
 				continue
+			if not _same_level(lanes, i, other):
+				continue
 			_add(lane, other)
 
 
 # --- helpers ---------------------------------------------------------------------------------------
+
+## Two lanes can be linked when the end of the first and the start of the second are on the same
+## level: the lane graph must not join a street to the deck above it.
+static func _same_level(lanes: Array[LanePath], from_index: int, to_index: int) -> bool:
+	if from_index < 0 or to_index < 0:
+		return false
+	if from_index >= lanes.size() or to_index >= lanes.size():
+		return false
+	var from_lane := lanes[from_index]
+	var to_lane := lanes[to_index]
+	if from_lane == null or to_lane == null:
+		return false
+	if from_lane.curve == null or to_lane.curve == null:
+		return false
+	var end_point := from_lane.curve.get_point_position(from_lane.curve.get_point_count() - 1)
+	var start_point := to_lane.curve.get_point_position(0)
+	return absf(end_point.y - start_point.y) <= LevelRules.LINK_LEVEL
 
 static func _add(lane: LanePath, index: int) -> void:
 	if not lane.next_lanes.has(index):
