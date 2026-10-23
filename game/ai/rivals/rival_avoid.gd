@@ -21,13 +21,11 @@ const RIVAL_AVOID_DISTANCE := 15.0  ## m: the rivals this far ahead are kept cle
 const PASS_MIN_GAP := 20.0      ## m: a pass only starts when the car ahead is this far away
 const PASS_DISTANCE := 60.0      ## m: a car this far ahead can be passed
 const PASS_SHIFT := 6.0           ## m: the distance between the centres of two passing cars
-const PASS_LANE := 6.0           ## m: the distance between the two lanes of the field
-const LANE_SAME := 1.5           ## m: two cars this close drive in the same lane
+const PASS_LANE := 9.0           ## m: the distance between the two lanes of the field
 const PASS_CLOSING := 1.5        ## m/s: the rival must be this much faster to pass
 const PASS_HOLD := 8.0           ## m: the pass holds until the car is this far behind
 const PASS_MERGE := 1.2          ## s: the time the rival needs to change the lane
 const PASS_RATE := 3.5           ## m/s: the speed of the sideways move
-const PASS_GAP := 1.2            ## m: the gap a pass keeps to the car next to it
 const PASS_SIDE_BAND := 8.0        ## m: the cars this close limit the spot of a pass
 const PASS_ERROR := 0.6           ## m: the room the cars need for their line error
 const PASS_ACTIVE := 0.05        ## m: the shift above which a pass counts as under way
@@ -41,6 +39,7 @@ const STATIONARY_SPEED := 2.0    ## m/s: a car below this counts as stopped
 const DEADLOCK_SPEED := 4.0      ## m/s: the speed below which a car counts as stuck
 const DEADLOCK_TIME := 3.0       ## s: the time a pack may stand still before it breaks up
 const CAR_WIDTH := 1.95          ## m: the width of a car (the gap between two of them)
+const TYRE_LIMIT := 14.2          ## m/s^2: the lateral grip of the Roadster's tyres
 const MIN_AHEAD := 1.0           ## m: a car closer than this is not in front
 
 ## The sideways shift of the pass (m).
@@ -99,9 +98,11 @@ func update_blocker(car: ArcadeCar, ctx: RivalContext, offset: float, line: Riva
 	for node in ctx.near_of(car):
 		if not is_instance_valid(node):
 			continue
-		if node == pass_node:
+		if node == pass_node and pass_shift >= AVOID_CLEARANCE:
 			# The car that is being passed does not set the pace: the rival is already
-			# moving over to its side.
+			# moving over to its side. A rival that has not yet cleared the car keeps
+			# following it: a car that accelerates before it is beside the car it
+			# passes drives into the back of it.
 			var passed := node as VehicleBase
 			pass_speed = passed.linear_velocity.length() if passed != null else INF
 			pass_distance = _relation(node, car, ctx, line, offset, lane_offset).x
@@ -266,9 +267,11 @@ func _avoid_offset(car: ArcadeCar, ctx: RivalContext, offset: float, line: Rival
 	if free_right == INF and free_left == INF:
 		return 0.0
 	if free_right == INF:
-		return -clampf(free_left, 0.0, AVOID_SHIFT)
+		# The left is blocked: the rival moves to the right.
+		return clampf(free_left, 0.0, AVOID_SHIFT)
 	if free_left == INF:
-		return clampf(free_right, 0.0, AVOID_SHIFT)
+		# The right is blocked: the rival moves to the left.
+		return -clampf(free_right, 0.0, AVOID_SHIFT)
 	if free_right >= free_left:
 		return clampf(free_right, 0.0, AVOID_SHIFT)
 	return -clampf(free_left, 0.0, AVOID_SHIFT)
@@ -284,7 +287,12 @@ func _pass_shift(delta: float, car: ArcadeCar, ctx: RivalContext, offset: float,
 	var blocker := _pass_blocker(car, ctx, offset, speed, line, potential)
 	if blocker == null and pass_node != null and is_instance_valid(pass_node):
 		# The pass is over when the car that was passed is behind.
-		if _distance_behind(car, pass_node, offset, line) > PASS_HOLD:
+		var behind := _distance_behind(car, pass_node, offset, line)
+		if behind > PASS_HOLD or behind < -PASS_DISTANCE:
+			# The car that was passed is behind the rival, or it has pulled away again.
+			# A pass of a car 160 m ahead is not a pass: it is a lane change that never
+			# ends, and two rivals that never end their lane change meet in the middle
+			# of the road.
 			pass_node = null
 			_pass_side = 0.0
 			_pass_target = 0.0
@@ -305,6 +313,11 @@ func _pass_shift(delta: float, car: ArcadeCar, ctx: RivalContext, offset: float,
 			_pass_time = 0.0
 			_pass_side = _pass_side_of(car, ctx, blocker, offset, line, lane_offset, road_half)
 		_pass_target = _pass_target_of(car, ctx, blocker, offset, line, lane_offset, road_half)
+		if _pass_target == 0.0 and absf(pass_shift) >= AVOID_CLEARANCE:
+			# The lane the rival moves into is not free any more. It keeps the lane it
+			# is in until the car it passes is behind it: merging back into a lane with
+			# a car in it is a side swipe.
+			_pass_target = pass_shift
 	elif pass_node != null and not is_instance_valid(pass_node):
 		pass_node = null
 		_pass_side = 0.0
@@ -316,12 +329,17 @@ func _pass_shift(delta: float, car: ArcadeCar, ctx: RivalContext, offset: float,
 			_pass_side = 0.0
 			_pass_target = 0.0
 		else:
-			_pass_target = _pass_target_of(car, ctx, pass_node, offset, line, lane_offset,
+			var target := _pass_target_of(car, ctx, pass_node, offset, line, lane_offset,
 				road_half)
+			if target != 0.0:
+				_pass_target = target
 	else:
 		_pass_target = 0.0
 	_pass_time += delta
-	var rate := PASS_SHIFT / PASS_MERGE
+	# The sideways move of a pass: 3.5 m/s, so the 4.5 m of a lane change takes the
+	# 1.2 s of PASS_MERGE. A quicker move puts the car into the lane of the car it
+	# passes before it is clear of it.
+	var rate := PASS_RATE
 	if pass_shift < _pass_target:
 		pass_shift = minf(_pass_target, pass_shift + rate * delta)
 	else:
@@ -339,10 +357,16 @@ func _pass_blocker(car: ArcadeCar, ctx: RivalContext, offset: float, speed: floa
 		line: RivalLine, potential: float) -> Node3D:
 	# No pass when the rival has to slow down for the corner ahead: it would be at the
 	# side of the road in the middle of the corner.
-	if potential < speed + PASS_CORNER_MARGIN:
+	#
+	# The measure is the corner speed of the line and not the target of the rival: the
+	# target of a car on a straight is its top speed, and the top speed is never more
+	# than the speed of the car plus the margin. With the target as the measure no
+	# rival ever passed: the field ran as a train for the whole race.
+	var corner := line.corner_speed(offset + CORNER_LOOKAHEAD, TYRE_LIMIT)
+	if corner < speed + PASS_CORNER_MARGIN:
 		return null
 	# No pass into a slow corner.
-	if line.corner_speed(offset + CORNER_LOOKAHEAD, 14.2) < CORNER_SPEED_LIMIT:
+	if corner < CORNER_SPEED_LIMIT:
 		return null
 	var best: Node3D = null
 	var best_distance := INF
@@ -423,23 +447,20 @@ func _lane_of(node: Node3D, ctx: RivalContext, line: RivalLine, offset: float) -
 
 ## The lane a pass drives into (m from the racing line).
 ##
-## The field drives in two lanes that are 4.4 m apart: a pass goes from one lane into the
-## other one, and the 2.45 m between the two cars is the clearance they need.
-func _pass_lane(my_lane: float, blocker_lane: float) -> float:
-	if absf(blocker_lane - my_lane) >= LANE_SAME:
-		# The car in front is in the other lane: the rival drives beside it.
-		return blocker_lane
-	if my_lane >= 0.0:
-		return my_lane - PASS_LANE
-	return my_lane + PASS_LANE
+## The field drives in two lanes that are PASS_LANE apart: a pass goes to the middle
+## between them, where the car of the rival has the clearance of both lanes (3 m to the
+## lane it comes from and 3 m to the lane it goes to). A pass that drove into the lane
+## of the car in front would be a side swipe, and a pass that stayed in its own lane
+## would be a rear-end.
+func _pass_lane(my_lane: float) -> float:
+	return my_lane - signf(my_lane) * PASS_LANE * 0.5
 
 
 ## The side of the pass (-1 = to the left, 1 = to the right, 0 = no clean pass is possible).
 func _pass_side_of(car: ArcadeCar, ctx: RivalContext, blocker: Node3D, offset: float,
 		line: RivalLine, lane_offset: float, road_half: float) -> float:
 	var mine := _lane_of(car, ctx, line, offset)
-	var theirs := _lane_of(blocker, ctx, line, offset)
-	var target := _pass_lane(mine, theirs)
+	var target := _pass_lane(mine)
 	if not _pass_fits(car, ctx, blocker, offset, line, road_half, target):
 		return 0.0
 	return signf(target - mine)
@@ -454,8 +475,7 @@ func _pass_target_of(car: ArcadeCar, ctx: RivalContext, blocker: Node3D, offset:
 	if _pass_side == 0.0:
 		return 0.0
 	var mine := _lane_of(car, ctx, line, offset)
-	var theirs := _lane_of(blocker, ctx, line, offset)
-	var target := _pass_lane(mine, theirs)
+	var target := _pass_lane(mine)
 	if not _pass_fits(car, ctx, blocker, offset, line, road_half, target):
 		return 0.0
 	return clampf(target - lane_offset, -PASS_SHIFT, PASS_SHIFT)
@@ -473,14 +493,29 @@ func _pass_fits(car: ArcadeCar, ctx: RivalContext, blocker: Node3D, offset: floa
 		if node == blocker or not is_instance_valid(node):
 			continue
 		var rel := _relation(node, car, ctx, line, offset, 0.0)
-		# The cars beside the rival and the ones right behind it: the lane change sweeps
-		# over them.
-		if absf(rel.x) > PASS_SIDE_BAND:
+		# The lane change sweeps over the cars beside the rival and the ones right
+		# behind it. The cars ahead count as well: the rival catches them while it
+		# passes, and a pass into a lane with a car in it ends in a side swipe.
+		if rel.x < -PASS_SIDE_BAND or rel.x > PASS_DISTANCE:
 			continue
-		var lateral := _ribbon_lateral(node, ctx, line, offset)
-		if absf(target - lateral) < CAR_WIDTH + PASS_GAP + PASS_ERROR:
+		# A car that is changing lanes is heading for its own target: the lane it
+		# goes to is the one the pass may not use.
+		var lateral := _aim_lateral(node, ctx, line, offset)
+		if absf(target - lateral) < CAR_WIDTH + PASS_ERROR:
 			return false
 	return true
+
+
+## The lateral position a car is heading for (m from the racing line).
+##
+## A car that is changing lanes drives for its own target: the pass may not use the
+## lane the car is going to, or the two cars meet in the middle of the road.
+func _aim_lateral(node: Node3D, ctx: RivalContext, line: RivalLine, offset: float) -> float:
+	var lane := _lane_of(node, ctx, line, offset)
+	var rival := node as RivalCar
+	if rival != null and rival.brain != null:
+		lane += rival.brain.avoid.pass_shift
+	return lane
 
 
 ## How far the passed car is behind the rival (0 when it is still ahead).

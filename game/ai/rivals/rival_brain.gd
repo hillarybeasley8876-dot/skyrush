@@ -47,6 +47,7 @@ const MISTAKE_CORNER := 0.006       ## 1/m: the corner that is worth a mistake
 const MISTAKE_BRAKE := 5.0          ## m/s: the speed the car has to lose to be braking
 const MISTAKE_RETRY := 2.0          ## s: the wait before the next attempt at a mistake
 const ROAD_HALF_REFRESH := 0.5      ## s: how often the width of the road is measured
+const REVERSE_GUARD_SPEED := 0.6    ## m/s: below this speed the brake of the car is its reverse
 
 var line: RivalLine = null
 ## The lateral offset of the car from the racing line (m): every rival drives its own line.
@@ -154,7 +155,8 @@ func tick(delta: float, car: ArcadeCar, ctx: RivalContext) -> void:
 		car.set_controls(0.0, 0.0, 0.0, false)
 		return
 	_update_position(car, delta)
-	speed = maxf(car.get_forward().dot(car.linear_velocity), 0.0)
+	var forward := car.get_forward().dot(car.linear_velocity)
+	speed = maxf(forward, 0.0)
 	distance += speed * delta
 	if ctx.on_grid:
 		car.set_controls(0.0, 0.0, 0.0, false)
@@ -170,6 +172,9 @@ func tick(delta: float, car: ArcadeCar, ctx: RivalContext) -> void:
 	if _watchdog(delta, car, ctx):
 		return
 	var on_road := road.update(self, delta, car)
+	# The rivals keep the column of their grid slot for the first metres of a race: a
+	# rival that may not pass the car in front does not close up on it.
+	speed_helper.pass_enabled = avoid.pass_enabled
 	speed_helper.update(delta, car, ctx, offset, speed, travelled, avoid.block_speed,
 		avoid.block_distance, road.speed_cap(), avoid.pass_speed, avoid.pass_distance)
 	var shift := avoid.update(delta, car, ctx, offset, speed, line, lane_offset,
@@ -184,6 +189,11 @@ func tick(delta: float, car: ArcadeCar, ctx: RivalContext) -> void:
 		avoid.emergency = false
 	if mistake == &"late_brake":
 		brake *= MISTAKE_LATE_BRAKE
+	# The brake of the arcade car is its reverse gear below a walking pace: a rival
+	# that brakes to a standstill would drive backwards off the grid. The brake is
+	# dropped there: the car coasts to a stop and the throttle takes it forward again.
+	if brake > 0.0 and forward < REVERSE_GUARD_SPEED:
+		brake = 0.0
 	car.set_controls(throttle, brake, steer_cmd, false)
 	_update_drift(car)
 	speed_helper.update_nitro(delta, car, offset, speed, travelled - ctx.player_travelled)
