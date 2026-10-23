@@ -60,6 +60,19 @@ func reset_state(car: VehicleBase) -> void:
 		state.fx.reset()
 
 
+## A car that comes out of its pool: it is a whole new car. No dent, no scrape, no smoke
+## and the parts that came off are back on it.
+func recycle_state(car: VehicleBase) -> void:
+	var state := states.get(car.get_instance_id(), null) as CarDamage
+	if state == null:
+		return
+	state.recycle()
+	if state.painter != null:
+		state.painter.reset()
+	if state.fx != null:
+		state.fx.reset()
+
+
 ## Forgets a car that left the world (its mask and its meshes would leak).
 func forget(car: VehicleBase) -> void:
 	var id := car.get_instance_id()

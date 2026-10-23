@@ -144,7 +144,7 @@ func detach(car: VehicleBase, state: CarDamage, entry: Dictionary, part: Diction
 		return
 	var name: StringName = entry["name"]
 	var group := _part_group(car, node, name)
-	state.mark_detached(name, node)
+	state.mark_detached(name, node, group)
 	for mesh_node in group:
 		(mesh_node as MeshInstance3D).visible = false
 	# The debris is built after the hit: the spawn of a rigid body with its meshes costs

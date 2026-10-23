@@ -182,6 +182,23 @@ func soften() -> void:
 		DentMaterials.set_uniform(material, "mask_gain", 0.5)
 
 
+## A car that comes out of its pool: it has no dent and no scrape at all.
+func reset() -> void:
+	for i in _dents.size():
+		_dents[i] = Vector4.ZERO
+		_dirs[i] = Vector4.ZERO
+	_next = 0
+	for material: ShaderMaterial in _materials.values():
+		DentMaterials.set_uniform(material, "dent_pos", _dents)
+		DentMaterials.set_uniform(material, "dent_dir", _dirs)
+		DentMaterials.set_uniform(material, "mask_gain", 1.0)
+	if _mask == null:
+		return
+	# The scrape is gone: the mask is cleared and the GPU gets it on the next flush.
+	_mask.clear()
+	_notify_dirty()
+
+
 ## The car leaves the world: its mask goes back to the pool.
 func dispose() -> void:
 	if _mask != null:

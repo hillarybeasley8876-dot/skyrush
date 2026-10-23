@@ -53,9 +53,21 @@ class Ghost:
 	var exceptions: Array = []
 
 
+## The wreck of one car: the serial of the life it belongs to and the tweens that sink it.
+##
+## A car that comes out of its pool gets a new serial: the timer and the tweens of the old
+## wreck must not touch the new life of the car.
+class Sink:
+	extends RefCounted
+	var serial: int = 0
+	var tweens: Array[Tween] = []
+
+
 var _pending: Respawn = null
 ## The ghosts that are running, by the id of the car.
 var _ghosts: Dictionary = {}
+## The wrecks that are running, by the id of the car.
+var _sinks: Dictionary = {}
 
 
 ## The player is wrecked: the crash cam, the slow motion, the banner and the respawn.
@@ -74,8 +86,38 @@ func player_wreck(car: VehicleBase, speed: float, heading: Vector3) -> void:
 ## An AI car is wrecked: it stays 6 s, then sinks and fades. The car is bound by its id:
 ## a car that leaves the world before the timer must not break the call.
 func ai_wreck(car: VehicleBase) -> void:
+	if car == null or not is_instance_valid(car):
+		return
+	var id := car.get_instance_id()
+	var sink := _sink_of(car)
+	sink.serial += 1
+	var serial := sink.serial
 	var timer := get_tree().create_timer(AI_LIFETIME, true, false, true)
-	timer.timeout.connect(_sink_away.bind(car.get_instance_id()))
+	timer.timeout.connect(_sink_away.bind(id, serial))
+
+
+## The wreck of a car, with its serial. A car that was wrecked before keeps its record, so
+## the serial of the new wreck is always higher than the one of the old one.
+func _sink_of(car: VehicleBase) -> Sink:
+	var id := car.get_instance_id()
+	var sink := _sinks.get(id, null) as Sink
+	if sink == null:
+		sink = Sink.new()
+		_sinks[id] = sink
+		car.tree_exiting.connect(_on_car_gone.bind(id))
+	return sink
+
+
+## A car left the world: its wreck is forgotten and its tweens are stopped (they would
+## write on meshes that are gone).
+func _on_car_gone(id: int) -> void:
+	var sink := _sinks.get(id, null) as Sink
+	if sink != null:
+		for tween in sink.tweens:
+			if tween != null and tween.is_valid():
+				tween.kill()
+		sink.tweens.clear()
+	_sinks.erase(id)
 
 
 func _process(delta: float) -> void:
@@ -237,7 +279,13 @@ func _meshes(car: VehicleBase) -> Array:
 
 # --- the AI wreck --------------------------------------------------------------------------------
 ## The wrecked AI car stops being an obstacle, sinks a little and fades out.
-func _sink_away(id: int) -> void:
+##
+## The car is bound by its id and by the serial of its wreck: a car that comes out of its
+## pool while its old wreck is sinking must not sink again.
+func _sink_away(id: int, serial: int) -> void:
+	var sink := _sinks.get(id, null) as Sink
+	if sink == null or sink.serial != serial:
+		return
 	var car := _car_of(id)
 	if car == null:
 		return
@@ -250,20 +298,54 @@ func _sink_away(id: int) -> void:
 	var tween := create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(car, "global_position", target, AI_FADE)
+	sink.tweens.append(tween)
 	if visual != null:
-		_fade_out(visual, 0.0)
-	tween.chain().tween_callback(_hide.bind(id))
+		sink.tweens.append_array(_fade_out(visual, 0.0))
+	tween.chain().tween_callback(_hide.bind(id, serial))
 
 
-## Fades the meshes of a visual from the value they have to 1.0 (invisible).
-func _fade_out(visual: Node3D, from: float) -> void:
+## Fades the meshes of a visual from the value they have to 1.0 (invisible). The tweens are
+## returned, so a car that comes out of its pool can stop them.
+func _fade_out(visual: Node3D, from: float) -> Array[Tween]:
+	var tweens: Array[Tween] = []
 	for child in visual.find_children("*", "MeshInstance3D", true, false):
 		var mesh := child as GeometryInstance3D
 		var tween := create_tween()
 		tween.tween_property(mesh, "transparency", 1.0, AI_FADE).from(from)
+		tweens.append(tween)
+	return tweens
 
 
-func _hide(id: int) -> void:
+## The car of the wreck is hidden when the fade is over. The serial keeps the hide of an
+## old wreck from hiding a car that is back on the road.
+func _hide(id: int, serial: int) -> void:
+	var sink := _sinks.get(id, null) as Sink
+	if sink == null or sink.serial != serial:
+		return
 	var car := _car_of(id)
 	if car != null:
 		car.visible = false
+
+
+## The car comes out of its pool: the wreck of its old life is void. The timer that was
+## waiting for the sink and the tweens that were fading the car out must not touch the new
+## life of the car.
+func cancel_sink(car: VehicleBase) -> void:
+	if car == null or not is_instance_valid(car):
+		return
+	var sink := _sinks.get(car.get_instance_id(), null) as Sink
+	if sink == null:
+		return
+	sink.serial += 1
+	for tween in sink.tweens:
+		if tween != null and tween.is_valid():
+			tween.kill()
+	sink.tweens.clear()
+
+
+## The car is whole again: its meshes are opaque and it is on the screen.
+func restore_visual(car: VehicleBase) -> void:
+	if car == null or not is_instance_valid(car):
+		return
+	car.visible = true
+	_set_transparency(car, 0.0)
