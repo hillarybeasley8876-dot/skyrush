@@ -19,6 +19,7 @@ KERB_RETURN = 9.0
 MAX_REACH = 20.0       # how far the kerb return may reach past the kerb line
 MIN_ARM_ANGLE = 25.0   # two arms closer than this are a merge, not a junction
 END_CAP = 14.0          # how far the junction reaches past the arm's kerb line
+MIN_CUT = 1.0           # a kerb cut shorter than this is no kerb return (the straight side of a T has a rounding error of 1e-5)
 
 
 def line_intersect(p1, d1, p2, d2):
@@ -185,7 +186,7 @@ def road_radius(arms, road_id):
         if a["road"].id != road_id:
             continue
         cut = min(a.get("_cut_left", 0.0), a.get("_cut_right", 0.0))
-        if cut <= 0.0:
+        if cut < MIN_CUT:
             cut = a["half"] + KERB_RETURN
         cut = min(cut, a["half"] + MAX_REACH)
         best = cut if best is None else min(best, cut)

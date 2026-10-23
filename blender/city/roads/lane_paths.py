@@ -67,8 +67,8 @@ def connector_points(src, dst, centre=None, fan=None):
     """
     p0 = v3(src["points"][-1])
     p3 = v3(dst["points"][0])
-    if (p3 - p0).length > MAX_CONNECTOR and fan is not None:
-        return []   # the two lanes do not meet: a data error, not a movement
+    if (p3 - p0).length > MAX_CONNECTOR:
+        return []   # the two lanes do not meet: a data error, not a movement (a merge has no fill, the cap holds there too)
     wide = None
     if fan is not None:
         # the drivable area is the junction's collision, a little wider than its
