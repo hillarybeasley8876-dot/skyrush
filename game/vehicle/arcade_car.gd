@@ -61,6 +61,7 @@ const SetupMod := preload("res://vehicle/modules/car_setup.gd")
 const InputMod := preload("res://vehicle/modules/car_input.gd")
 const EventsMod := preload("res://vehicle/modules/car_events.gd")
 const FlightMod := preload("res://vehicle/modules/car_flight.gd")
+const IncidentRecorder := preload("res://vehicle/incident_recorder.gd")
 
 ## The vehicle data. Assign it before the car enters the tree.
 @export var spec: CarSpec = null
@@ -155,6 +156,11 @@ func _ready() -> void:
 	setup.wire(self)
 	if _visual != null and _visual.has_method("setup"):
 		_visual.call("setup", spec, player_controlled)
+	if player_controlled and OS.is_debug_build():
+		# the last seconds of the car go to the log when it hangs in the air or stays on its side (vehicle/incident_recorder.gd)
+		var recorder := IncidentRecorder.new()
+		recorder.name = "IncidentRecorder"
+		add_child(recorder)
 
 
 # --- the AI facing API ---------------------------------------------------------------------------
@@ -321,7 +327,28 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	gravity_scale = AirTuning.AIR_GRAVITY_SCALE if dynamics.air_gravity else 1.0
 	readout.write_telemetry(telemetry, state.transform, state.linear_velocity)
 	_check_upside_down(state, dt)
+	_check_stuck(state, dt)
 	cpu_usec = Time.get_ticks_usec() - t0
+
+
+## The player car that is stuck goes back on the road (BodyTuning.STUCK_*): off its wheels or leaning on a wall, and standing still,
+## for 2 s. Only the player: the AI has its own rescue (the rival marshal, the police and the traffic pools).
+func _check_stuck(state: PhysicsDirectBodyState3D, dt: float) -> void:
+	if Game.player != self or is_wrecked:
+		return
+	var grounded: int = 0
+	for w in wheels:
+		if w.contact:
+			grounded += 1
+	var tilt: float = rad_to_deg(acos(clampf(global_transform.basis.y.dot(Vector3.UP), -1.0, 1.0)))
+	var stuck: bool = state.linear_velocity.length() < BodyTuning.STUCK_SPEED \
+			and (grounded < 2 or tilt > BodyTuning.STUCK_TILT_DEG) \
+			and not thruster.hovering and not thruster.rolling and not sky.flying
+	if setup.stuck_time(stuck, dt) < BodyTuning.STUCK_TIME:
+		return
+	setup.reset_state()
+	Game.respawn_player()
+	Events.toast.emit("车辆卡住 已复位（随时按 R 复位） STUCK — RESET (R)", &"info")
 
 
 ## The car on its roof for 1.5 s respawns (dossier 4.7). The car lies still and touches

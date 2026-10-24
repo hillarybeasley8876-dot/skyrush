@@ -172,6 +172,23 @@ static func yaw_target(vel_yaw: float, heading_yaw: float) -> float:
 	return vel_yaw + YAW_NOSE_BIAS * wrap_angle(heading_yaw - vel_yaw)
 
 
+## The horizontal direction the camera follows: the velocity, folded onto the front half of the car. A car that moves
+## backwards (it reverses, a hit pushes it back) is followed from behind its nose: the velocity is mirrored across the side
+## axis of the car. The raw velocity of a reversing car points at the tail, which put the camera in front of the car, and a
+## straight reverse sat on the 180 degree seam of the nose bias: the target jumped from one side of the car to the other
+## with every touch of the steering (a swing of 126 degrees, the "camera cuts when I reverse").
+static func follow_direction(velocity: Vector3, forward: Vector3) -> Vector3:
+	var flat := Vector3(velocity.x, 0.0, velocity.z)
+	var nose := Vector3(forward.x, 0.0, forward.z)
+	if nose.length() < 0.001:
+		return flat
+	nose = nose.normalized()
+	var along := flat.dot(nose)
+	if along < 0.0:
+		flat -= nose * (2.0 * along)
+	return flat
+
+
 ## Target vFOV for a speed in m/s and the active boost kinds.
 static func fov_target(speed_mps: float, nitro: bool, mini: bool) -> float:
 	var fov := FOV_BASE + FOV_PER_MPS * speed_mps

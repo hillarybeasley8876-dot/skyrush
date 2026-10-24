@@ -92,7 +92,10 @@ static func _faces(mesh: ArrayMesh) -> PackedVector3Array:
 	return out
 
 
-## Cuts a cell that touches the water into fine cells and keeps the ones that are land.
+## Cuts a cell that touches the water into fine cells: the land cells are kept, the water cells are dropped, and a cell that the
+## edge of the water crosses is clipped to the edge. The crossed cells used to be dropped: the ground stopped up to 7 m short of
+## the bank, and nothing was under that strip (the water starts at the bank): a car that came off the road there fell to the kill
+## floor (the shore ring only looks like water).
 func _add_fine(st: SurfaceTool, corners: Array, water_polys: Array[PackedVector2Array]) -> void:
 	var steps := int(CELL / FINE_CELL)
 	var origin: Vector2 = corners[0]
@@ -102,14 +105,40 @@ func _add_fine(st: SurfaceTool, corners: Array, water_polys: Array[PackedVector2
 			var b := a + Vector2(FINE_CELL, 0.0)
 			var c := a + Vector2(FINE_CELL, FINE_CELL)
 			var d := a + Vector2(0.0, FINE_CELL)
-			if _in_water(a, water_polys) or _in_water(b, water_polys) or _in_water(c, water_polys) \
-					or _in_water(d, water_polys) or _in_water((a + c) * 0.5, water_polys):
-				continue
-			# A cell that the edge of the water crosses is dropped as well, so no sliver of the
-			# ground sticks into the river.
 			if _cut_by_water(a, b, c, d, water_polys):
+				_add_clipped(st, PackedVector2Array([a, b, c, d]), water_polys)
+				continue
+			if _in_water((a + c) * 0.5, water_polys):
 				continue
 			_quad(st, a, b, c, d)
+
+
+## The land part of a cell that the edge of the water crosses: the cell less every water body, in triangles.
+func _add_clipped(st: SurfaceTool, cell: PackedVector2Array, water_polys: Array[PackedVector2Array]) -> void:
+	var pieces: Array[PackedVector2Array] = [cell]
+	var outer_clockwise := Geometry2D.is_polygon_clockwise(cell)
+	for poly in water_polys:
+		var next: Array[PackedVector2Array] = []
+		for piece in pieces:
+			for part in Geometry2D.clip_polygons(piece, poly):
+				# a hole (a water body inside the cell) turns the other way: the outline is kept, the hole is not cut
+				if Geometry2D.is_polygon_clockwise(part) == outer_clockwise:
+					next.append(part)
+		pieces = next
+	for piece in pieces:
+		var indices := Geometry2D.triangulate_polygon(piece)
+		for t in range(0, indices.size() - 2, 3):
+			var p0 := piece[indices[t]]
+			var p1 := piece[indices[t + 1]]
+			var p2 := piece[indices[t + 2]]
+			# the face points up when the corners turn the way of a quad of the ground (a, b, c)
+			if (p1 - p0).cross(p2 - p0) < 0.0:
+				var swap := p1
+				p1 = p2
+				p2 = swap
+			_vertex(st, p0)
+			_vertex(st, p1)
+			_vertex(st, p2)
 
 
 ## True when the edge of a water body crosses the cell.

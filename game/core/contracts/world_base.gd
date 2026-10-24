@@ -13,6 +13,17 @@ func nearest_road_transform(pos: Vector3) -> Transform3D:
 	return Transform3D(Basis.IDENTITY, Vector3(pos.x, 1.0, pos.z))
 
 
+## Where the player is put back on the road (a wreck, a reset): the road near `pos`, driven along `direction` (horizontal),
+## with a clear road ahead. The default is the nearest road transform, turned to the direction.
+func respawn_transform(pos: Vector3, direction: Vector3) -> Transform3D:
+	var xform := nearest_road_transform(pos)
+	var forward := -xform.basis.z
+	forward.y = 0.0
+	if forward.length() > 0.01 and forward.dot(Vector3(direction.x, 0.0, direction.z)) < 0.0:
+		xform.basis = xform.basis.rotated(Vector3.UP, PI)
+	return xform
+
+
 func get_lane_paths() -> Array[LanePath]:
 	return []
 

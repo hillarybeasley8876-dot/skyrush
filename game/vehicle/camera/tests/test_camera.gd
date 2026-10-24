@@ -54,6 +54,16 @@ func _test_math() -> void:
 	_report.near("blur in nitro", CameraMath.blur_strength(300, true), 0.25)
 	_report.near("blur at 150 in nitro", CameraMath.blur_strength(150, true), 0)
 	_report.near("yaw target a third to the nose", CameraMath.yaw_target(0, PI * 0.5), 0.35 * PI * 0.5)
+	# the camera follows a backwards motion from behind the nose (the velocity is folded onto the front of the car)
+	var nose := Vector3(0, 0, -1)
+	_report.check("a reverse is followed along the nose",
+			CameraMath.follow_direction(Vector3(0, 0, 5), nose).is_equal_approx(Vector3(0, 0, -5)))
+	_report.check("a forward motion is followed as it is",
+			CameraMath.follow_direction(Vector3(1, 3, -5), nose).is_equal_approx(Vector3(1, 0, -5)))
+	_report.check("a slide sideways is followed as it is",
+			CameraMath.follow_direction(Vector3(4, 0, 0), nose).is_equal_approx(Vector3(4, 0, 0)))
+	_report.check("a reverse with a swing to the left keeps its side",
+			CameraMath.follow_direction(Vector3(-1, 0, 5), nose).is_equal_approx(Vector3(-1, 0, -5)))
 	var look := CameraMath.look_point(Vector3(1, 0, 2), Vector3.FORWARD, 4, 1.2)
 	_report.check("look point", look.is_equal_approx(Vector3(1, 1.2, -2)), str(look))
 	_report.near("punch kick", CameraMath.punch_offset(CameraMath.PUNCH_KICK_TIME), -0.6)

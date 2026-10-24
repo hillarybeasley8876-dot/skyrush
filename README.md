@@ -21,7 +21,7 @@ tools/godot.sh drive --timeline=res://tools/timelines/smoke_drive.json --skip-me
 tools/blender.sh run blender/npc_cars/web/convert.py   # 重新转换交通车和警车（build.py 只剩警用无人机）
 ```
 
-操作：W/S 油门刹车，A/D 转向，Shift 漂移，Ctrl/J 氮气，空格 跳跃（长按大跳或悬停），Q/E 空中翻滚，F 离开飞行车道，Esc 暂停。完整键位见 `SPEC.md` §4。
+操作：W/S 油门刹车（停下后按 S 倒车），A/D 转向，Shift 漂移，Ctrl/J 氮气，空格 跳跃（长按大跳或悬停），Q/E 空中翻滚，F 离开飞行车道，R 复位到路面（车卡住时；卡住 2 秒也会自动复位），C 回看，V 切换视角，Esc 暂停。完整键位见 `SPEC.md` §4。
 
 ## 目录
 

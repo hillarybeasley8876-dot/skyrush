@@ -53,6 +53,8 @@ var roadblock_sites: Array[Transform3D] = []
 var lanes: Array[LanePath] = []
 ## The spatial index of the lanes: the furniture, the route builder and the lane links use it.
 var lane_grid: LaneSpatial
+## The terrain builder (the bank walls are built after the lanes).
+var _terrain: TerrainBuilder
 ## The drivable graph of the lanes.
 var _graph: LaneGraphBuilder
 ## The positions of the street furniture that was placed.
@@ -116,6 +118,7 @@ func build(world: Node3D, city_data: CityData) -> void:
 	await _phase("blocks", 0.40)
 	_build_lights()
 	_build_lanes()
+	_build_banks()
 	await _phase("lanes", 0.55)
 	await _build_furniture()
 	await _phase("furniture", 0.70)
@@ -163,6 +166,7 @@ func _phase(label: String, fraction: float) -> void:
 
 func _build_terrain() -> void:
 	var terrain := TerrainBuilder.new()
+	_terrain = terrain
 	var window := data.window_rect()
 	var bodies := terrain.parse_water(data.water())
 	var ground := _group("Terrain")
@@ -307,6 +311,12 @@ func _add_bund_light(entry: Dictionary) -> void:
 		direction = Vector3(float(d[0]), float(d[1]), float(d[2]))
 	floods.add_source(position, color, energy, light_range, "spot", 80.0, 0.0, direction,
 		position, angle)
+
+
+## The bank walls of the river and the creek: after the lanes, so a road that crosses a bank gets a gap in the wall.
+func _build_banks() -> void:
+	_terrain.build_banks(_group("Terrain"), lane_grid, data.window_rect().grow(TerrainBuilder.EDGE_RING))
+	print("[world] bank walls: %d pieces, %d gaps for the roads" % [_terrain.bank_pieces, _terrain.bank_gaps])
 
 
 ## The lane graph of the city: the lanes of the roads unit, the rest derived from city.json.

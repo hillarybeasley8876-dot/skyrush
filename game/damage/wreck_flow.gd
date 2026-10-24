@@ -29,6 +29,8 @@ const GHOST_ALPHA := 0.5
 const GHOST_ALPHA_JITTER := 0.2
 ## The layer of the cars (physics layer 2) that the ghost ignores.
 const VEHICLE_LAYER := 1 << 1
+## The longest a ghost waits, after its 2 s, for the car to be clear of the other cars.
+const GHOST_HOLD_MAX := 3.0
 
 
 ## The respawn of one car, waiting for the crash cam to end.
@@ -151,15 +153,9 @@ func _respawn(car: VehicleBase, speed: float, heading: Vector3) -> void:
 	var behind := car.global_position - direction * RESPAWN_BACK
 	var xform := Transform3D(Basis.IDENTITY, behind + Vector3.UP)
 	if Game.world != null:
-		xform = Game.world.nearest_road_transform(behind)
-	# The lane can face against the direction of the crash: the car must drive away from
-	# the wreck, so the road transform is flipped when it points the wrong way.
-	var road_forward := -xform.basis.z
-	road_forward.y = 0.0
-	if road_forward.length() > 0.01:
-		road_forward = road_forward.normalized()
-		if road_forward.dot(direction) < 0.0:
-			xform.basis = xform.basis.rotated(Vector3.UP, PI)
+		# The lane can face against the direction of the crash: the car must drive away from the wreck, so the world turns
+		# the transform round, and it moves the car along the lane to a place where the road ahead is clear.
+		xform = Game.world.respawn_transform(behind, direction)
 	car.reset_to(xform)
 	var drive := -xform.basis.z
 	drive.y = 0.0
@@ -182,15 +178,21 @@ func _respawn(car: VehicleBase, speed: float, heading: Vector3) -> void:
 ## is not enough: the ghost needs a collision exception for every car.
 func _start_ghost(car: VehicleBase) -> void:
 	car.collision_mask = car.collision_mask & ~VEHICLE_LAYER
-	var ghost := Ghost.new()
+	# A car that is put back during its ghost (a second wreck within the 2 s) keeps the ghost it has, from the start again.
+	# A new ghost saved the half transparent car of the running one as the car to come back to: the car stayed see-through
+	# for the rest of the game.
+	var ghost := _ghosts.get(car.get_instance_id(), null) as Ghost
+	if ghost == null:
+		ghost = Ghost.new()
+		_save_transparency(car, ghost)
+		_ghosts[car.get_instance_id()] = ghost
+	ghost.elapsed = 0.0
 	for node in get_tree().get_nodes_in_group(&"vehicles"):
 		var other := node as Node3D
-		if other == null or other == car:
+		if other == null or other == car or ghost.exceptions.has(other):
 			continue
 		car.add_collision_exception_with(other)
 		ghost.exceptions.append(other)
-	_save_transparency(car, ghost)
-	_ghosts[car.get_instance_id()] = ghost
 	# A car that joins the world during the ghost must pass through it as well.
 	var refresh := get_tree().create_timer(0.25, true, false, true)
 	refresh.timeout.connect(_refresh_exceptions.bind(car))
@@ -209,12 +211,35 @@ func _tick_ghosts(delta: float) -> void:
 		if car == null:
 			_ghosts.erase(id)
 			continue
-		if ghost.elapsed >= GHOST_TIME:
+		# The collision with the cars comes back when the car is clear of them: two boxes inside each other are thrown apart
+		# by the solver (a player that a police car had driven into was kicked up and spun at the end of its ghost).
+		if ghost.elapsed >= GHOST_TIME and (ghost.elapsed >= GHOST_TIME + GHOST_HOLD_MAX or not _inside_a_car(car)):
 			_end_ghost(car, ghost)
 			_ghosts.erase(id)
 			continue
 		var alpha := GHOST_ALPHA + GHOST_ALPHA_JITTER * sin(ghost.elapsed * GHOST_HZ * TAU)
 		_set_transparency(car, clampf(alpha, 0.0, 1.0))
+
+
+## True when the collision shapes of the car overlap another car (a shape query does not see the collision exceptions).
+func _inside_a_car(car: VehicleBase) -> bool:
+	var space := car.get_world_3d().direct_space_state
+	if space == null:
+		return false
+	for child in car.get_children():
+		var shape_node := child as CollisionShape3D
+		if shape_node == null or shape_node.shape == null or shape_node.disabled:
+			continue
+		var query := PhysicsShapeQueryParameters3D.new()
+		query.shape = shape_node.shape
+		query.transform = shape_node.global_transform
+		query.collision_mask = VEHICLE_LAYER
+		query.collide_with_bodies = true
+		query.collide_with_areas = false
+		query.exclude = [car.get_rid()]
+		if not space.intersect_shape(query, 1).is_empty():
+			return true
+	return false
 
 
 ## Adds the collision exception for the cars that joined the world during the ghost.

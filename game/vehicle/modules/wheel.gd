@@ -10,6 +10,9 @@ extends RefCounted
 const SuspensionTuning := preload("res://vehicle/tuning/suspension_tuning.gd")
 const TyreTuning := preload("res://vehicle/tuning/tyre_tuning.gd")
 
+## What a wheel can stand on: the world, the cars and the props.
+const PROBE_MASK := 0b111
+
 ## Wheel index: 0 = FL, 1 = FR, 2 = RL, 3 = RR.
 var index: int = 0
 var radius: float = 0.36
@@ -70,7 +73,7 @@ func setup(parent: Node3D, spec: CarSpec, wheel_index: int) -> void:
 	sphere.radius = SuspensionTuning.PROBE_RADIUS
 	probe.shape = sphere
 	probe.target_position = Vector3(0.0, -SuspensionTuning.PROBE_CAST, 0.0)
-	probe.collision_mask = 0b111  # world | vehicle | prop
+	probe.collision_mask = PROBE_MASK
 	probe.exclude_parent = true
 	probe.max_results = 1
 	probe.position = mount
@@ -82,6 +85,11 @@ func setup(parent: Node3D, spec: CarSpec, wheel_index: int) -> void:
 func update_probe(anchor_world: Vector3, body_up: Vector3) -> void:
 	if probe == null:
 		return
+	# The probe sees what the body hits: a ghost (damage/wreck_flow.gd) drives through the other cars, and its wheels must not
+	# stand on them (a player stood half on the police car that had driven into its ghost, and popped up when it drove off).
+	var body := probe.get_parent() as CollisionObject3D
+	if body != null:
+		probe.collision_mask = PROBE_MASK & body.collision_mask
 	probe.force_shapecast_update()
 	# A wall, a ceiling or the back of a surface is not ground (SuspensionTuning.MIN_GROUND_NORMAL_Y).
 	var standing: bool = probe.is_colliding() \

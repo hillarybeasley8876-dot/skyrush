@@ -32,6 +32,7 @@ func _ready() -> void:
 	_modes.start_mode(&"free", {})
 	await _wait(0.5)
 	await _test_lost_in_the_water()
+	await _test_in_the_water_near_the_bank()
 	await _test_on_the_road()
 	await _test_timer_restarts()
 	await _test_flying_and_grid()
@@ -83,6 +84,30 @@ func _test_lost_in_the_water() -> void:
 
 
 ## A player that stands on a lane is left alone.
+## A car in the water next to the bank is put back. The water of the city is a solid floor 3 m under the road: a car in the creek
+## less than 15 m from the lane of the riverside road was not "lost" (too close to a lane) and could not get out.
+func _test_in_the_water_near_the_bank() -> void:
+	var water := StaticBody3D.new()
+	water.collision_layer = 1
+	water.add_to_group(&"water")
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(40.0, 1.0, 12.0)
+	shape.shape = box
+	water.add_child(shape)
+	add_child(water)
+	# the south straight of the sandbox runs at z 196-204: the water is 6-18 m from its outer lane, 3 m under the road
+	water.global_position = Vector3(300.0, -3.5, 216.0)
+	var before := _road_toasts()
+	_car.reset_to(Transform3D(Basis.IDENTITY, Vector3(300.0, -2.6, 216.0)))
+	await _wait(LOST_SECONDS + 1.0)
+	_expect(_road_toasts() > before, "a car in the water next to the bank is put back",
+		"(at %s)" % str(_car.global_position.snapped(Vector3.ONE * 0.1)))
+	_expect(_car.global_position.y > -1.0, "it is on the road again", "= y %.2f" % _car.global_position.y)
+	water.queue_free()
+	await _wait(0.2)
+
+
 func _test_on_the_road() -> void:
 	var before := _road_toasts()
 	_place_on_road()

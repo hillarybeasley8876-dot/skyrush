@@ -58,7 +58,7 @@ func set_paused(paused: bool) -> void:
 func respawn_player() -> void:
 	if player == null or world == null:
 		return
-	player.reset_to(world.nearest_road_transform(player.global_position))
+	player.reset_to(world.respawn_transform(player.global_position, player.get_forward()))
 	Events.player_respawned.emit()
 
 

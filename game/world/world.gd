@@ -149,6 +149,18 @@ func nearest_road_transform(pos: Vector3) -> Transform3D:
 	return _placer.lane_transform(self, lane, offset)
 
 
+## The player back on the road after a wreck or a reset: the closest lane, driven along `direction`, at a place with a clear
+## road ahead (world/api/spawn_placer.gd respawn_on_lane).
+func respawn_transform(pos: Vector3, direction: Vector3) -> Transform3D:
+	if not is_ready():
+		_not_ready()
+		return Transform3D(Basis.IDENTITY, Vector3(pos.x, 1.0, pos.z))
+	var found := _placer.closest_lane(pos)
+	if found.is_empty():
+		return Transform3D(Basis.IDENTITY, Vector3(pos.x, 1.0, pos.z))
+	return _placer.respawn_on_lane(self, found["lane"], found["offset"], direction)
+
+
 func get_lane_paths() -> Array[LanePath]:
 	return _lanes
 

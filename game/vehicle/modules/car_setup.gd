@@ -39,6 +39,7 @@ var visual: Node3D = null
 var wheels: Array[WheelMod] = []
 ## How long the car has been on its roof.
 var _upside_down_time: float = 0.0
+var _stuck_time: float = 0.0
 
 
 ## Applies the spec to the rigid body.
@@ -101,6 +102,12 @@ func upside_down_time(up_dot: float, resting: bool, dt: float) -> float:
 	return _upside_down_time
 
 
+## How long the car has been stuck (BodyTuning.STUCK_*): off its wheels or leaning, and standing still.
+func stuck_time(stuck: bool, dt: float) -> float:
+	_stuck_time = _stuck_time + dt if stuck else 0.0
+	return _stuck_time
+
+
 ## Clears the flight, the roll, the hover, the drift and the boost timers (a respawn).
 func reset_state() -> void:
 	sky.flying = false
@@ -109,6 +116,7 @@ func reset_state() -> void:
 	drift.reset()
 	boost.reset()
 	_upside_down_time = 0.0
+	_stuck_time = 0.0
 
 
 ## Connects the modules to each other.

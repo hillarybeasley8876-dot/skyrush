@@ -151,12 +151,12 @@ func _face_button_pressed() -> bool:
 
 
 func _update_yaw(dt: float) -> void:
-	var vel := _player.linear_velocity
 	var heading := _player.get_forward()
+	var vel := CameraMath.follow_direction(_player.linear_velocity, heading)
 	var head_yaw := CameraMath.yaw_of(heading)
 	var vel_yaw := head_yaw
 	if vel.length() > CameraMath.VELOCITY_MIN:
-		vel_yaw = CameraMath.yaw_of(Vector3(vel.x, 0, vel.z))
+		vel_yaw = CameraMath.yaw_of(vel)
 	var target := CameraMath.yaw_target(vel_yaw, head_yaw)
 	if _look_back:
 		target = head_yaw + PI
@@ -263,16 +263,17 @@ func _camera_basis(pos: Vector3) -> Basis:
 	return basis
 
 
-## The point the camera aims at: the car, LOOK_HEIGHT up, LOOK_AHEAD along the velocity.
+## The point the camera aims at: the car, LOOK_HEIGHT up, LOOK_AHEAD along the velocity (folded onto the front of the car,
+## so a reversing car is not looked past).
 func _look_point() -> Vector3:
 	var preset := CameraPresets.get_preset(_preset)
 	var dir := Vector3.ZERO
 	if _preset == CameraPresets.Preset.BUMPER:
 		dir = _player.get_forward()
 	else:
-		var vel := _player.linear_velocity
+		var vel := CameraMath.follow_direction(_player.linear_velocity, _player.get_forward())
 		if vel.length() > CameraMath.VELOCITY_MIN:
-			dir = Vector3(vel.x, 0, vel.z).normalized()
+			dir = vel.normalized()
 	if _look_back:
 		if dir.length() < CameraMath.MIN_LOOK_LENGTH:
 			dir = _player.get_forward()

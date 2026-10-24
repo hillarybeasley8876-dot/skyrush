@@ -17,6 +17,7 @@ var _helpers := Helpers.new()
 func run(host: Node, report: Report) -> void:
 	_report = report
 	await _test_follow(host)
+	await _test_reverse(host)
 	await _test_walls(host)
 	await _test_drift(host)
 	await _test_bank(host)
@@ -60,6 +61,41 @@ func _test_follow(host: Node) -> void:
 			_helpers.flat_distance(cam_pos, car_pos), expected, 0.4)
 	_report.near("the camera height", cam_pos.y - car_pos.y, CameraMath.HEIGHT_REST, 0.4)
 	_report.near("the fov ramp", _helpers.cam.fov, CameraMath.FOV_BASE + CameraMath.FOV_PER_MPS * CHASE_SPEED, 0.2)
+	_helpers.cam_root.queue_free()
+	await host.get_tree().physics_frame
+
+
+## A reversing car is followed from behind its nose. The camera looked along the velocity, so it swung round in front of a
+## reversing car, and a straight reverse sat on the 180 degree seam of the nose bias: every touch of the steering threw the
+## target from one side of the car to the other (126 degrees, about 7 degrees a tick).
+func _test_reverse(host: Node) -> void:
+	_helpers.setup(host)
+	await _helpers.tick(host, 60)
+	var car := _helpers.car
+	var reverse_speed := 8.0
+	var in_front := 0
+	var worst_step := 0.0
+	var previous := _heading(_helpers.cam)
+	for i in 360:
+		# a straight reverse with the wobble of a hand on the wheel: the velocity swings 1.5 degrees to either side of the tail
+		var wobble := deg_to_rad(1.5) * sin(float(i) * 0.4)
+		var velocity := Vector3(sin(wobble), 0.0, cos(wobble)) * reverse_speed
+		car.global_position += velocity / 120.0
+		car.linear_velocity = velocity
+		car.telemetry.speed_kmh = reverse_speed * 3.6
+		car.telemetry.forward_speed_kmh = -reverse_speed * 3.6
+		await host.get_tree().physics_frame
+		var heading := _heading(_helpers.cam)
+		worst_step = maxf(worst_step, absf(wrapf(heading - previous, -180.0, 180.0)))
+		previous = heading
+		if _helpers.cam.global_position.z <= car.global_position.z:
+			in_front += 1
+	_report.check("reverse: the camera stays behind the car", in_front == 0, "%d ticks in front of the car" % in_front)
+	_report.check("reverse: the camera does not swing", worst_step < 1.0, "largest step %.2f degrees a tick" % worst_step)
+	_report.near("reverse: the camera looks along the nose", _heading(_helpers.cam), 0.0, 3.0)
+	car.linear_velocity = Vector3.ZERO
+	car.telemetry.speed_kmh = 0.0
+	car.telemetry.forward_speed_kmh = 0.0
 	_helpers.cam_root.queue_free()
 	await host.get_tree().physics_frame
 

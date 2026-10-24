@@ -74,6 +74,8 @@ func _ready() -> void:
 			solid_car.global_position.distance_to(player.global_position) > 2.0)
 	await _test_head_on()
 	await _test_ghost_alpha()
+	await _test_second_wreck_in_ghost()
+	await _test_ghost_ends_inside_a_car()
 	await _test_doors()
 	print(("FAIL" if _failures > 0 else "PASS") + " respawn (%d failures)" % _failures)
 	get_tree().quit(1 if _failures > 0 else 0)
@@ -143,6 +145,109 @@ func _test_ghost_alpha() -> void:
 		highest = maxf(highest, alpha)
 	_expect("the ghost fades to %.2f (at most 0.35)" % lowest, lowest <= 0.35)
 	_expect("the ghost brightens to %.2f (at least 0.65)" % highest, highest >= 0.65)
+
+
+## A second wreck during the ghost: the car comes back opaque when the second ghost is over. The second ghost saved the half
+## transparent car of the first one as the car to come back to, and the car stayed see-through for the rest of the game.
+func _test_second_wreck_in_ghost() -> void:
+	await _clear_cars()
+	var player := Kit.make_car(VehicleBase.Team.PLAYER, 100.0, 1900.0)
+	player.add_to_group(&"vehicles")
+	add_child(player)
+	player.global_transform = Transform3D(Basis.IDENTITY, Vector3(0.0, 1.0, 0.0))
+	Game.player = player
+	var flow := get_tree().root.find_child("WreckFlow", true, false)
+	if flow == null:
+		_expect("the wreck flow is there", false)
+		return
+	flow.call("_respawn", player, 20.0, Vector3.FORWARD)
+	# half way through the ghost the car is half transparent, and it is put back again (the car is held where it is: the
+	# respawn sends it off at 60 km/h, and a crash would be a third wreck)
+	for i in 25:
+		player.linear_velocity = Vector3.ZERO
+		await Kit.wait_frames(get_tree(), 1)
+	_expect("the first ghost is running (%.2f)" % _transparency_of(player), _transparency_of(player) > 0.2)
+	flow.call("_respawn", player, 20.0, Vector3.FORWARD)
+	# the ghost runs on the game clock: wait until it is over
+	var ghosts: Dictionary = flow.get("_ghosts")
+	var frames := 0
+	while ghosts.has(player.get_instance_id()) and frames < 1200:
+		player.linear_velocity = Vector3.ZERO
+		await get_tree().physics_frame
+		frames += 1
+	await Kit.wait_frames(get_tree(), 2)
+	_expect("the car is opaque after a second wreck in its ghost (%.2f)" % _transparency_of(player),
+			_transparency_of(player) == 0.0)
+	_expect("the car hits the other cars again", (player.collision_mask & 2) != 0)
+	player.queue_free()
+	await Kit.wait_frames(get_tree(), 2)
+
+
+## The ghost is over while a car is inside the player (a police car drove into the ghost and stopped there). The collision must
+## not come back with the boxes inside each other (the solver kicked the player up and spun it): the ghost waits until the
+## other car has driven off.
+func _test_ghost_ends_inside_a_car() -> void:
+	await _clear_cars()
+	var player := (load("res://vehicle/player_car.tscn") as PackedScene).instantiate() as VehicleBase
+	player.set("player_controlled", false)
+	add_child(player)
+	player.global_transform = Transform3D(Basis.IDENTITY, Vector3(30.0, 1.0, 30.0))
+	Game.player = player
+	await Kit.wait_frames(get_tree(), 90)
+	var flow := get_tree().root.find_child("WreckFlow", true, false)
+	if flow == null:
+		_expect("the wreck flow is there", false)
+		return
+	var rest := player.global_position
+	# a police car parked 1.2 m to the side of the player: the two boxes overlap by about 0.7 m
+	var intruder := Kit.make_car(VehicleBase.Team.POLICE, 60.0, 1900.0)
+	intruder.add_to_group(&"vehicles")
+	add_child(intruder)
+	intruder.global_transform = Transform3D(Basis.IDENTITY, Vector3(rest.x + 1.2, 0.05, rest.z + 0.4))
+	flow.call("_start_ghost", player)
+	var peak_vy := 0.0
+	var peak_rise := 0.0
+	var peak_spin := 0.0
+	var peak_speed := 0.0
+	var ghosts: Dictionary = flow.get("_ghosts")
+	var held := false
+	for i in int(4.5 * 120.0):
+		await get_tree().physics_frame
+		if i == int(2.5 * 120.0):
+			# half a second after the 2 s of the ghost the police car drives off
+			held = ghosts.has(player.get_instance_id())
+			intruder.global_position += Vector3(6.0, 0.0, 0.0)
+			intruder.linear_velocity = Vector3.ZERO
+		if i < int(0.2 * 120.0):
+			continue          # the player settles on its wheels first
+		peak_vy = maxf(peak_vy, absf(player.linear_velocity.y))
+		peak_rise = maxf(peak_rise, player.global_position.y - rest.y)
+		peak_spin = maxf(peak_spin, player.angular_velocity.length())
+		peak_speed = maxf(peak_speed, player.linear_velocity.length())
+	_expect("the ghost waits while a car is inside the player", held)
+	_expect("the ghost is over when the car has driven off", not ghosts.has(player.get_instance_id())
+			and (player.collision_mask & 2) != 0)
+	print("   ghost end inside a car: peak vy %.2f m/s, rise %.2f m, spin %.2f rad/s, speed %.2f m/s" % [
+		peak_vy, peak_rise, peak_spin, peak_speed])
+	_expect("the player is not thrown up when its ghost ends inside a car (vy %.2f m/s, rise %.2f m)" % [peak_vy, peak_rise],
+			peak_vy < 2.0 and peak_rise < 0.5)
+	_expect("the player is not spun when its ghost ends inside a car (%.2f rad/s)" % peak_spin, peak_spin < 1.5)
+	intruder.queue_free()
+	player.queue_free()
+	await Kit.wait_frames(get_tree(), 2)
+
+
+## The cars of the scenarios before go, and the slow motion of their wrecks is over: they drive on and crash into each other, and
+## the slow motion of a wreck (core/game.gd, on the wall clock) slows the ghost of the next scenario down.
+func _clear_cars() -> void:
+	for node in get_tree().get_nodes_in_group(&"vehicles"):
+		node.remove_from_group(&"vehicles")
+		node.queue_free()
+	await Kit.wait_frames(get_tree(), 2)
+	var frames := 0
+	while Engine.time_scale < 1.0 and frames < 2400:
+		await get_tree().physics_frame
+		frames += 1
 
 
 ## The transparency of the meshes of the car.

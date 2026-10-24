@@ -8,7 +8,9 @@ extends RefCounted
 ## lane and tells it with a toast.
 ##
 ## The rules:
-##   - the player is lost when it is more than LOST_DISTANCE metres from the nearest lane and either
+##   - the player is lost when it touches the water (a solid floor 3 m under the road: a car in the creek next to the bank is
+##     less than LOST_DISTANCE from the lane of the riverside road, and it was never lost), or when it is more than
+##     LOST_DISTANCE metres from the nearest lane and either
 ##     LOST_HEIGHT metres above or below the road level (the river, the kill floor) or LOST_FAR metres
 ##     away in the plan (the world weighs the height of a lane, so a deck 10 m above does not win over
 ##     the street the player is on, and the tunnel 28 m below is a road like any other; a plaza is not
@@ -69,13 +71,23 @@ func _measure(player: VehicleBase, world: WorldBase) -> void:
 	_road = world.nearest_road_transform(player.global_position)
 	var away := player.global_position - _road.origin
 	var plan := Vector2(away.x, away.z).length()
-	if away.length() > LOST_DISTANCE and (absf(away.y) > LOST_HEIGHT or plan > LOST_FAR):
+	if _in_water(player) or (away.length() > LOST_DISTANCE and (absf(away.y) > LOST_HEIGHT or plan > LOST_FAR)):
 		if not is_lost:
 			lost_time = 0.0
 		is_lost = true
 	else:
 		is_lost = false
 		lost_time = 0.0
+
+
+## True when the car touches the water of the city (the water bodies are in the group "water").
+func _in_water(player: VehicleBase) -> bool:
+	if not player.contact_monitor:
+		return false
+	for body in player.get_colliding_bodies():
+		if (body as Node).is_in_group(&"water"):
+			return true
+	return false
 
 
 ## True when the player must not be put back: it flies, it is in a jump or it waits on the grid.
@@ -94,7 +106,7 @@ func _exempt(player: VehicleBase) -> bool:
 func _put_back(player: VehicleBase, world: WorldBase) -> void:
 	# The lane is measured once more: the player may have fallen a long way since the last
 	# measurement, and the lane under the water is not the deck it jumped from.
-	_road = world.nearest_road_transform(player.global_position)
+	_road = world.respawn_transform(player.global_position, player.get_forward())
 	var xform := _road
 	xform.origin.y += PUT_BACK_LIFT
 	player.reset_to(xform)

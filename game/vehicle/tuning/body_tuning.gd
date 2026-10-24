@@ -50,6 +50,15 @@ const UPSIDE_DOWN_TIME := 1.5
 ## The vertical speed below which the car counts as lying still.
 const UPSIDE_DOWN_REST_SPEED := 1.0
 
+## The player car that is stuck goes back on the road after STUCK_TIME: it is slower than STUCK_SPEED and it does not stand on its
+## wheels (fewer than two touch the ground) or it leans more than STUCK_TILT_DEG, and it does not fly, hover or roll. The roof rule
+## above only knew a car on its roof (a tilt over 107 degrees), and the out-of-bounds rule of the modes only a car 15 m from every
+## lane: a car that hung on the wall of a house next to the road, or lay on its side in the street, stayed there until the player
+## found the reset key.
+const STUCK_SPEED := 1.5
+const STUCK_TILT_DEG := 50.0
+const STUCK_TIME := 2.0
+
 ## The timestamp of "never" (far in the past).
 const TIME_NEVER := -100.0
 
