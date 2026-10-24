@@ -10,6 +10,7 @@ const CityData := preload("res://world/loader/city_data.gd")
 const AssetLibrary := preload("res://world/loader/asset_library.gd")
 const LandmarkManifest := preload("res://world/loader/landmark_manifest.gd")
 const TerrainBuilder := preload("res://world/build/terrain_builder.gd")
+const PropBreaker := preload("res://world/build/prop_breaker.gd")
 const GroundBuilder := preload("res://world/build/ground_builder.gd")
 const RoadBuilder := preload("res://world/build/road_builder.gd")
 const BlockBuilder := preload("res://world/build/block_builder.gd")
@@ -55,6 +56,8 @@ var lanes: Array[LanePath] = []
 var lane_grid: LaneSpatial
 ## The terrain builder (the bank walls are built after the lanes).
 var _terrain: TerrainBuilder
+## The street lamps that break away (world/build/prop_breaker.gd).
+var prop_breaker: PropBreaker = null
 ## The drivable graph of the lanes.
 var _graph: LaneGraphBuilder
 ## The positions of the street furniture that was placed.
@@ -373,6 +376,11 @@ func _build_furniture() -> void:
 			rest.append(entry)
 		print("[world] street dressing: %s" % _str(dresser.counts()))
 	var sign_props := furniture.build(_group("Furniture"), rest)
+	prop_breaker = PropBreaker.new()
+	prop_breaker.name = "PropBreaker"
+	prop_breaker.setup(furniture.breakables, furniture.multimeshes, lights, furniture.library())
+	_group("Furniture").add_child(prop_breaker)
+	print("[world] lamps that break away: %d" % furniture.breakables.size())
 	furniture_positions = furniture.placed
 	furniture_kinds = furniture.placed_kinds
 	_furniture_entries = furniture.placed_entries

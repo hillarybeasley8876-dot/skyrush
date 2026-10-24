@@ -85,15 +85,24 @@ func _ready() -> void:
 func add_source(position: Vector3, color: Color, energy: float, light_range: float,
 		kind: String = "omni", pitch: float = 0.0, yaw: float = 0.0,
 		direction: Vector3 = Vector3.ZERO, ground: Vector3 = Vector3.INF,
-		angle: float = DEFAULT_SPOT_ANGLE) -> void:
+		angle: float = DEFAULT_SPOT_ANGLE) -> int:
 	var index := _sources.size()
 	_sources.append({
 		"position": position, "color": color, "energy": energy, "range": light_range,
 		"kind": kind, "pitch": pitch, "yaw": yaw, "direction": direction,
 		"ground": position if ground == Vector3.INF else ground, "angle": angle,
-		"assigned": false,
+		"assigned": false, "off": false,
 	})
 	_insert(position, index)
+	return index
+
+
+## Switches a source off (the lamp was knocked down) or on again. The lights are given out again at once.
+func set_source_enabled(index: int, enabled: bool) -> void:
+	if index < 0 or index >= _sources.size():
+		return
+	_sources[index]["off"] = not enabled
+	_timer = REASSIGN
 func _process(delta: float) -> void:
 	_timer += delta
 	if _timer < REASSIGN:
@@ -118,6 +127,8 @@ func _reassign() -> void:
 	for index in near:
 		var source := _sources[index]
 		source["assigned"] = false
+		if bool(source.get("off", false)):
+			continue
 		var distance := origin.distance_to(source["position"])
 		if distance <= decal_distance:
 			var kind := String(source["kind"])

@@ -46,6 +46,17 @@ of the contract are kept, so the traffic, the police, the vehicle specs and the 
 | cars drove on the river and fell through the creek to the kill floor | the bank walls were drawn, without collision; the ground stopped up to 7 m short of the bank; the creek floor was a ribbon with 8 m wedges open at the bends | 1.0 m walls of boxes with gaps where a lane crosses or runs along the bank; the ground is clipped to the bank; the creek floor is its cut outline | `world/test_bank_walls.gd` (4 mutations), `tools/fuzz_drive.gd` |
 | a car in the creek next to the bank never came out | it was less than 15 m from the lane of the riverside road, so it was not "lost" | touching the water is lost | `modes/test_out_of_bounds.gd` |
 
+## Street furniture: lamps break away, the rest hurts less (the player: "make it lighter")
+
+Half of the random drives ended on a prop: a lamp of 15 cm stopped a car of 1.9 t dead, and by the damage rules a head-on hit at
+108 km/h wrecked it. The street lamps (4,941 of them) have no rigid shape now: a car that drives into one knocks it down
+(`world/build/prop_breaker.gd`): the lamp and its light go, its pole falls and fades after 6 s, the car keeps 85 % of its speed and
+loses 3 HP (the event `prop_broken` plays a hit and breaking glass). Trees, masts, shelters, planters and billboards stand: they cost
+40 % of the damage of a wall and never wreck a car in one hit (a tree at 150 km/h costs 40 HP, at 250 km/h it still wrecks).
+Checks: `world/tests/test_prop_breakaway.gd` (the breaker costs 38 us a tick with 91 cars), `damage/tests/test_collision_severity.gd`,
+`world/tests/test_prop_collision_orientation.gd`, all three mutation-checked; the picture by a windowed capture (a headless run
+cannot read a MultiMesh back).
+
 The player car keeps an incident record in debug builds (`vehicle/incident_recorder.gd`): when it hangs in the air, lies tipped over or is
 thrown up without a hop, the last 6 s of the car (position, speed, wheels, what the body touches, the ghost) go to the log as
 `[incident]` lines.
@@ -72,7 +83,6 @@ Five tests of that baseline pass now (`police/test_perf`, `rivals/test_rival_dri
 * The collision hulls of the Oriental Pearl (the drum is cut now), the Shanghai Tower and the SWFC still lie over a few lanes (about 70
   samples of 150,000), the D0 streets east of the Bund run into the flood wall of the promenade (15 samples). A probe that writes the
   blocked samples for `buildingcut.py` to read would close the class.
-* Street props are solid now (trees, lamps, shelters, planters): by the damage rules a head-on hit at 108 km/h or more wrecks the car.
 * The racing line of the Bund sprint goes by Fuzhou Rd and Sichuan Rd now that Hankou Rd ends in the Customs House (the shortest path
   is a tie between several streets).
 * The rivals race at 55 m/s on the Bund (200 km/h on a 50 km/h road): the speed profile is the grip budget of the car, not the limit

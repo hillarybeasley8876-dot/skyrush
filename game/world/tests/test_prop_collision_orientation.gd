@@ -111,11 +111,17 @@ func _run() -> void:
 	var solid_entries: Array[Dictionary] = []
 	for k in 4:
 		soft_entries.append({"type": PropCollision.SOFT[k], "transform": Transform3D(Basis(), Vector3(float(k) * 100.0, 0.0, 800.0)), "height_m": 0.0})
-	for k in ["tree", "lamp", "billboard", "planter"]:
+	for k in ["tree", "billboard", "planter"]:
 		solid_entries.append({"type": k, "transform": Transform3D(Basis(), Vector3(float(solid_entries.size()) * 100.0, 0.0, 900.0)), "height_m": 0.0})
+	var lamp_entries: Array[Dictionary] = []
+	for k in PropCollision.BREAKAWAY.size():
+		lamp_entries.append({"type": PropCollision.BREAKAWAY[k], "transform": Transform3D(Basis(), Vector3(float(k) * 100.0, 0.0, 1000.0)), "height_m": 0.0})
 	var soft_count := PropCollision.new().build(holder, soft_entries)
 	var solid_count := PropCollision.new().build(holder, solid_entries)
+	var lamp_count := PropCollision.new().build(holder, lamp_entries)
 	_check("the small furniture (bollards, bins, hydrants, scooters) has no collision", soft_count == 0, "(%d shapes)" % soft_count)
-	_check("trees, lamps, billboards and planters have", solid_count == 4, "(%d shapes)" % solid_count)
+	_check("trees, billboards and planters have", solid_count == 3, "(%d shapes)" % solid_count)
+	# the street lamps break away (world/build/prop_breaker.gd): no rigid shape
+	_check("the street lamps have no rigid shape (they break away)", lamp_count == 0, "(%d shapes)" % lamp_count)
 	print("[probe] %d checks, %d failures" % [_checks, _failures])
 	get_tree().quit(1 if _failures > 0 else 0)

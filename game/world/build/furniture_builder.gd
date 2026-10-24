@@ -84,6 +84,11 @@ var placed_kinds: Array[String] = []
 var placed_entries: Array[Dictionary] = []
 ## The entries of the props that were placed (the collision is built from them).
 var _collision: Array[Dictionary] = []
+## The lamps that break away (PropCollision.BREAKAWAY): {"type", "variant", "transform", "scale_vector", "height", "refs" (the
+## [group key, instance] of every part and far dot), "lights" (the indices of the light pool)}. world/build/prop_breaker.gd.
+var breakables: Array[Dictionary] = []
+## The MultiMesh of every group key (a broken lamp hides its instances).
+var multimeshes: Dictionary = {}
 
 
 func setup(light_pool: Node, filter: Object = null, atlas: Node = null) -> void:
@@ -112,6 +117,8 @@ func build(parent: Node3D, entries: Array[Dictionary]) -> Array[Dictionary]:
 	placed_kinds.clear()
 	placed_entries.clear()
 	_collision.clear()
+	breakables.clear()
+	multimeshes.clear()
 	var signs: Array[Dictionary] = []
 	var variant := 0
 	var gantries: Dictionary = {}
@@ -136,8 +143,15 @@ func build(parent: Node3D, entries: Array[Dictionary]) -> Array[Dictionary]:
 		placed_kinds.append(type)
 		placed_entries.append(_cache_entry(entry))
 		_count(type)
-		_add_entry(entry)
-		_register_light(entry)
+		var refs := _add_entry(entry)
+		var lights := _register_light(entry)
+		if PropCollision.BREAKAWAY.has(type):
+			var def := _props.get_prop(type, int(entry.get("variant", 0)))
+			var scale_vector: Vector3 = entry.get("scale_vector", Vector3.ONE * float(entry.get("scale", 1.0))) \
+					* float(def.get("scale", 1.0))
+			breakables.append({"type": type, "variant": int(entry.get("variant", 0)), "transform": spot,
+				"scale_vector": scale_vector, "refs": refs, "lights": lights,
+				"height": PropCollision.pole_height(type, float(entry.get("height_m", 0.0)))})
 		_collision.append({"type": type, "transform": spot,
 			"height_m": float(entry.get("height_m", 0.0)),
 			"scale_vector": entry.get("scale_vector", Vector3.ONE)})
@@ -156,6 +170,11 @@ func build(parent: Node3D, entries: Array[Dictionary]) -> Array[Dictionary]:
 
 ## The number of collision shapes that were built.
 var _collision_count := 0
+
+
+## The prop library of the furniture (the broken lamps fall as debris with its meshes).
+func library() -> PropLibrary:
+	return _props
 
 
 ## The entry of a prop that is written to the cache: everything the next build needs to put
@@ -290,15 +309,16 @@ func _count(type: String) -> void:
 
 # --- the lights ---------------------------------------------------------------------------------------
 
-## Registers a real (pooled) light for every lamp prop.
-func _register_light(entry: Dictionary) -> void:
+## Registers a real (pooled) light for every lamp prop. Returns the indices of the sources (a broken lamp switches them off).
+func _register_light(entry: Dictionary) -> Array[int]:
+	var indices: Array[int] = []
 	if not bool(entry.get("light", false)) or _light_pool == null:
-		return
+		return indices
 	var type := String(entry["type"])
 	var def := _props.get_prop(type, int(entry.get("variant", 0)))
 	var spec: Dictionary = def.get("light", {})
 	if spec.is_empty():
-		return
+		return indices
 	var xform: Transform3D = entry["transform"]
 	var offsets: Array = spec.get("offsets", [spec.get("offset", Vector3.ZERO)])
 	var scale_vector: Vector3 = entry.get("scale_vector", Vector3.ONE)
@@ -310,18 +330,23 @@ func _register_light(entry: Dictionary) -> void:
 	var ground := xform.origin
 	for offset in offsets:
 		var local: Vector3 = offset * scale_vector
-		_light_pool.add_source(xform * local, color, energy, light_range, "omni", 0.0, 0.0,
+		var index: Variant = _light_pool.add_source(xform * local, color, energy, light_range, "omni", 0.0, 0.0,
 			Vector3.ZERO, ground)
+		if index is int:
+			indices.append(index)
+	return indices
 
 
 # --- MultiMesh assembly ------------------------------------------------------------------------------
 
-func _add_entry(entry: Dictionary) -> void:
+## Adds the parts of a prop to the groups of its tile. Returns the [group key, instance] of every part and far dot.
+func _add_entry(entry: Dictionary) -> Array:
+	var refs: Array = []
 	var type := String(entry["type"])
 	var def := _props.get_prop(type, int(entry.get("variant", 0)))
 	var parts: Array = def.get("parts", [])
 	if parts.is_empty():
-		return
+		return refs
 	var xform: Transform3D = entry["transform"]
 	var scale := float(entry.get("scale", 1.0))
 	var def_scale := float(def.get("scale", 1.0))
@@ -338,10 +363,12 @@ func _add_entry(entry: Dictionary) -> void:
 		var part_xform: Transform3D = part["transform"]
 		var scale_vector: Vector3 = entry.get("scale_vector", Vector3.ONE * scale) * def_scale
 		var scaled := Transform3D(part_xform.basis.scaled(scale_vector), part_xform.origin * scale_vector)
+		refs.append([key, list.size()])
 		list.append(xform * scaled)
 		custom.append(_custom_data(part, group, entry))
 		if bool(part.get("glow", false)):
-			_add_dot(group, xform, part, scale_vector, entry)
+			refs.append_array(_add_dot(group, xform, part, scale_vector, entry))
+	return refs
 
 
 ## The material of a part: the board of a shop name carries the atlas of the names.
@@ -367,11 +394,12 @@ static func _as_color(value: Vector4) -> Color:
 ## The far dot of a lamp: a 2 m cross of quads at the head, so the dot never shrinks below a
 ## pixel when the city is seen from the air.
 func _add_dot(group: Dictionary, xform: Transform3D, part: Dictionary, scale_vector: Vector3,
-		entry: Dictionary) -> void:
+		entry: Dictionary) -> Array:
+	var refs: Array = []
 	var def := _props.get_prop(String(entry["type"]), int(entry.get("variant", 0)))
 	var spec: Dictionary = def.get("light", {})
 	if spec.is_empty():
-		return
+		return refs
 	var offsets: Array = spec.get("offsets", [spec.get("offset", Vector3.ZERO)])
 	for i in offsets.size():
 		var offset: Vector3 = offsets[i] * scale_vector
@@ -383,8 +411,10 @@ func _add_dot(group: Dictionary, xform: Transform3D, part: Dictionary, scale_vec
 				"transforms": [], "custom": [], "type": String(entry["type"]),
 				"glow": false, "atlas": false, "dot": true}
 		var dot: Dictionary = _groups[key]
+		refs.append([key, (dot["transforms"] as Array).size()])
 		(dot["transforms"] as Array).append(xform * Transform3D(Basis.IDENTITY, offset))
 		(dot["custom"] as Array).append(Vector4.ZERO)
+	return refs
 
 
 func _flush(parent: Node3D) -> void:
@@ -404,6 +434,7 @@ func _flush(parent: Node3D) -> void:
 		var mmi := MultiMeshInstance3D.new()
 		mmi.name = "Furniture_" + String(key).replace("|", "_")
 		mmi.multimesh = multimesh
+		multimeshes[key] = multimesh
 		var material: Variant = group.get("material")
 		if material != null:
 			mmi.material_override = material

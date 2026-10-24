@@ -51,6 +51,9 @@ func hit(car: VehicleBase, other: Node3D, n_car: Vector3, point: Vector3, v_n: f
 	# slow car head-on does not lose the speed of the other car.
 	var force: float = severity if severity >= 0.0 else v_n
 	var hp := Rules.damage_hp(force, k) * factor
+	var prop := is_prop(other)
+	if prop:
+		hp *= Rules.PROP_DAMAGE_SCALE
 	var contact := contact_of(car, state, n_car, point, v_n, impact, v_rel.normalized())
 	# The point of the hit, so the wheel that comes off is the nearest one.
 	state.wreck_point = contact.world_point
@@ -68,9 +71,17 @@ func hit(car: VehicleBase, other: Node3D, n_car: Vector3, point: Vector3, v_n: f
 				impact)
 	spark_hit(contact, v_rel)
 	parts.check(car, state, contact, v_n, impact, own_velocity)
-	# A head-on hit that took 30 m/s of speed from the car wrecks it (dossier 7.2).
-	if factor >= 1.0 and impact >= Rules.HIT_LIMIT and force >= Rules.WRECK_HEAD_ON:
+	# A head-on hit that took 30 m/s of speed from the car wrecks it (dossier 7.2). A tree or a mast does not: it costs HP.
+	if not prop and factor >= 1.0 and impact >= Rules.HIT_LIMIT and force >= Rules.WRECK_HEAD_ON:
 		car.wreck(other)
+
+
+## True when the other body is street furniture (the prop layer), not a wall, a deck or a car.
+static func is_prop(other: Node3D) -> bool:
+	var body := other as CollisionObject3D
+	if body == null or body is VehicleBase:
+		return false
+	return (body.collision_layer & Rules.PROP_LAYER) != 0
 
 
 ## The vertical takedown: the car below is wrecked, the car above gets the credit.

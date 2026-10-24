@@ -6,6 +6,8 @@ extends Node
 ## Any physical hit between a vehicle and something else (impulse in N·s, world-space point/normal).
 signal vehicle_collided(vehicle: VehicleBase, other: Node3D, impulse: float, point: Vector3, normal: Vector3)
 signal vehicle_damaged(vehicle: VehicleBase, amount: float, source: Node3D)
+## A vehicle knocked a street lamp down (world/build/prop_breaker.gd): the sound of the hit and of the glass of its head.
+signal prop_broken(vehicle: VehicleBase, kind: StringName, point: Vector3, speed: float)
 signal vehicle_wrecked(vehicle: VehicleBase, source: Node3D)
 ## A pooled AI car (traffic, police) was taken out of its pool and put back into play: every unit that keeps state per
 ## car forgets it (the damage unit restores the health, the paint, the parts and the visibility of a car that was wrecked).

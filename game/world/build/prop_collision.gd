@@ -51,6 +51,11 @@ const SHAPES: Dictionary = {
 ## solid (the filter keeps them off the lanes).
 const SOFT: Array[String] = ["bollard", "bin", "hydrant", "e_scooter", "bike_share", "sign", "shop_sign", "neon_blade_frame"]
 
+## The street lamps break away (world/build/prop_breaker.gd): they have no rigid shape, a car that drives into one knocks it
+## down. A pole of 15 cm stopped a car of 1.9 t dead, and by the damage rules a head-on hit at 108 km/h wrecked it: half of the
+## random drives of tools/fuzz_drive.gd ended on a prop.
+const BREAKAWAY: Array[String] = ["lamp", "lamp_heritage", "lamp_magnolia", "lamp_deck_double"]
+
 ## The arm of a traffic light mast (the glb: 7.3 m long on -Z, at the top of the pole): its box, and how far under the top of
 ## the pole the box is.
 const MAST_ARM_SIZE := Vector3(0.45, 0.45, 7.0)
@@ -73,7 +78,7 @@ func count() -> int:
 func build(parent: Node3D, entries: Array[Dictionary]) -> int:
 	for entry in entries:
 		var type := String(entry.get("type", ""))
-		if not SHAPES.has(type) or SOFT.has(type):
+		if not SHAPES.has(type) or SOFT.has(type) or BREAKAWAY.has(type):
 			continue
 		var xform: Transform3D = entry.get("transform", Transform3D.IDENTITY)
 		var stretch: Vector3 = entry.get("scale_vector", Vector3.ONE)
@@ -90,6 +95,14 @@ func build(parent: Node3D, entries: Array[Dictionary]) -> int:
 		body.set_meta(&"shapes", _shared_shapes.values())
 		parent.add_child(body)
 	return _count
+
+
+## The height of the pole of a prop kind (a lamp of the data may be taller or shorter than the kit).
+static func pole_height(type: String, height_m: float) -> float:
+	var height := float((SHAPES.get(type, {}) as Dictionary).get("height", 9.0))
+	if height_m > 0.1 and type.begins_with("lamp"):
+		height = height_m
+	return height
 
 
 ## The body of the tile of a point.

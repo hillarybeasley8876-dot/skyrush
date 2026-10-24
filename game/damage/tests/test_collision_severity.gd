@@ -44,6 +44,7 @@ func _ready() -> void:
 	await Kit.wait_frames(get_tree(), 2)
 	await _test_head_on(director)
 	await _test_wall(director)
+	await _test_prop(director)
 	print(("FAIL" if _failures > 0 else "PASS") + " collision_severity (%d failures)" % _failures)
 	get_tree().quit(1 if _failures > 0 else 0)
 
@@ -99,6 +100,47 @@ func _test_wall(director: Node) -> void:
 	var health: float = float(player.get("health"))
 	_expect("a 20 m/s hit against a wall costs 16.9 HP (the ram factor 0.5)",
 			absf(100.0 - health - 16.9) < 0.6, "= %.2f HP" % (100.0 - health))
+
+
+## The street furniture that stands (a tree, a mast) costs 40 % of a wall, and it does not wreck a car in one hit: a head-on with
+## the side of the car at 35 m/s wrecks it against a wall (dossier 7.2), against a tree it costs 54 HP.
+func _test_prop(director: Node) -> void:
+	var front := await _hit_static(4, Basis(Vector3.UP, PI), Vector3(0.0, 0.0, 20.0), Vector3(0.0, 0.0, -1.0), 20.0)
+	_expect("a 20 m/s hit against a tree costs 40 % of the wall (6.8 HP)", absf(100.0 - front.health - 6.76) < 0.4,
+			"= %.2f HP" % (100.0 - front.health))
+	var side := await _hit_static(4, Basis.IDENTITY, Vector3(35.0, 0.0, 0.0), Vector3(-1.0, 0.0, 0.0), 35.0)
+	_expect("a side hit at 35 m/s against a tree does not wreck the car", not side.is_wrecked,
+			"(health %.0f)" % side.health)
+	_expect("and it costs 54 HP", absf(100.0 - side.health - 54.0) < 1.0, "= %.2f HP" % (100.0 - side.health))
+	var wall := await _hit_static(1, Basis.IDENTITY, Vector3(35.0, 0.0, 0.0), Vector3(-1.0, 0.0, 0.0), 35.0)
+	_expect("the same hit against a wall still wrecks the car", wall.is_wrecked, "(health %.0f)" % wall.health)
+
+
+## A player car hits a static body of the given layer: the car moves with `velocity`, the normal points out of the body towards
+## the car, the hit takes `lost` m/s from it. Returns the car.
+func _hit_static(layer: int, basis: Basis, velocity: Vector3, normal: Vector3, lost: float) -> VehicleBase:
+	var player := Kit.make_car(VehicleBase.Team.PLAYER, 100.0, 1900.0)
+	player.add_to_group(&"vehicles")
+	add_child(player)
+	var at := Vector3(float(get_child_count()) * 30.0, 0.5, 200.0)
+	player.global_transform = Transform3D(basis, at)
+	Game.player = player
+	var body := StaticBody3D.new()
+	body.collision_layer = layer
+	body.collision_mask = 0
+	var shape := CollisionShape3D.new()
+	var cylinder := CylinderShape3D.new()
+	cylinder.radius = 0.25
+	cylinder.height = 3.0
+	shape.shape = cylinder
+	body.add_child(shape)
+	add_child(body)
+	body.global_transform = Transform3D(Basis.IDENTITY, at - normal * 3.0)
+	player.linear_velocity = velocity
+	await Kit.wait_frames(get_tree(), 2)
+	Events.vehicle_collided.emit(player, body, 1900.0 * lost, at - normal * 2.0, normal)
+	await Kit.wait_frames(get_tree(), 2)
+	return player
 
 
 func _expect(label: String, ok: bool, detail: String = "") -> void:

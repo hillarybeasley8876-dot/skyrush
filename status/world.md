@@ -326,3 +326,17 @@ and the other four drove into it (the marshal put them back, the race start test
   and 4 contacts over 800 N*s; with instant column changes 1 pass and 1 contact, so the rate limit is not what fails it). The
   sandbox loop (8 gates) had no gate boards (`gen_gate_textures.py` writes the 8 now: the two tests died on the missing sign
   panels before they measured anything).
+
+## 2026-10-25: the street lamps break away
+
+The lamps (`PropCollision.BREAKAWAY`: lamp, lamp_heritage, lamp_magnolia, lamp_deck_double; 4,941 in the city) have no rigid shape.
+`world/build/prop_breaker.gd` (a child of the Furniture group, set up by the world builder) keeps them in an 8 m spatial hash and
+checks the box of every car that is not frozen, within 250 m of the camera, every physics tick: a car faster than 2 m/s that touches
+a pole knocks it down. The furniture builder records, for every lamp, the [group key, instance] of each part and far dot and the
+indices of its light sources (`LightPool.add_source` returns the index, `set_source_enabled` switches a source off), so the breaker
+hides exactly that lamp. The pole falls as a rigid body on the debris layer (the cars drive through it) and fades after 6 s; at most
+12 poles at once. A broken lamp stays broken for the game. Test: `world/tests/test_prop_breakaway.gd`.
+
+The bank walls of the river and the creek have collision (`TerrainBuilder.build_banks`, after the lanes; 3,041 pieces, gaps where a
+lane crosses or runs along the bank), the ground is clipped to the bank, and the creek floor is its cut outline. Test:
+`world/tests/test_bank_walls.gd`.

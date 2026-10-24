@@ -7,6 +7,12 @@ const SCRAPE_LIMIT := 0.35
 const HIT_LIMIT := 0.70
 ## A head-on hit at 30 m/s (108 km/h) wrecks the car whatever its HP is.
 const WRECK_HEAD_ON := 30.0
+## The street furniture that stands (trees, masts, shelters, planters, billboards; the lamps break away) costs this share of the
+## damage of a wall, and it never wrecks a car in one hit: a tree is not a wall of concrete. A tree at 150 km/h costs 40 HP, at
+## 250 km/h it still wrecks the car.
+const PROP_DAMAGE_SCALE := 0.4
+## The physics layer of the street furniture (CONTRACTS: layer 3).
+const PROP_LAYER := 1 << 2
 ## damage_HP = HP_COEFF * max(0, v_n - HP_FLOOR)^2 * k_mass
 const HP_COEFF := 0.15
 const HP_FLOOR := 5.0

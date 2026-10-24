@@ -63,6 +63,7 @@ var _clock := 0.0
 
 func _connect_all() -> void:
 	Events.vehicle_collided.connect(_on_vehicle_collided)
+	Events.prop_broken.connect(_on_prop_broken)
 	Events.vehicle_wrecked.connect(_on_vehicle_wrecked)
 	Events.boost_started.connect(_on_boost_started)
 	Events.drift_started.connect(_on_drift_started)
@@ -109,6 +110,17 @@ func _on_vehicle_collided(vehicle: VehicleBase, _other: Node3D, impulse: float, 
 	# the scrape loop needs a repeated contact: a single hit is an impact, not a scrape
 	if _contact_repeated(vehicle.get_instance_id()):
 		_scrape_contact(vehicle, impulse, point, is_player)
+
+
+## A street lamp knocked down: a hit, and the glass of its head.
+func _on_prop_broken(vehicle: VehicleBase, _kind: StringName, point: Vector3, _speed: float) -> void:
+	if vehicle == null or not is_instance_valid(vehicle):
+		return
+	if _is_player(vehicle):
+		_sfx(&"impact_medium", Tuning.IMPACT_MIX_DB)
+	else:
+		_sfx_3d(&"impact_medium", point, Tuning.IMPACT_MIX_DB)
+	_sfx_3d(&"glass_break", point, Tuning.GLASS_MIX_DB)
 
 
 ## True when this vehicle may play an impact again (one impact per cooldown).
