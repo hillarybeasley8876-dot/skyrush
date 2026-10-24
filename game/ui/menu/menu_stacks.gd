@@ -76,7 +76,8 @@ func push_overlay(screen: Control, payload: Dictionary = {}, replace: bool = fal
 	_attach(screen, payload)
 	screen.name = _unique_name(_overlay_layer, String(screen.name))
 	_overlay_layer.add_child(screen)
-	var below: Control = overlay.back()
+	# The screen below (none for the first overlay: back() of an empty array is an engine error, every time the pause menu opened).
+	var below: Control = overlay.back() if not overlay.is_empty() else null
 	overlay.append(screen)
 	if below != null:
 		# The screen below fades out: only one screen is visible at a time.

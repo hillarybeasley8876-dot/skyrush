@@ -89,8 +89,16 @@ func _test_fast_confirm_and_back_late() -> void:
 func _test_overlay_does_not_stack() -> void:
 	_menu.call("open_screen", &"main")
 	await get_tree().process_frame
+	# the first overlay asked the empty overlay stack for the screen below it: "Can't take value from empty array" every time the
+	# pause menu opened in a game
+	var counter := ErrorCounter.new()
+	OS.add_logger(counter)
 	_menu.call("open_overlay", &"pause", {"mode": &"free", "options": {}})
 	await get_tree().create_timer(0.35).timeout
+	OS.remove_logger(counter)
+	_expect(counter.errors == 0, "opening the pause menu raises no engine error (%d)" % counter.errors)
+	for line in counter.first:
+		print("  error: ", line)
 	_expect(_overlay() == ["ScreenPause"], "the pause menu is on the overlay stack")
 	_expect(_visible_hint_bars(_menu.get("overlay_layer")) == 1, "the pause menu has one hint bar")
 
