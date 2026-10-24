@@ -19,7 +19,7 @@ CONCRETE_NAME = "concrete-colonly"
 STEEL_NAME = "steel-colonly"
 SURFACE_DROP = 0.015     # the collider sits just under the visible asphalt
 BARRIER_INSET = 0.04     # inset so the collider never z-fights the render mesh
-BARRIER_TOP = 0.60       # how high the collider of a parapet reaches above the deck
+BARRIER_TOP = 0.60       # how high the collider of a median barrier reaches above the deck (the parapet: profiles.PARAPET_H)
 BARRIER_DEPTH = 0.60     # how far it reaches below the deck
 RIBBON_SHIFT = 1.0       # the connector strip is a step ahead of its lane
 CORRIDOR_MARGIN = 0.5    # a deck keeps its collider this far off the ramp's lane
@@ -120,8 +120,11 @@ def _parapet_collider(kind="full"):
         return [(0.02, 0.15), (0.07, 0.42), (0.26, 0.42),
                 (0.26, profiles.PARAPET_BOTTOM)]
     bottom = -BARRIER_DEPTH if kind == "full" else profiles.PARAPET_BOTTOM
-    return [(0.04, 0.44), (0.24, BARRIER_TOP), (0.46, BARRIER_TOP),
-            (0.46, bottom)]
+    # The face towards the road is vertical and the wall is as high as the parapet that is seen (1.0 m). The first version was 0.6 m
+    # high with a recessed foot and a chamfered top (0.44 -> 0.6): a car that met it at 20 degrees and 170 km/h rolled up the chamfer
+    # and over it (the random viaduct drives of tools/fuzz_drive.gd: 9 of 40 left the deck over a parapet that was there).
+    return [(0.04, profiles.PARAPET_H - 0.14), (0.28, profiles.PARAPET_H), (0.46, profiles.PARAPET_H),
+            (0.46, bottom), (0.04, bottom)]
 
 
 def build_barriers(road, idx, builder, lay, side, kind="full"):

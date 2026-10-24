@@ -43,6 +43,14 @@ const SHAPES: Dictionary = {
 	"vms": {"size": Vector3(0.5, 7.0, 0.5)},
 }
 
+## The street furniture that a car does not hit: bollards, bins, hydrants, scooters, bike racks, road signs, shop signs, neon blades.
+## They are small and thin. A rigid pillar of 20 cm stops a car of 1.9 t dead, and the AI (the racers, the police, the traffic)
+## does not see them: a row of bollards across the racing line of the Lujiazui ring stopped the whole field of a race, and the
+## marshal had to put every rival back. The player drove through them as long as the props had no collision at all, so the street
+## looks the same and plays the same: a bollard is not a wall. Trees, lamps, masts, shelters, walls, planters and billboards are
+## solid (the filter keeps them off the lanes).
+const SOFT: Array[String] = ["bollard", "bin", "hydrant", "e_scooter", "bike_share", "sign", "shop_sign", "neon_blade_frame"]
+
 ## The arm of a traffic light mast (the glb: 7.3 m long on -Z, at the top of the pole): its box, and how far under the top of
 ## the pole the box is.
 const MAST_ARM_SIZE := Vector3(0.45, 0.45, 7.0)
@@ -65,7 +73,7 @@ func count() -> int:
 func build(parent: Node3D, entries: Array[Dictionary]) -> int:
 	for entry in entries:
 		var type := String(entry.get("type", ""))
-		if not SHAPES.has(type):
+		if not SHAPES.has(type) or SOFT.has(type):
 			continue
 		var xform: Transform3D = entry.get("transform", Transform3D.IDENTITY)
 		var stretch: Vector3 = entry.get("scale_vector", Vector3.ONE)

@@ -18,12 +18,17 @@ var _covered: Dictionary = {}  # road id -> true when lanes.json already provide
 ## gets its lanes derived from the city description, so a partly regenerated lanes.json never
 ## leaves the world without lanes.
 func build(lane_dicts: Array[Dictionary], roads: Array,
-		links: Array[Dictionary] = []) -> Array[LanePath]:
+		links: Array[Dictionary] = [], lane_stats: Dictionary = {}) -> Array[LanePath]:
 	var lanes: Array[LanePath] = []
 	if not lane_dicts.is_empty():
 		var usable := _usable_entries(lane_dicts, roads)
 		lanes = _from_lanes_json(usable)
 		_merge_links(links)
+		# A street that ends in a building of the Bund has no lane left in lanes.json: it is covered all the same, or the lanes
+		# that are derived from the city description would run through the building again.
+		for road_id in lane_stats:
+			if float((lane_stats[road_id] as Dictionary).get("buildings", 0.0)) > 0.0:
+				_covered[String(road_id)] = true
 	lanes.append_array(_from_city_roads(roads))
 	return lanes
 
@@ -81,6 +86,9 @@ func _from_lanes_json(entries: Array[Dictionary]) -> Array[LanePath]:
 		# travel direction: the furniture filter needs them to move a prop off the carriageway.
 		lane.set_meta("offset", float(entry.get("offset", 0.0)))
 		lane.set_meta("dir", int(entry.get("dir", 1)))
+		# A connector (a turn through a junction, an attach to a ramp) lies outside the carriageway of its road: whoever measures
+		# the carriageway from its lanes leaves the connectors out.
+		lane.set_meta("connector", bool(entry.get("connector", false)))
 		lane.curve = Spline.make_curve(pts, LANE_BAKE)
 		var id := String(entry.get("id", "lane_%d" % lanes.size()))
 		ids.append(id)

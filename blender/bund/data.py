@@ -4,7 +4,9 @@ centreline (§5.2). The palette tokens live in ao.HUE.
 Coordinates: Blender Z up, +Y south == game Z south, +X east == game X east (CONTRACTS §1).
 Building `front_x` is the x of the facade centre; `z` is the facade-centre game Z.
 """
+import json
 import math
+import os
 
 # ---------------------------------------------------------------- road / river line
 # bund_zhongshan_e1 centreline, dossier §5.2 (game X, Z).
@@ -165,6 +167,53 @@ def _resolve_overlaps(specs):
 
 
 _resolve_overlaps(SPECS)
+
+# ---------------------------------------------------------------- the road the cars drive on
+# The facades of the dossier stand 16 m west of the dossier line (§5.2), but the cars drive on the road of the city
+# (tools/city/city_roads.bund_road): its plan starts at the junction with Yan'an Rd at (0, 0), where the dossier line starts at
+# (4.2, -10.2), and its Catmull-Rom curve bulges up to 7 m west of the straight legs of the dossier. A facade at the dossier x
+# stood 6-8 m from the middle of the road at z -30 ... -250, i.e. in the west lanes (the traffic, the rivals and the player met
+# a wall in their lane: 198 of the lane samples of the Bund road were inside a collider box), so the facades follow the road
+# of the city: 16 m from its centre line. The promenade stays on the dossier line: the flood wall is glued to the river.
+FACADE_OFFSET = 16.0              # m: the facade stands this far west of the centre of the road (dossier 5.2)
+CITY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "data", "city", "city.json")
+CITY_ROAD = "bund_zhongshan_e1"
+FOLLOW_ROAD_MIN_Z = -920.0        # m: north of the end of the road the buildings keep the dossier x (Broadway Mansions)
+
+
+def city_road_points(path=CITY_FILE, road=CITY_ROAD):
+    """The centre line of a road of the city as [(x, z)] from the south end, or [] when the city file is not there."""
+    if not os.path.exists(path):
+        return []
+    with open(path, encoding="utf-8") as fh:
+        city = json.load(fh)
+    for entry in city.get("roads", []):
+        if entry.get("id") == road:
+            return [(p[0], p[2]) for p in entry.get("points", [])]
+    return []
+
+
+def city_road_x(points, z):
+    """The x of the centre line at game Z `z` (linear between the stations), None outside the road."""
+    for a, b in zip(points, points[1:]):
+        if a[1] >= z >= b[1] and a[1] != b[1]:
+            return a[0] + (b[0] - a[0]) * (a[1] - z) / (a[1] - b[1])
+    return None
+
+
+def _follow_city_road(specs, points):
+    """Moves the facades onto the road of the city. The dossier x stays in `dossier_front_x`."""
+    for s in specs:
+        s["dossier_front_x"] = s["front_x"]
+        if not points or s["z"] < FOLLOW_ROAD_MIN_Z:
+            continue
+        x = city_road_x(points, s["z"])
+        if x is not None:
+            s["front_x"] = round(x - FACADE_OFFSET, 2)
+    return specs
+
+
+_follow_city_road(SPECS, city_road_points())
 
 
 # ---------------------------------------------------------------- path helpers

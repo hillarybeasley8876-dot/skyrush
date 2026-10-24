@@ -317,7 +317,7 @@ func _build_lanes() -> void:
 		lane_grid.build(lanes)
 		return
 	_graph = LaneGraphBuilder.new()
-	lanes = _graph.build(data.lanes, data.roads(), data.lane_links)
+	lanes = _graph.build(data.lanes, data.roads(), data.lane_links, data.lane_stats)
 	lane_grid = LaneSpatial.new()
 	lane_grid.build(lanes)
 	LaneLinks.new().link(lanes, _graph, data.junctions(), lane_grid)

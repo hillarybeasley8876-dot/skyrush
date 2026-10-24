@@ -93,6 +93,8 @@ func _check_coverage(roads: Dictionary) -> void:
 		var trimmed := float(info.get("trimmed", 0.0))
 		if length < 20.0:
 			continue   # a stub road shorter than a lane
+		if covered <= 0.0 and float(info.get("buildings", 0.0)) > 0.0:
+			continue   # a street that ends in a building of the Bund before its first lane starts (buildingcut.py)
 		var usable := maxf(1.0, length - trimmed)
 		if covered < COVERAGE * usable:
 			bad.append("%s (%.0f/%.0f m)" % [id, covered, usable])
@@ -108,6 +110,8 @@ func _check_termini(lanes: Array) -> void:
 		if not lane.get("next", []).is_empty():
 			continue
 		var kind := String(lane.get("terminus_kind", "?"))
+		if kind == "building":
+			continue   # a street that runs into a building of the Bund ends there (buildingcut.py)
 		if kind == "map_edge":
 			map_edges.append(String(lane.get("id", "")))
 		else:

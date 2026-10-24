@@ -296,3 +296,33 @@ headings until then).
   Before: 426 of 541 shelters and all 32 walls reached into a lane (the box is solid now). After: 534 shelters (503 along the road, 94 %),
   26 walls (all along), 0 reach into a lane. The world cache is version 18.
 * Tools: `tools/prop_lane_clearance.gd` (the box props against the lanes, the angle to their road), `test_prop_alignment.gd`.
+
+### The mouth of a junction is free of solid props
+
+The furniture filter kept props 8 m from the centre of a junction (a circle), but the box of a junction is bigger: the lanes of the street
+that leaves the Bund begin 13 m after the kerb of the Bund (they are cut at the kerb returns), and the first tree and the first lamp of
+Fuzhou Rd stood in that mouth, 3.5 m from the nearest lane (a turning movement), on the axis of the street. The props are solid
+since the dead collider fix, and the first rival that took the turn at 20 m/s hit the tree, stopped dead, steered into it for ten seconds
+and the other four drove into it (the marshal put them back, the race start test failed on the Bund sprint).
+* `FurnitureFilter._index_mouths`: for every road of a junction the stretch of its carriageway from the centre of the junction to the end
+  of the box (the half width of the roads that cross it + `MOUTH_RETURN` 13 m), with the half width of the road and its shoulders;
+  `_in_junction` (the circle of 8 m) is true in a mouth as well. `in_junction_box` is the public name. The builder asks again after the
+  slide along the road and after the nudge of a box prop (they had moved props into a box: 69 trees, lamps and shelters of 23,900).
+  Dressed props (bins, bollards of the corners, planters) keep their place in a junction on purpose. About 390 props of 48,000 went.
+* `world/tests/test_junction_mouths.gd`: no tree, lamp, shelter, wall or billboard in a junction box (0 of 23,824), the mouth of
+  Fuzhou Rd on the Bund is free.
+* **The world cache has to be bumped when the placement changes** (`world_cache.gd` VERSION, 23 now): the key is the hash of the three
+  data files, so a change of the filter or of the builder keeps the old placement until the version changes (two test runs of this
+  job measured the old placement).
+* `LanePath` carries `connector` as metadata (the roads unit's flag) and `CityData.lane_stats` the statistics per road of lanes.json: a road
+  that the buildings of the Bund took every lane of is covered all the same (`LaneGraph.build`), or the world derived lanes for it from
+  city.json.
+* The rivals (status in the rivals test logs, no status file): `RivalRoad.road_frame` leaves the connector lanes out (they widened the
+  measured carriageway by the width of the junction: the field drove 14 m to the side at the Beijing Rd junction at 120 km/h into the
+  kerb) and the column of a rival moves sideways at 4 m/s at most (`LANE_RATE`; the road around a junction changes by ten metres between
+  two readings). `test_real_start` passes on both routes (the rescues before: 3-4 on the Bund sprint, 1 on the Lujiazui ring),
+  `test_real_route` passes. Still failing in the rivals folder: `test_performance` (the AI costs 0.54 ms per tick against a budget of
+  0.35; the same 0.53 ms was measured before the changes of this round) and `test_race_flow` (the sandbox race: 5 passes of 6 wanted
+  and 4 contacts over 800 N*s; with instant column changes 1 pass and 1 contact, so the rate limit is not what fails it). The
+  sandbox loop (8 gates) had no gate boards (`gen_gate_textures.py` writes the 8 now: the two tests died on the missing sign
+  panels before they measured anything).

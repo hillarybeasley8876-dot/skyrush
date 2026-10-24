@@ -45,6 +45,8 @@ const GATE_APPROACH := 40.0         ## m: the rival aims at the gate from this d
 const LANE_SLOT := 4.5             ## m: the personal lines of the field are two lanes apart
 const GRID_HOLD := 300.0            ## m: the rivals keep their grid column for this distance
 const LANE_BLEND := 120.0           ## m: the stretch over which a rival moves onto its own line
+const LANE_RATE := 4.0              ## m/s: how fast the column of a rival moves sideways (the road that is measured around a junction
+                                    ## changes by ten metres between two readings: the pack swerved across the junction at 30 m/s)
 const MISTAKE_MIN_SPEED := 15.0     ## m/s: a mistake only happens above this speed
 const MISTAKE_CORNER := 0.006       ## 1/m: the corner that is worth a mistake
 const MISTAKE_BRAKE := 5.0          ## m/s: the speed the car has to lose to be braking
@@ -180,7 +182,7 @@ func tick(delta: float, car: ArcadeCar, ctx: RivalContext) -> void:
 		drifting = false
 		return
 	_update_road(delta, car)
-	_update_lane(car)
+	_update_lane(car, delta)
 	_update_mistake(delta)
 	# At the start of a race the rivals keep the column of their grid slot: nobody
 	# moves over until the pack has spread out.
@@ -339,7 +341,7 @@ func set_lanes(grid: float, spread: float) -> void:
 ## drives against the traffic runs in the footway of the Bund, and a column 4.5 m beside it
 ## is inside the buildings. A rival that drives the middle of the road is on the road,
 ## whatever the line of the route does.
-func _update_lane(car: ArcadeCar) -> void:
+func _update_lane(_car: ArcadeCar, delta: float) -> void:
 	var blend := clampf((travelled - GRID_HOLD) / LANE_BLEND, 0.0, 1.0)
 	# The column of the rival is counted in the road: the line of a route that drives
 	# against the traffic runs in the footway of the Bund, and a column 4.5 m beside it
@@ -347,7 +349,7 @@ func _update_lane(car: ArcadeCar) -> void:
 	# well: the line of a rival is measured from the line of the route, so it is turned
 	# into a column of the road here.
 	var column := lerpf(_grid_column, spread_lane - _road_mid, blend)
-	lane_offset = _on_road(_road_mid + column)
+	lane_offset = move_toward(lane_offset, _on_road(_road_mid + column), LANE_RATE * delta)
 
 
 

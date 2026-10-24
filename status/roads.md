@@ -184,3 +184,69 @@ tools/godot.sh shot --scene=res://assets/city/roads/preview_roads.tscn --out=r4 
   roads: 4 254 of the 9 216 road-name signs read a placeholder.
 - A building stands against the inner ring's parapet at (−403, 11.6, 1688):
   the buildings unit should keep the parcels of the elevated roads clear.
+
+## 2026-10-24: the safety net under the parapets (edgewalls.py), the fences of roads-edge-fence
+
+`game/tools/fuzz_drive.gd --elevated=1` (random drives over the viaducts, flight recorder) left the deck in 65 % of the drives
+(26 of 40, seed 11) on the build that came out of the jobs, and `check_open_edges.py` counted 903 open edges (regular lanes).
+* **roads-edge-fence** (job, merged unfinished, 903 -> 304 regular open edges, 225 -> 134 connector): the traffic gaps of the parapet
+  are measured between the points of a lane (a lane crosses the edge between two of its points), a lane that passes UNDER the parapet
+  only cuts its collider (the fence stays), a low parapet where a lane runs under the edge of a deck, parapets on the strips of the
+  gores. Rebuilt with the final city.json (folds, slivers): the same 304 / 134; the random viaduct drives fell from 26 to 13 of 40.
+* **blender/city/roads/edgewalls.py** (new, `build_roads.py --no-edgewalls` skips it): the parapet code is the place for the design (the
+  look, the gaps a ramp needs); this pass is the net under it. It welds the surface colliders of all tiles by position, takes every edge that
+  one triangle only has, keeps the edges of a DECK (the surface 2.5 m or more over the ground) and leaves an edge alone when another surface
+  goes on within 1.6 m behind it (a seam: a ramp that carries on), when a barrier already stands at it (concrete or steel collider of
+  the roads, 0.05 to 0.55 m over the deck, within 1 m) or when a lane comes closer than 1.45 m to it anywhere along it (the traffic).
+  Every other edge gets a closed box of 0.55 m on its outer side, 0.8 m under to 1.35 m over the deck (colliders only: the
+  look of the viaducts does not change). 235 walls, the barrier area of the city stays under the 345,000 m2 cap, the blockers of
+  the three path sets stay 0 (the first version, with a lane test at three points of the edge, blocked 59 points of the attach paths).
+  Result: open edges 304 -> 200 regular and 134 -> 24 connector.
+* The rest of the open edges: the checker's phantoms (99 of the first 438 by the worker's own ray walk: the barrier is in a cell it does
+  not look in) and edges within 1.45 m of a lane (left alone on purpose).
+
+### The parapet collider is as high as the parapet (1.0 m), with a vertical face
+
+The random viaduct drives still lost 9 of 40 cars over a parapet that WAS there. The collider of a parapet was 0.6 m high with a
+recessed foot and a chamfered top (0.44 -> 0.6 m): a car that meets it at 20 degrees and 170 km/h rolls up the chamfer and over the
+wall (roll 21 degrees, 4 m/s upwards in the recorder), and the lower edge of the body, which is 0.34 m over the road now, only meets the
+lowest 0.26 m of a 0.6 m wall. `collision._parapet_collider`: the face towards the road is vertical, the top is `profiles.PARAPET_H`
+(1.0 m, the height of the parapet that is seen). The barrier area of the city grows from 329,000 to 364,000 m2 (the cap of
+`check_path_blockers --max-barrier-area` is 460,000 now); the blockers of the lanes and of the attach and chain paths stay 0.
+
+Result on the random viaduct drives (40 drives, 6 s, +-30 degrees, 100-175 km/h, `fuzz_drive.gd --elevated=1`):
+
+| build | falls of 40 (seed 11) |
+|---|---|
+| jobs merged, tiles of the day before (903 open edges) | 26 |
+| rebuilt with city-folds / slivers and roads-edge-fence (304) | 13 |
+| + edgewalls.py (194) | 12 (9 with a start 0.2 m over the deck instead of 0.5 m) |
+| + the collider of 1.0 m with a vertical face | 2 (seeds 12 and 13: 0 of 40) |
+
+A start 0.5 m over the deck at 170 km/h rebounds off the landing and flies over a parapet that stops the same car when it lands
+calmly: the fuzz starts 0.2 m over the road now (`--lift`).
+
+### The streets end at the buildings of the Bund (`buildingcut.py`)
+
+The Bund unit stands 24 landmark buildings along the west side of the Bund (a collider box each), and the city lays its cross streets
+(Guangdong, Hankou, Jiujiang, Beijing East, the lattice of district D1) to the centre line of the Bund, across the row. 70 lanes had a
+point inside a box, 45 of them movements of the junctions that the buildings hide: a car on such a lane drives into a facade, the
+traffic stood pressed against a wall and a rival that was sent through the junction was stopped dead. (The facades themselves stood
+in the west lanes of the Bund road: see status/bund.md, they follow the road of the city now.)
+
+`blender/city/roads/buildingcut.py` runs in `lanes.build_lanes` before the termini are marked (`--lanes-only` runs it as well, 35 s):
+
+1. a movement through a junction with a point inside a box (grown by 0.3 m) is dropped with its links;
+2. a lane of a street keeps its longest run outside the boxes (the cut end is a dead end with `terminus_kind: "building"`, the cut
+   start has no predecessor) and is dropped when less than 10 m are left;
+3. a link to a cut end or from a cut start goes, a movement that lost one of its two links goes too, until nothing changes.
+
+Result: 76 lanes touched, 75 dropped (67 movements, 8 street lanes that were inside a building), 18 cut, 134 links dropped, 11 dead ends;
+the lane graph, the lane links, the chain links and the drivability of the five routes pass (`check_*` of tools/city); `test_lanes.gd`
+accepts the terminus kind "building" and skips a road that has no lane left because of the buildings (`roads[id].buildings` is the
+length of lane that they took). The world does not derive lanes from the city description for such a road (`lane_graph.gd`: the road
+is covered), or the lanes of Yokohama Specie Bank's street would run through the building again. The surface of the streets stays
+(it is under the buildings). `world/tests/test_bund_lanes.gd` samples every lane in the window of the Bund with a probe of half a metre:
+0 of 8199 samples touch a collider of the Bund (the promenade is another case: five streets of district D0 run into its flood wall).
+The margin is 0.3 m on purpose: Nanjing Rd runs in a gap of 15 m between two buildings and its outer lanes are 0.5 m from the walls, and it
+is the street of two race routes.

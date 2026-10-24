@@ -394,3 +394,12 @@ its width. A kerb of 15-17 cm was the edge between "a bump" and "a wall", decide
 * Not changed: a landing from a drop of 0.5 m at 250 km/h in the test host still counts as a crash for the damage module (the
   impulse of a hit is `mass * |dv|` of ONE tick, and a landing changes the horizontal speed a little too): the fuzz start was
   lowered (`--lift`) instead. To look at: the damage of a normal landing at top speed.
+
+### The collision box of the Roadster is 1.9 m wide (the body is 2.1 m)
+
+The roads are designed for a car of 1.9 m (`check_path_blockers.HALF = 0.95`, `collision.CAR_HALF`, the gaps of the gores and ramps, the
+3.5 m lanes). The concept car is 2.1 m wide and its box was too: with real cars on the stubbed follow trials of the ramp attaches
+(`tools/run_follow.py`) 6 of 19 attach paths stood still against a barrier that the oracle (a 1.9 m box) lets pass, 3 of the 4 that were
+looked at (nanpu_spiral_lower, ramp_l4_nb_wb, ramp_rt_eb_sb) pass with a box of 1.9 m. `roadster.tres body_size.x = 1.9`: the body
+sinks up to 10 cm into a wall at the sides, the wheels (probes at +-0.976 m) are outside the box as before.
+`ramp_l3_eb_nb.attach_end` still stops: the ramp passes the edge of the parent deck at 1.0 m with the deck 1.1 m higher (see status/roads.md).

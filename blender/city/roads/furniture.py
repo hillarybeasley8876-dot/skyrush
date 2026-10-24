@@ -299,7 +299,9 @@ def noise_walls(city, road, items):
     """Noise wall runs declared in the road style."""
     for (a, b, side) in road.style.get("noise_walls", []) or []:
         s = float(a)
-        while s < float(b):
+        # a run that is declared longer than the road (road.at clamps to the end: 13 walls stood on the same spot at the end of the
+        # Yan'an Elevated)
+        while s < min(float(b), road.length):
             p, t, r, u, _ = road.at(s)
             sign = 1.0 if side in ("left", "both") else -1.0
             if side == "both":

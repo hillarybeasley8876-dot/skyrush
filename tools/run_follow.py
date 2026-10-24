@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """run_follow — drive every path file with the game's path-following autodrive and judge the run.
 
-    python tools/run_follow.py <paths dir> [--only substring] [--out DIR] [--time-limit 90]
+    python tools/run_follow.py <paths dir> [--only substring] [--out DIR] [--time-limit 90] [--with-traffic]
+
+The trials are a test of the road (the geometry under a real car), so the traffic, the police and the rivals are stubbed:
+a traffic car that stands on a ramp stops the car, and the trial reports a "stuck" road. --with-traffic runs them as the game does.
 
 For each <paths dir>/*.json: `gd.py drive --follow=... --spawn=...` (a game window opens, one run at a time),
 then the telemetry csv is judged:
@@ -51,6 +54,7 @@ def main(argv):
     args = [a for a in argv[1:] if not a.startswith("--")]
     opt = lambda n, d: argv[argv.index(n) + 1] if n in argv else d  # noqa: E731
     only, out = opt("--only", ""), Path(opt("--out", str(ROOT.parent / "skyrush-out" / "follow")))
+    with_traffic = "--with-traffic" in argv
     for n in ("--only", "--out", "--time-limit"):
         if n in argv:
             args.remove(argv[argv.index(n) + 1])
@@ -63,7 +67,8 @@ def main(argv):
         csv_path = out / (p.stem + ".csv")
         t0 = time.time()
         proc = subprocess.run([sys.executable, str(ROOT / "tools" / "gd.py"), "drive", "--timeline=res://tools/timelines/follow_120s.json",
-                               "--follow=" + p.as_posix(), "--spawn=%s,%s,%s,%s" % tuple(sp), "--skip-menu", "--log=" + csv_path.as_posix(), "--out=" + p.stem],
+                               "--follow=" + p.as_posix(), "--spawn=%s,%s,%s,%s" % tuple(sp), "--skip-menu", "--log=" + csv_path.as_posix(), "--out=" + p.stem]
+                              + ([] if with_traffic else ["--stub=traffic,police,rivals"]),
                               capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=900)
         verdict = judge(csv_path, (proc.stdout or "") + (proc.stderr or ""))
         results[p.stem] = verdict

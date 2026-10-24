@@ -235,6 +235,9 @@ func _spot(entry: Dictionary) -> Variant:
 	if _filter != null and not _filter.clear_of_lanes(out.origin):
 		# The prop would stand on a carriageway: it is dropped instead of driving there.
 		return null
+	if _filter != null and not dressed and _filter.in_junction_box(out.origin):
+		# The filter judged the place it gave, and the slide along the road moved the prop out of it: into the box of a junction.
+		return null
 	if _filter != null and ALONG_ROAD.has(type):
 		out.basis = _along_road(out.basis, out.origin, type == "bus_stop", str(entry.get("road", "")))
 	var box: Variant = PropCollision.SHAPES.get(type, {}).get("size", null)
@@ -249,7 +252,8 @@ func _spot(entry: Dictionary) -> Variant:
 				for step in FOOTPRINT_NUDGES:
 					var candidate := Transform3D(out.basis, out.origin + away * step)
 					var clear: bool = _filter.footprint_clear(candidate, size, FOOTPRINT_CLEARANCE) \
-							and _filter.clear_of_lanes(candidate.origin)
+							and _filter.clear_of_lanes(candidate.origin) \
+							and (dressed or not _filter.in_junction_box(candidate.origin))
 					if clear and _occupancy.is_free(candidate.origin, type):
 						out = candidate
 						moved = true

@@ -14,8 +14,9 @@ extends Node
 ##                 the traffic is not, so a drive that hit a car does not repeat: stub traffic,police,rivals to cross
 ##                 the same place alone)
 ##   verbose       print the flight recorder of this drive, whether it was odd or not
-##   lift          the height above the road a drive starts at (0.5, the lift of the spawns of the game); a start at 250 km/h
-##                 from 0.5 m wrecks the car at the landing, so the replays of fast places start lower (0.2)
+##   lift          the height above the road a drive starts at (0.2); the spawns of the game are 0.6 m over the road, but a car
+##                 that is thrown at 170 km/h from that height lands, rebounds and flies over a parapet that stops it when it
+##                 lands calmly (the first viaduct runs counted 26 falls in 40 drives; most of the 13 that were left were this)
 ##   at            x,z,heading_deg,kmh: every drive starts there (heading 0 = north = -Z, 90 = east), so a place that
 ##                 launched the car once is crossed again and again; jitter=m moves each start up to m metres sideways
 ##                 (the statistics of a place: a launch that happens in 3 of 40 passes is a bug, not bad luck)
@@ -41,6 +42,8 @@ const EVENT_FALL := 3.0
 ## The ground of the city (x, z, width, depth): a fall within EDGE_REACH metres of its border is the end of the world, not a bug.
 const WINDOW := Rect2(-2200.0, -1200.0, 4000.0, 3000.0)
 const EDGE_REACH := 150.0
+## The distance (m) to every other vehicle that a start has to have.
+const START_CLEAR := 12.0
 ## The seconds the fuzz waits after a wreck before the next drive (the wreck flow of the game takes about 4.3 s).
 const SETTLE := 5.0
 ## The frames printed before and after the first event, and the step between the printed frames.
@@ -76,8 +79,25 @@ func _name_of(body: Node) -> String:
 func _on_hit(vehicle: VehicleBase, other: Node3D, impulse: float, point: Vector3, normal: Vector3) -> void:
 	if vehicle != Game.player:
 		return
+	var what := _name_of(other) if other != null else "?"
+	if what.contains("PropCollision"):
+		what += "[%s]" % _prop_near(point)
 	_hits.append("t=%.2f %s impulse %.0f at (%.1f %.1f %.1f) normal (%.2f %.2f %.2f)" % [_clock,
-		_name_of(other) if other != null else "?", impulse, point.x, point.y, point.z, normal.x, normal.y, normal.z])
+		what, impulse, point.x, point.y, point.z, normal.x, normal.y, normal.z])
+
+
+## The kind of the street prop nearest to a point (the contact point of a hit on a prop body).
+func _prop_near(point: Vector3) -> String:
+	var positions: Array[Vector3] = Game.world.get_furniture_positions()
+	var kinds: Array[String] = Game.world.get("_builder").furniture_kinds
+	var best := 4.0
+	var kind := "?"
+	for i in positions.size():
+		var d := positions[i].distance_to(point)
+		if d < best:
+			best = d
+			kind = kinds[i]
+	return kind
 
 
 ## The start points: lane points of the city, filtered by the options.
@@ -132,6 +152,16 @@ func _near_edge(p: Vector3) -> bool:
 	return not WINDOW.grow(-EDGE_REACH).has_point(Vector2(p.x, p.z))
 
 
+## True when another vehicle (traffic, police, rival) is within `reach` of the point.
+func _vehicle_near(point: Vector3, reach: float) -> bool:
+	for group in [&"traffic", &"police", &"rivals"]:
+		for node in get_tree().get_nodes_in_group(group):
+			var other := node as Node3D
+			if other != null and other.visible and other != Game.player and other.global_position.distance_to(point) < reach:
+				return true
+	return false
+
+
 ## One line of the flight recorder: where the car is, how it moves and what it touches.
 func _frame_line(car: ArcadeCar, rp: Vector2, speed: float) -> String:
 	var touching := ""
@@ -159,7 +189,7 @@ func _run() -> void:
 	var elevated := Game.option("elevated", "0") == "1"
 	var at := String(Game.option("at", "")).split(",") if String(Game.option("at", "")) != "" else PackedStringArray()
 	var jitter := float(Game.option("jitter", "0"))
-	var lift := float(Game.option("lift", "0.5"))
+	var lift := float(Game.option("lift", "0.2"))
 	_rng.seed = int(Game.option("seed", "1"))
 	var main := (load(MAIN) as PackedScene).instantiate()
 	add_child(main)
@@ -179,7 +209,14 @@ func _run() -> void:
 	var stale: Dictionary = {}
 	var wrecked_before := false
 	for n in trials:
-		var pick: Dictionary = points[_rng.randi_range(0, points.size() - 1)]
+		var pick_index := _rng.randi_range(0, points.size() - 1)
+		var pick: Dictionary = points[pick_index]
+		# a drive that starts inside another car (a traffic car of the deck, a police car) is thrown by the solver: the next point
+		for step in 12:
+			if not _vehicle_near(pick["p"], START_CLEAR):
+				break
+			pick_index = (pick_index + 1) % points.size()
+			pick = points[pick_index]
 		var p: Vector3 = pick["p"]
 		var d := Vector3(pick["d"].x, 0.0, pick["d"].z).normalized()
 		var angle := deg_to_rad(_rng.randf_range(-angle_max, angle_max))

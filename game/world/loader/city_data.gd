@@ -16,6 +16,9 @@ var city: Dictionary = {}
 var lanes: Array[Dictionary] = []
 ## Explicit lane-to-lane links of the roads unit ({"from", "to", "turn"}).
 var lane_links: Array[Dictionary] = []
+## The statistics per road of lanes.json ({road id: {"length", "covered", "trimmed", "buildings"?}}): "buildings" is the length of
+## lane that the buildings of the Bund took from the road (the roads unit ended the street at the building).
+var lane_stats: Dictionary = {}
 var minimap_roads: Array[Dictionary] = []
 var furniture: Array[Dictionary] = []
 var bund_lights: Array[Dictionary] = []
@@ -43,6 +46,7 @@ func load_all() -> void:
 		_load_city()
 	lanes = _read_lane_dicts(LANES_PATH)
 	lane_links = _read_lane_links(LANES_PATH)
+	lane_stats = _read_lane_stats(LANES_PATH)
 	minimap_roads = _read_minimap_roads(MINIMAP_PATH)
 	furniture = _read_furniture(FURNITURE_PATH)
 	bund_lights = _read_bund_lights(BUND_LIGHTS_PATH)
@@ -171,6 +175,15 @@ func _read_lane_links(path: String) -> Array[Dictionary]:
 		if entry is Dictionary:
 			out.append(entry)
 	return out
+
+
+## The "roads" statistics of lanes.json (road id -> record).
+func _read_lane_stats(path: String) -> Dictionary:
+	var data: Variant = _read_json(path)
+	if not data is Dictionary:
+		return {}
+	var raw: Variant = (data as Dictionary).get("roads", {})
+	return raw as Dictionary if raw is Dictionary else {}
 
 
 func _read_minimap_roads(path: String) -> Array[Dictionary]:

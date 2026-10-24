@@ -77,7 +77,7 @@ func _enter_road(car: ArcadeCar, line: RivalLine, offset: float) -> void:
 ##
 ## With a direction, the lanes that drive the other way are the second best: the rival
 ## drives the way of the race.
-func _nearest_lane(pos: Vector3, direction: Vector3 = Vector3.ZERO) -> int:
+func _nearest_lane(pos: Vector3, direction: Vector3 = Vector3.ZERO, skip_connectors: bool = false) -> int:
 	var best := -1
 	var best_distance := INF
 	var against := -1
@@ -85,6 +85,8 @@ func _nearest_lane(pos: Vector3, direction: Vector3 = Vector3.ZERO) -> int:
 	for i in graph.lane_count():
 		var length := graph.lane_length(i)
 		if length <= 0.0:
+			continue
+		if skip_connectors and graph.lanes[i].get_meta("connector", false):
 			continue
 		var offset := graph.closest_offset(i, pos)
 		var point := graph.position_at(i, offset)
@@ -132,7 +134,10 @@ func speed_cap() -> float:
 func road_frame(point: Vector3, line: RivalLine, offset: float) -> Vector3:
 	if graph == null or graph.lanes.is_empty():
 		return Vector3(-INF, INF, 0.0)
-	var lane := _nearest_lane(point)
+	# The carriageway is the carriageway of the lanes of the road: a connector (the turn into a cross street, the curve of a
+	# junction) lies far outside it and would widen it by the width of the junction (the rivals of the Bund drove 14 m to the
+	# side at the Beijing Rd junction, at 120 km/h, into the kerb).
+	var lane := _nearest_lane(point, Vector3.ZERO, true)
 	if lane < 0:
 		return Vector3(-INF, INF, 0.0)
 	var road := graph.lanes[lane].road_id
@@ -144,7 +149,7 @@ func road_frame(point: Vector3, line: RivalLine, offset: float) -> Vector3:
 	var lats: Array[float] = []
 	var has_offset := false
 	for i in graph.lane_count():
-		if graph.lanes[i].road_id != road:
+		if graph.lanes[i].road_id != road or graph.lanes[i].get_meta("connector", false):
 			continue
 		var o := graph.closest_offset(i, point)
 		var p := graph.position_at(i, o)

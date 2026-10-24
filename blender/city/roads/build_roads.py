@@ -12,7 +12,7 @@ import time
 sys.path.insert(0, os.path.expanduser("~/m/skyrush/blender"))
 from lib import common  # noqa: E402
 
-from city.roads import (attaches, collision, deck, furniture, junctions, lanes,  # noqa: E402
+from city.roads import (attaches, collision, deck, edgewalls, furniture, junctions, lanes,  # noqa: E402
                         load, markings, materials, piers, profiles, surface, tiles, tunnel)
 DATA_DIR = os.path.expanduser("~/m/skyrush/game/world/data")
 
@@ -26,6 +26,8 @@ def parse_args():
     p.add_argument("--data", default=DATA_DIR)
     p.add_argument("--no-textures", action="store_true")
     p.add_argument("--no-data", action="store_true")
+    p.add_argument("--no-edgewalls", action="store_true",
+                   help="do not add the walls on the edges of the decks that nothing else fences (edgewalls.py)")
     p.add_argument("--lanes-only", action="store_true",
                    help="build the lane graph and write only <data>/lanes.json (no tiles, about 10x faster)")
     return p.parse_args(argv)
@@ -112,6 +114,8 @@ def main():
     if args.only:
         parts = args.only.replace("_", ",").split(",")
         only = (int(parts[0]), int(parts[1]))
+    if not args.no_edgewalls:
+        print("EDGEWALLS %s" % edgewalls.add(tileset, lane_data))
     shared = materials.build(tex_dir=os.path.expanduser("~/m/skyrush/tmp/roads/tex"))
     materials.strip_shader_textures()
     print("MATERIALS %d" % len(shared))

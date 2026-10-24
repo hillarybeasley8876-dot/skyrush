@@ -9,7 +9,7 @@ geometry of a movement in lane_paths.py.
 import math
 
 from city.roads import junctions as jn
-from city.roads import lane_links, lane_paths, profiles
+from city.roads import buildingcut, lane_links, lane_paths, profiles
 
 SAMPLE = 2.0
 CUT_GAP = 8.0     # an attach closer than this to another cut shares that cut
@@ -274,11 +274,20 @@ def build_lanes(city):
         lane = by_id.get(link["from"])
         if lane is not None and link["to"] not in lane["next"]:
             lane["next"].append(link["to"])
+    # the streets that run into the buildings of the Bund end at them (the buildings are those of this city only)
+    at_buildings = {}
+    if "bund_zhongshan_e1" in city.by_id:
+        report, at_buildings = buildingcut.apply(lanes, links)
+        print("LANES at the buildings of the Bund: %s" % report)
     _mark_termini(city, lanes)
     if lane_links.SKIPPED:
         top = sorted(lane_links.SKIPPED.items(), key=lambda kv: -kv[1])[:8]
         print("LANES %d movements skipped: %s" % (sum(lane_links.SKIPPED.values()), top))
-    return {"version": 1, "lanes": lanes, "links": links, "roads": _road_stats(city, lanes)}
+    stats = _road_stats(city, lanes)
+    for road_id, metres in at_buildings.items():
+        if road_id in stats:
+            stats[road_id]["buildings"] = round(metres, 1)     # the lanes that the buildings of the Bund took
+    return {"version": 1, "lanes": lanes, "links": links, "roads": stats}
 
 
 def _link_cuts(city, segs, links, index):
@@ -336,7 +345,7 @@ def _mark_termini(city, lanes):
     """
     junctions = city.junctions
     for lane in lanes:
-        if lane["next"]:
+        if lane["next"] or lane.get("terminus_kind") == buildingcut.KIND:
             continue
         end = lane["points"][-1]
         best = min(junctions, key=lambda j: math.hypot(end[0] - j["x"], end[2] - j["z"]),

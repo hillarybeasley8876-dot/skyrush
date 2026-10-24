@@ -106,5 +106,16 @@ func _run() -> void:
 			"(first hit %.2f m from 12 m out)" % out_hit)
 		_check("and the pole has no arm behind it at heading %.1f" % HEADINGS[k], back_hit > 12.0 - 0.6,
 			"(first hit %.2f m from 12 m behind)" % back_hit)
+	# the small furniture is not an obstacle: no shape for it, a shape for the rest
+	var soft_entries: Array[Dictionary] = []
+	var solid_entries: Array[Dictionary] = []
+	for k in 4:
+		soft_entries.append({"type": PropCollision.SOFT[k], "transform": Transform3D(Basis(), Vector3(float(k) * 100.0, 0.0, 800.0)), "height_m": 0.0})
+	for k in ["tree", "lamp", "billboard", "planter"]:
+		solid_entries.append({"type": k, "transform": Transform3D(Basis(), Vector3(float(solid_entries.size()) * 100.0, 0.0, 900.0)), "height_m": 0.0})
+	var soft_count := PropCollision.new().build(holder, soft_entries)
+	var solid_count := PropCollision.new().build(holder, solid_entries)
+	_check("the small furniture (bollards, bins, hydrants, scooters) has no collision", soft_count == 0, "(%d shapes)" % soft_count)
+	_check("trees, lamps, billboards and planters have", solid_count == 4, "(%d shapes)" % solid_count)
 	print("[probe] %d checks, %d failures" % [_checks, _failures])
 	get_tree().quit(1 if _failures > 0 else 0)

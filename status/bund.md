@@ -72,6 +72,22 @@ build.
 - The preview picks the 24 nearest facade lights + 8 deck lamps every 0.25 s (32 active),
   the lights fade between 60 and 80 m, and the capture prints the fps.
 
+## The facades follow the road of the city (improve round: collision, interactions)
+
+The dossier puts the facades 16 m west of ITS centre line, but the cars drive on the road of the city
+(`tools/city/city_roads.bund_road`): its plan starts at the junction with Yan'an Rd at (0, 0), where the dossier line starts at
+(4.2, -10.2), and its Catmull-Rom curve bulges up to 7 m west of the straight legs. A facade at the dossier x stood 5-8 m from the
+middle of the road at z -30 ... -250, in the west lanes: 198 samples of the lanes of the Bund road were inside a collider box, and the
+sidewalk was inside the buildings. `data.py` now moves every facade of the main Bund to `centre_x(city road, z) - 16 m`
+(`FACADE_OFFSET`; the dossier x stays in `dossier_front_x`; the city is read from data/city/city.json, without it the dossier x
+stands): the buildings move 0 to 10.4 m west (Nisshin and the Commercial Bank 10.4 m, the Customs House 6.6 m, Yangtze and Jardine
+1.5 and 2.6 m east). Broadway Mansions (north of the bridge, set back on purpose) and the promenade stay: the flood wall is glued to
+the river, which does not follow the road. The yaw of the facades stays the one of the dossier. The glb is rebuilt with
+`python tools/gd.py blender run blender/bund/build.py` (2 minutes, the promenade glb is byte for byte the same), the unit test asserts
+z and heights only. Lanes of the Bund road inside a box (a car 1.9 m wide, 4 m steps): 666 -> 481 with this change; the cross streets
+that run through the row are cut by the roads unit (status/roads.md): 125 samples of 150,000 touch any collider of the city now, 11 of
+them in the Bund buildings (lanes 0.3-0.9 m from a wall).
+
 ## How to test (exact commands)
 
 ```

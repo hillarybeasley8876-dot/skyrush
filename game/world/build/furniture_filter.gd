@@ -21,6 +21,12 @@ const DEFAULT_SHOULDER := 0.5
 const LEVEL_TOLERANCE := 2.5
 ## The half size of the box of a junction that stays free.
 const JUNCTION_CLEARANCE := 8.0
+## The kerb returns of a junction (m): the box of a junction reaches this far past the kerb of the road that crosses it (the lanes of
+## the street that leaves the Bund begin 13 m after the kerb of the Bund). The first trees and lamps of a street stood in that
+## mouth, 3.5 m from the nearest lane (a turning movement): the rivals that took the turn hit them.
+const MOUTH_RETURN := 13.0
+## The half width of a road that has no lanes (m).
+const MOUTH_DEFAULT_HALF := 8.0
 ## The space a site needs around it.
 const SITE_CLEARANCE := 4.0
 ## How far the furniture is looked for around a prop.
@@ -39,6 +45,8 @@ const FOOTPRINT_STEP := 1.0
 var _probe: LaneProbe
 var _lanes: Array[LanePath] = []
 var _junction_cells: Dictionary = {}
+## The mouths of the junctions: cell key of the junction -> [{"points": PackedVector2Array, "half": float}].
+var _mouths: Dictionary = {}
 var _sites: Array[Dictionary] = []
 var _half_width: Dictionary = {}
 var _shoulder: Dictionary = {}
@@ -55,6 +63,7 @@ func setup(lanes: Array[LanePath], junctions: Array, pois: Array, roads: Array =
 	_probe.setup(lanes, grid)
 	_measure_roads(roads)
 	_index_junctions(junctions)
+	_index_mouths(junctions, roads)
 	_index_sites(pois)
 
 
@@ -90,6 +99,101 @@ func _index_junctions(junctions: Array) -> void:
 		if not _junction_cells.has(key):
 			_junction_cells[key] = []
 		(_junction_cells[key] as Array).append(point)
+
+
+## The box of a junction as the stretches of its roads: for every road of a junction the carriageway from the centre of the junction to
+## the end of the box (the half width of the roads that cross it and their kerb returns), with the half width of the road.
+func _index_mouths(junctions: Array, roads: Array) -> void:
+	_mouths.clear()
+	var by_id: Dictionary = {}
+	for road in roads:
+		if road is Dictionary:
+			by_id[str((road as Dictionary).get("id", ""))] = road as Dictionary
+	for junction in junctions:
+		if not junction is Dictionary:
+			continue
+		var d := junction as Dictionary
+		var centre := Vector2(float(d.get("x", 0.0)), float(d.get("z", 0.0)))
+		var ids: Array = d.get("roads", [])
+		for id in ids:
+			var road: Dictionary = by_id.get(str(id), {})
+			var points: Array = road.get("points", [])
+			if points.size() < 2:
+				continue
+			var reach := 0.0
+			for other in ids:
+				if str(other) != str(id):
+					reach = maxf(reach, _mouth_half(str(other)) + MOUTH_RETURN)
+			if reach <= 0.0:
+				continue
+			var line := _stretch(points, centre, reach)
+			if line.size() < 2:
+				continue
+			var key := _cell_key(Vector3(centre.x, 0.0, centre.y))
+			if not _mouths.has(key):
+				_mouths[key] = []
+			(_mouths[key] as Array).append({"points": line, "half": _mouth_half(str(id))})
+
+
+## The half width of the carriageway of a road with its shoulders (m).
+func _mouth_half(road: String) -> float:
+	if not _half_width.has(road):
+		return MOUTH_DEFAULT_HALF
+	return float(_half_width[road]) + float(_shoulder.get(road, DEFAULT_SHOULDER))
+
+
+## The stretch of a road (its stations as [x, y, z]) that lies within `reach` metres along it of the station nearest to `centre`.
+func _stretch(points: Array, centre: Vector2, reach: float) -> PackedVector2Array:
+	var nearest := 0
+	var best := INF
+	for i in points.size():
+		var p: Array = points[i]
+		var gap := Vector2(float(p[0]) - centre.x, float(p[2]) - centre.y).length_squared()
+		if gap < best:
+			best = gap
+			nearest = i
+	var line := PackedVector2Array()
+	line.append(Vector2(float(points[nearest][0]), float(points[nearest][2])))
+	for direction in [-1, 1]:
+		var walked := 0.0
+		var i: int = nearest
+		var last := line[0]
+		var part := PackedVector2Array()
+		while walked < reach:
+			i += direction
+			if i < 0 or i >= points.size():
+				break
+			var here := Vector2(float(points[i][0]), float(points[i][2]))
+			walked += here.distance_to(last)
+			last = here
+			part.append(here)
+		if direction < 0:
+			part.reverse()
+			part.append_array(line)
+			line = part
+		else:
+			line.append_array(part)
+	return line
+
+
+## True when the point stands in the box of a junction (the mouth of one of its roads).
+func _in_mouth(position: Vector3) -> bool:
+	var cx := int(floor(position.x / JUNCTION_CELL))
+	var cz := int(floor(position.z / JUNCTION_CELL))
+	var here := Vector2(position.x, position.z)
+	for dx in range(-1, 2):
+		for dz in range(-1, 2):
+			var key := "%d_%d" % [cx + dx, cz + dz]
+			if not _mouths.has(key):
+				continue
+			for mouth: Dictionary in _mouths[key]:
+				var line: PackedVector2Array = mouth["points"]
+				var half: float = mouth["half"]
+				for i in line.size() - 1:
+					var closest := Geometry2D.get_closest_point_to_segment(here, line[i], line[i + 1])
+					if closest.distance_to(here) <= half:
+						return true
+	return false
 
 
 func _index_sites(pois: Array) -> void:
@@ -224,6 +328,8 @@ func _under_deck(near: Dictionary, position: Vector3, height: float) -> bool:
 
 
 func _in_junction(position: Vector3) -> bool:
+	if _in_mouth(position):
+		return true
 	var cx := int(floor(position.x / JUNCTION_CELL))
 	var cz := int(floor(position.z / JUNCTION_CELL))
 	for dx in range(-1, 2):
@@ -245,6 +351,11 @@ func _in_site(position: Vector3) -> bool:
 		if absf(position.x - centre.x) <= half.x and absf(position.z - centre.z) <= half.y:
 			return true
 	return false
+
+
+## True when the point stands in the box of a junction (the mouths of its roads and the circle around its centre).
+func in_junction_box(position: Vector3) -> bool:
+	return _in_junction(position)
 
 
 ## True when the point stands on a lane of the same level (the gantry posts).
