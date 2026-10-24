@@ -25,6 +25,18 @@ textures and are **not** in the derived model.
 
 The credit is also shown on the title screen of the game.
 
+## The traffic and police cars: "Free Low Poly Vehicles Pack" (CC0)
+
+The cars of the traffic and the police (`game/assets/cars/npc/*.glb`: sedan, hatchback, SUV, taxi, robotaxi, van, bus, truck and the
+three police cars) are converted from the **Free Low Poly Vehicles Pack** by **Rgsdev** (Raphael Goncalves):
+
+* Source: the FBX files of the pack, kept in `blender/npc_cars/web/source/` with their `License.txt`
+* Licence: CC0 1.0 (public domain), no credit needed; it is given anyway
+* Changes: the cars were scaled and narrowed to the sizes of the fleet table, the roofs were lowered, the body mesh was split into the
+  parts of the SKYRUSH car contract (bumpers, bonnet, lamps, glass, mirrors, light bar), the materials were replaced by the game's
+  paint, glass and lamp materials, and a cargo box (truck) and a LiDAR puck (robotaxi) were added. The conversion is in
+  `blender/npc_cars/web/convert.py` and can be re-run.
+
 ## Other assets
 
 * Textures: Poly Haven, ambientCG (CC0), downloaded by `tools/textures/fetch.py`

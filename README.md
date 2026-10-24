@@ -9,7 +9,7 @@ A cyberpunk night-Shanghai arcade racer starring a black-and-white concept Roads
 > Public snapshot of the state after the last worker review round: every script passes the project check and the game runs end to end. Later work-in-progress fixes and the third-party reference photos in `ref/` are not included.
 
 - 引擎：Godot 4.7.2（Forward+、Metal、Jolt 物理 120 Hz）
-- 建模：Blender 5.2，用 Python 程序化生成（城市、地标、道具、交通车）；主角车是转换后的第三方模型（见下）
+- 建模：Blender 5.2，用 Python 程序化生成（城市、地标、道具）；主角车、交通车和警车是转换后的第三方模型（见下）
 - 开发方式：21 个模块由 MiniMax M3.1 工人按任务书实现，Claude Opus 负责规划、评审和美术指导
 
 ## 运行
@@ -18,7 +18,7 @@ A cyberpunk night-Shanghai arcade racer starring a black-and-white concept Roads
 godot --path game                         # Godot 4.7.2；第一次打开会导入全部资源，需要一段时间
 tools/godot.sh check                      # 检查全部脚本、场景和着色器（工具脚本默认仓库位于 ~/m/skyrush）
 tools/godot.sh drive --timeline=res://tools/timelines/smoke_drive.json --skip-menu --shots=3,9
-tools/blender.sh run blender/npc_cars/build.py   # 重新生成某个模块的模型
+tools/blender.sh run blender/npc_cars/web/convert.py   # 重新转换交通车和警车（build.py 只剩警用无人机）
 ```
 
 操作：W/S 油门刹车，A/D 转向，Shift 漂移，Ctrl/J 氮气，空格 跳跃（长按大跳或悬停），Q/E 空中翻滚，F 离开飞行车道，Esc 暂停。完整键位见 `SPEC.md` §4。
@@ -40,5 +40,6 @@ tools/blender.sh run blender/npc_cars/build.py   # 重新生成某个模块的�
 ## 第三方素材
 
 - 主角车模：Khronos glTF Sample Assets 的 Car Concept（Eric Chadwick，CC BY 4.0，原型是 Unity Fan 的 CC0 模型），改成黑白双色并按本项目的车辆契约重新拆分，转换脚本在 `blender/car/concept/`，署名全文见 `CREDITS.md`
+- 交通车和警车：Rgsdev 的 Free Low Poly Vehicles Pack（CC0），按车辆契约拆分材质和部件，转换脚本在 `blender/npc_cars/web/convert.py`，原始 FBX 和许可证在 `blender/npc_cars/web/source/`
 - 贴图：Poly Haven、ambientCG（CC0），用 `tools/textures/fetch.py` 下载
 - 字体：得意黑 Smiley Sans、Noto Sans SC（SIL OFL，许可证见 `game/assets/fonts/`）

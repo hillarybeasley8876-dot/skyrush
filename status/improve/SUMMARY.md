@@ -1,6 +1,6 @@
 # improve/openworld — what changed and what is left
 
-Branch `improve/openworld` (local, nothing pushed). The brief: open-world sports-car map (viaduct links, correct Z interaction, real
+Branch `improve/openworld` (pushed to GitHub, history without personal data). The brief: open-world sports-car map (viaduct links, correct Z interaction, real
 collisions, behaviour logic, the flying feature), with a weak cheap model (MiniMax M3.1 Flash) as the workers and the lead as the
 reviewer (`tools/m31w`). Then: a web-sourced hero car (black and white), and "continue to optimise all bugs, correct interactions".
 
@@ -8,6 +8,13 @@ reviewer (`tools/m31w`). Then: a web-sourced hero car (black and white), and "co
 
 Khronos Car Concept (CC BY 4.0), converted by `blender/car/concept` to the vehicle contract: white pearl paint, black paint, black
 rims, smoked glass. Collision box 1.9 m wide (the oracles' car), floor 0.34 m over the road (`MIN_BOX_BOTTOM`).
+
+## The traffic and police cars
+
+Found on the web instead of generated: the CC0 "Free Low Poly Vehicles Pack" by Rgsdev, converted to the car contract by
+`blender/npc_cars/web/convert.py` (status/npc_cars.md). 11 cars of 1.4-1.9 k triangles and 70-95 KB each, replace the procedural fleet
+(21 k triangles, 34-42 surfaces and 5 MB of textures per car); the nodes, the lamps, the wheels and the tear-off parts (bumpers, bonnet)
+of the contract are kept, so the traffic, the police, the vehicle specs and the damage unit work unchanged. The drone is still procedural.
 
 ## Collisions and interactions fixed in the last rounds (every item has a test or a tool that measures it)
 

@@ -1,190 +1,163 @@
 extends Node
-## npc_cars material and UV contract test (unit: npc_cars).
+## npc_cars material contract test.
 ##
-## Every textured surface must carry UVs, the lamps must sample the right LED
-## strips of the shared trim sheet, the route sign must use its whole image
-## and the preview scene must stand on the ground.
+## The fleet is made of plain colours (no texture, no UV), and the game finds its surfaces by the name of the material: the traffic
+## paints the surface that wears SH_car_paint_npc (the colour of a car is an instance uniform; the taxi wears its own SH_car_paint_taxi,
+## the white of a police car is SH_car_paint_police: all three are materials of the shader library), the lamps of a traffic car are the
+## surfaces NPC_lamp_front (Lamp_F) and NPC_lamp_rear (Lamp_R), the brake lamps of a car with physics are NPC_lamp_brake, the light
+## bar of a police car is two meshes with one material each (the police unit duplicates surface 0 to drive the strobe).
 ##
-##     tools/godot.sh test res://assets/cars/npc/tests/test_npc_materials.gd
+##     python tools/gd.py test res://assets/cars/npc/tests/test_npc_materials.gd
 
-const MODELS := ["sedan_ev", "suv_ev", "hatch_ev", "taxi", "robotaxi",
-	"police_patrol", "police_interceptor", "police_suv", "van", "truck", "bus",
-	"police_drone"]
-
-# the LED strips of the shared trim sheet: the front bar samples the white
-# strip, the tail bar the red one (ref/art §4.8)
-const LED_WHITE := Rect2(0.5, 0.5, 0.25, 0.125)
-const LED_RED := Rect2(0.75, 0.5, 0.25, 0.125)
-# the route sign covers its image (the UV of the whole 1024x256 sheet)
-const SIGN_COVER := 0.9
+const TRAFFIC := ["sedan_ev", "suv_ev", "hatch_ev", "taxi", "robotaxi", "van", "truck", "bus"]
+const POLICE := ["police_patrol", "police_interceptor", "police_suv"]
+const DRONE := "police_drone"
+const PAINT := "SH_car_paint_npc"
+const TAXI_PAINT := "SH_car_paint_taxi"
+const POLICE_PAINT := "SH_car_paint_police"
+const GLASS := "NPC_glass_dark"
+## The cars of the pack have no texture: nothing may sample an image.
+const FLAT := true
 
 
 func _ready() -> void:
 	var ok := true
-	for model_name in MODELS:
-		ok = _check_model(model_name) and ok
+	for model_name in TRAFFIC:
+		ok = _check_car(model_name, false) and ok
+	for model_name in POLICE:
+		ok = _check_car(model_name, true) and ok
+	ok = _check_drone() and ok
 	ok = _check_preview() and ok
 	get_tree().quit(0 if ok else 1)
 
 
-func _check_model(model_name: String) -> bool:
-	var ok := true
-	var path := "res://assets/cars/npc/%s.glb" % model_name
-	var packed := load(path) as PackedScene
+func _load(model_name: String) -> Node:
+	var packed := load("res://assets/cars/npc/%s.glb" % model_name) as PackedScene
 	if packed == null:
 		print("FAIL %s does not load" % model_name)
-		return false
+		return null
 	var root := packed.instantiate()
 	add_child(root)
-	var no_uv := _surfaces_without_uv(root)
-	if not no_uv.is_empty():
-		print("FAIL %s surfaces without UVs: %s" % [model_name, ", ".join(no_uv)])
-		ok = false
-	if model_name != "police_drone":
-		ok = _check_lamp_uvs(root, model_name) and ok
-	if model_name == "bus":
-		ok = _check_sign_uv(root) and ok
+	return root
+
+
+func _check_car(model_name: String, police: bool) -> bool:
+	var root := _load(model_name)
+	if root == null:
+		return false
+	var ok := true
+	var body_materials := _materials(root, "Body")
+	if police:
+		if body_materials.has(PAINT):
+			print("FAIL %s wears the traffic paint (the police cars are black and white)" % model_name)
+			ok = false
+		if not body_materials.has("NPC_police_black") or not body_materials.has(POLICE_PAINT):
+			print("FAIL %s Body lacks the police black and white (%s): %s" % [model_name, POLICE_PAINT, body_materials])
+			ok = false
+	else:
+		var paint := TAXI_PAINT if model_name == "taxi" else PAINT
+		if not body_materials.has(paint):
+			print("FAIL %s Body has no %s surface: %s" % [model_name, paint, body_materials])
+			ok = false
+	for pair in [["Lamp_F", "NPC_lamp_front"], ["Lamp_R", "NPC_lamp_brake" if police else "NPC_lamp_rear"], ["Glass", GLASS],
+			["Wheel_FL", "NPC_tyre"], ["Wheel_RR", "NPC_rim"]]:
+		var wanted := String(pair[1])
+		if not _materials(root, String(pair[0])).has(wanted):
+			print("FAIL %s %s has no %s surface: %s" % [model_name, pair[0], wanted, _materials(root, String(pair[0]))])
+			ok = false
+	if police:
+		for pair in [["LightBar_Red", "NPC_lightbar_red"], ["LightBar_Blue", "NPC_lightbar_blue"]]:
+			var materials := _materials(root, String(pair[0]))
+			if materials != [String(pair[1])]:
+				print("FAIL %s %s has to be one surface of %s: %s" % [model_name, pair[0], pair[1], materials])
+				ok = false
+	if FLAT:
+		var textured := _textured(root)
+		if not textured.is_empty():
+			print("FAIL %s surfaces with a texture: %s" % [model_name, ", ".join(textured)])
+			ok = false
+	if ok:
+		print("PASS %s has the materials of the contract" % model_name)
 	root.queue_free()
 	return ok
 
 
-func _check_lamp_uvs(root: Node, model_name: String) -> bool:
-	"""The tail lamp must sample the red LED strip, the head lamp the white one.
-
-	Every surface of the lamp node is checked on its own: the head lamp also
-	carries the dark reflector of the lamp housing.
-	"""
+## The drone is the procedural model of the old generator: it keeps its textures and its UVs.
+func _check_drone() -> bool:
+	var root := _load(DRONE)
+	if root == null:
+		return false
 	var ok := true
-	for pair in [["Lamp_F", LED_WHITE], ["Lamp_R", LED_RED]]:
-		var node_name := String(pair[0])
-		var rect: Rect2 = pair[1]
-		var found := false
-		var lit := false
-		for child in root.find_children(node_name, "MeshInstance3D", true, false):
-			found = true
-			var mi := child as MeshInstance3D
-			for i in mi.mesh.get_surface_count():
-				var uvs := _uv_range(mi, i)
-				if uvs.size == Vector2.ZERO:
-					continue
-				if rect.grow(0.002).encloses(uvs):
-					lit = true
-		if not found:
-			print("FAIL %s is missing %s" % [model_name, node_name])
-			ok = false
-		elif not lit:
-			print("FAIL %s %s does not sample the LED strip %s"
-					% [model_name, node_name, rect])
-			ok = false
+	for child in root.find_children("*", "MeshInstance3D", true, false):
+		var mi := child as MeshInstance3D
+		if mi.mesh == null:
+			continue
+		for i in mi.mesh.get_surface_count():
+			var mat := mi.get_active_material(i)
+			if mat is BaseMaterial3D and (mat as BaseMaterial3D).albedo_texture != null:
+				var uvs: PackedVector2Array = mi.mesh.surface_get_arrays(i)[Mesh.ARRAY_TEX_UV]
+				if uvs.is_empty():
+					print("FAIL %s surface %s#%d is textured and has no UVs" % [DRONE, mi.name, i])
+					ok = false
 	if ok:
-		print("PASS %s lamps sample the right LED strips" % model_name)
+		print("PASS %s textured surfaces have UVs" % DRONE)
+	root.queue_free()
 	return ok
 
 
-func _check_sign_uv(root: Node) -> bool:
-	"""The LED route sign must cover its image (r3 item 5b)."""
-	var ok := true
-	for node_name in ["SignRoute", "SignRouteSide"]:
-		for child in root.find_children(node_name, "MeshInstance3D", true, false):
-			var mi := child as MeshInstance3D
-			var lo := Vector2(2.0, 2.0)
-			var hi := Vector2(-2.0, -2.0)
-			for i in mi.mesh.get_surface_count():
-				var uvs := _uv_range(mi, i)
-				if uvs.size == Vector2.ZERO:
-					continue
-				lo = lo.min(uvs.position)
-				hi = hi.max(uvs.end)
-			if hi.x < lo.x:
-				continue
-			var cover: float = minf(hi.x - lo.x, hi.y - lo.y)
-			if cover < SIGN_COVER:
-				print("FAIL %s %s covers only %.0f %% of its image"
-						% [node_name, node_name, cover * 100.0])
-				ok = false
-	if ok:
-		print("PASS bus the route signs use their whole image")
-	return ok
-
-
+## The preview scene must load and hold the whole fleet.
 func _check_preview() -> bool:
-	"""The preview scene must load and look at the fleet."""
-	var ok := true
 	var preview := load("res://assets/cars/npc/preview_npc.tscn") as PackedScene
 	if preview == null:
 		print("FAIL preview_npc.tscn does not load")
 		return false
 	var scene := preview.instantiate()
 	add_child(scene)
+	var ok := true
 	var cars := 0
 	for child in scene.get_children():
-		if not (child is Node3D):
+		if not (child is Node3D) or child is Light3D:
 			continue
-		var car_name := String((child as Node3D).name)
-		if not car_name.ends_with("_ev") and not car_name in ["taxi", "robotaxi",
-				"van", "truck", "bus", "police_drone", "police_patrol",
-				"police_interceptor", "police_suv"]:
-			continue
-		cars += 1
-		if absf((child as Node3D).position.y) > 0.01:
-			print("FAIL preview %s is not on the ground (y=%.2f)"
-					% [child.name, (child as Node3D).position.y])
-			ok = false
+		if String((child as Node3D).name) in TRAFFIC + POLICE + [DRONE]:
+			cars += 1
+			if absf((child as Node3D).position.y) > 0.01:
+				print("FAIL preview %s is not on the ground (y=%.2f)" % [child.name, (child as Node3D).position.y])
+				ok = false
 	if cars < 12:
 		print("FAIL preview_npc.tscn only has %d vehicles" % cars)
 		ok = false
-	var cam := scene.find_child("Camera3D", true, false) as Camera3D
-	if cam == null:
-		print("FAIL preview_npc.tscn has no Camera3D")
-		ok = false
-	else:
-		var fwd := -cam.global_transform.basis.z
-		print("PASS preview camera at %v forward %v" % [cam.global_position, fwd])
-		if fwd.y >= 0.0 or fwd.y < -0.4:
-			print("FAIL preview camera does not look slightly down")
-			ok = false
 	if ok:
 		print("PASS preview_npc.tscn has the whole fleet")
 	scene.queue_free()
 	return ok
 
 
-func _uv_range(mi: MeshInstance3D, surface: int) -> Rect2:
-	"""The bounding rectangle of the UVs of one surface of a mesh."""
-	var lo := Vector2(2.0, 2.0)
-	var hi := Vector2(-2.0, -2.0)
-	var arrays := mi.mesh.surface_get_arrays(surface)
-	var uvs: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV]
-	for uv in uvs:
-		lo = lo.min(uv)
-		hi = hi.max(uv)
-	if hi.x < lo.x:
-		return Rect2(Vector2.ZERO, Vector2.ZERO)
-	return Rect2(lo, hi - lo)
-
-
-func _surfaces_without_uv(node: Node) -> Array:
+## The names of the materials of the surfaces of a named mesh.
+func _materials(root: Node, node_name: String) -> Array:
 	var out: Array = []
-	for child in node.find_children("*", "MeshInstance3D", true, false):
+	for child in root.find_children(node_name, "MeshInstance3D", true, false):
 		var mi := child as MeshInstance3D
 		if mi.mesh == null:
 			continue
 		for i in mi.mesh.get_surface_count():
-			var mat := mi.get_active_material(i)
-			if mat == null:
-				continue
-			var textured := false
+			var mat := mi.mesh.surface_get_material(i)
+			if mat != null and not out.has(mat.resource_name):
+				out.append(mat.resource_name)
+	return out
+
+
+## The surfaces that sample an image.
+func _textured(root: Node) -> Array:
+	var out: Array = []
+	for child in root.find_children("*", "MeshInstance3D", true, false):
+		var mi := child as MeshInstance3D
+		if mi.mesh == null:
+			continue
+		for i in mi.mesh.get_surface_count():
+			var mat := mi.mesh.surface_get_material(i)
 			if mat is BaseMaterial3D:
 				var base := mat as BaseMaterial3D
-				textured = base.albedo_texture != null or base.normal_enabled \
-						or base.roughness_texture != null \
-						or base.metallic_texture != null \
-						or base.emission_enabled and base.emission_texture != null \
-						or base.ao_enabled and base.ao_texture != null
-			if not textured:
-				continue
-			var arrays := mi.mesh.surface_get_arrays(i)
-			if arrays[Mesh.ARRAY_TEX_UV] == null \
-					or (arrays[Mesh.ARRAY_TEX_UV] as PackedVector2Array).is_empty():
-				out.append("%s#%d" % [mi.name, i])
+				if base.albedo_texture != null or base.normal_texture != null or base.roughness_texture != null \
+						or base.emission_texture != null:
+					out.append("%s#%d" % [mi.name, i])
 	return out

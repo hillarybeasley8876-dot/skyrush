@@ -1,76 +1,69 @@
 extends Node
-## npc_cars node and geometry contract test (unit: npc_cars).
+## npc_cars node and geometry contract test.
 ##
-## Every fleet model must expose the node names the game relies on
-## (CONTRACTS.md §6 + the unit brief), sit on the ground, carry its lamps on
-## the right end, keep its number plate readable, and stay inside the
-## triangle budget of the brief.
+## The fleet is the CC0 "Free Low Poly Vehicles Pack" by Rgsdev, converted by blender/npc_cars/web/convert.py (the drone is the
+## procedural model of the old generator). Every model must expose the node names the game relies on (CONTRACTS.md 6, the traffic
+## lamps, the police light bar, the damage parts), stand on the ground, carry its lamps on the right end, have its wheels where
+## the physics expects them, match the dimensions of the fleet table, and stay inside the triangle budget.
 ##
-##     tools/godot.sh test res://assets/cars/npc/tests/test_npc_nodes.gd
+##     python tools/gd.py test res://assets/cars/npc/tests/test_npc_nodes.gd
 
-const GROUND_NODES := ["Body", "Glass", "Bumper_F", "Bumper_R", "Lamp_F", "Lamp_R",
-	"Light_Front", "Light_Rear"]
+const CARS := ["sedan_ev", "suv_ev", "hatch_ev", "taxi", "robotaxi", "van", "truck", "bus",
+	"police_patrol", "police_interceptor", "police_suv"]
+const GROUND_NODES := ["Body", "Glass", "Lamp_F", "Lamp_R", "Light_Front", "Light_Rear", "Mirror_L", "Mirror_R"]
 const WHEEL_NODES := ["Wheel_FL", "Wheel_FR", "Wheel_RL", "Wheel_RR"]
-const EXTRA_NODES := {
-	"sedan_ev": ["Hood", "Door_FL", "Door_FR", "Door_RL", "Door_RR", "Interior"],
-	"suv_ev": ["Hood", "Door_FL", "Door_FR", "Door_RL", "Door_RR", "Interior"],
-	"hatch_ev": ["Hood", "Door_FL", "Door_FR", "Door_RL", "Door_RR", "Interior"],
-	"taxi": ["Hood", "Door_FL", "Door_FR", "Door_RL", "Door_RR", "Interior",
-		"RoofSign"],
-	"robotaxi": ["Door_FL", "Door_FR", "Interior", "LiDAR"],
-	"police_patrol": ["Hood", "Door_FL", "Door_FR", "Door_RL", "Door_RR", "Interior",
-		"LightBar", "LightBar_Red", "LightBar_Blue", "Siren"],
-	"police_interceptor": ["Hood", "Door_FL", "Door_FR", "Door_RL", "Door_RR",
-		"Interior", "LightBar_Red", "LightBar_Blue", "Siren", "Splitter"],
-	"police_suv": ["Hood", "Door_FL", "Door_FR", "Door_RL", "Door_RR", "Interior",
-		"LightBar_Red", "LightBar_Blue", "Siren", "RamBar"],
-	"van": ["Interior", "Door_FL", "Door_FR", "Livery"],
-	"truck": ["Interior", "Door_FL", "Door_FR"],
-	"bus": ["Interior", "SignRoute", "SignRouteSide", "Door_FR", "Door_RR", "Roof"],
-	"police_drone": ["Spot", "Strobe_Red", "Strobe_Blue", "Rotor_FL", "Rotor_FR",
-		"Rotor_RL", "Rotor_RR"],
-}
-
-const BUDGET := {
-	"sedan_ev": 25000, "suv_ev": 25000, "hatch_ev": 25000, "taxi": 25000,
-	"robotaxi": 25000, "police_patrol": 30000, "police_interceptor": 30000,
-	"police_suv": 30000, "van": 30000, "truck": 30000, "bus": 30000,
-	"police_drone": 8000,
-}
-# The shared body generator (lib/car_body.py) puts the underbody and the
-# rocker cladding in their own material slot and the wheels carry a tyre and
-# an alloy rim, so a car has more surfaces than the flat r3 fleet.
-const MAX_SURFACES := {
-	"sedan_ev": 36, "suv_ev": 36, "hatch_ev": 36, "taxi": 44, "robotaxi": 36,
-	"police_patrol": 40, "police_interceptor": 42, "police_suv": 42,
-	"van": 26, "truck": 26, "bus": 28, "police_drone": 20,
-}
-# nothing may go under the road (r3 item 7)
+const POLICE_NODES := ["LightBar_Red", "LightBar_Blue", "Siren"]
+## The parts that the damage unit tears off (damage/part_catalog.gd looks for these exact names): every car has the two bumpers, the
+## cars with a bonnet have the Hood.
+const PART_NODES := ["Bumper_F", "Bumper_R"]
+const HOOD_CARS := ["sedan_ev", "suv_ev", "hatch_ev", "taxi", "police_patrol", "police_interceptor", "police_suv"]
+const DRONE_NODES := ["Spot", "Strobe_Red", "Strobe_Blue", "Rotor_FL", "Rotor_FR", "Rotor_RL", "Rotor_RR"]
+## The triangles and surfaces of a car (the pack's cars are 1.4-1.8 k triangles, the box truck has its cargo box). A surface is a draw
+## call: the body, the glass, the lamps, the mirrors, the three tear-off parts and the wheels (a tyre and a rim each) make 21-24.
+const CAR_BUDGET := 4000
+const CAR_SURFACES := 26
+const DRONE_BUDGET := 8000
+const DRONE_SURFACES := 20
+## How far the Body may differ from the fleet table of the traffic (m): the mirrors are not part of the Body.
+const TABLE_TOLERANCE := 0.12
+## nothing may go under the road
 const MIN_Y := -0.005
+## The wheel centre is the wheel radius above the road (m), within this tolerance.
+const WHEEL_TOLERANCE := 0.06
 
 
 func _ready() -> void:
 	var ok := true
-	for model_name in EXTRA_NODES:
-		ok = _check_model(model_name) and ok
+	for model_name in CARS:
+		ok = _check_car(model_name) and ok
+	ok = _check_drone() and ok
 	get_tree().quit(0 if ok else 1)
 
 
-func _check_model(model_name: String) -> bool:
-	var ok := true
-	var path := "res://assets/cars/npc/%s.glb" % model_name
-	var packed := load(path) as PackedScene
+func _load(model_name: String) -> Node:
+	var packed := load("res://assets/cars/npc/%s.glb" % model_name) as PackedScene
 	if packed == null:
 		print("FAIL %s does not load" % model_name)
-		return false
+		return null
 	var root := packed.instantiate()
 	add_child(root)
+	return root
+
+
+func _check_car(model_name: String) -> bool:
+	var root := _load(model_name)
+	if root == null:
+		return false
+	var ok := true
 	var names := _collect(root)
 	var required: Array[String] = []
-	if model_name != "police_drone":
-		required.append_array(GROUND_NODES)
-		required.append_array(WHEEL_NODES)
-	required.append_array(EXTRA_NODES[model_name])
+	required.append_array(GROUND_NODES)
+	required.append_array(WHEEL_NODES)
+	required.append_array(PART_NODES)
+	if HOOD_CARS.has(model_name):
+		required.append("Hood")
+	if model_name.begins_with("police_"):
+		required.append_array(POLICE_NODES)
 	var missing: Array[String] = []
 	for node_name in required:
 		if not names.has(node_name):
@@ -89,262 +82,197 @@ func _check_model(model_name: String) -> bool:
 		ok = false
 	ok = _check_lamp_ends(root, model_name) and ok
 	ok = _check_on_ground(root, model_name) and ok
-	if model_name != "police_drone":
-		ok = _check_plate_in_front(root, model_name) and ok
-		ok = _check_front_plate_readable(root, model_name) and ok
-	ok = _check_door_tops(root, model_name) and ok
-	if model_name == "bus":
-		ok = _check_bus(root) and ok
-	if model_name.begins_with("police_") and model_name != "police_drone":
-		ok = _check_police_livery(root, model_name) and ok
+	ok = _check_wheels(root, model_name) and ok
+	ok = _check_fleet_table(root, model_name) and ok
+	ok = _check_mirrors(root, model_name) and ok
+	ok = _check_parts(root, model_name) and ok
 	var surfaces := _surface_count(root)
-	var max_surfaces: int = MAX_SURFACES[model_name]
-	if surfaces > max_surfaces:
-		print("FAIL %s has %d surfaces (max %d)" % [model_name, surfaces, max_surfaces])
+	var tris := _triangles(root)
+	if surfaces > CAR_SURFACES or tris > CAR_BUDGET:
+		print("FAIL %s has %d surfaces (max %d) and %d triangles (budget %d)"
+				% [model_name, surfaces, CAR_SURFACES, tris, CAR_BUDGET])
 		ok = false
 	else:
-		print("PASS %s surfaces=%d tris=%d" % [model_name, surfaces, _triangles(root)])
-	var tris := _triangles(root)
-	var budget: int = BUDGET[model_name]
-	if tris > budget:
-		print("FAIL %s has %d tris (budget %d)" % [model_name, tris, budget])
-		ok = false
+		print("PASS %s surfaces=%d tris=%d" % [model_name, surfaces, tris])
 	root.queue_free()
 	return ok
 
 
-func _check_lamp_ends(root: Node, model_name: String) -> bool:
-	"""Godot -Z is forward, so the front lamp sits at negative z."""
-	if model_name == "police_drone":
-		return true
+func _check_drone() -> bool:
+	var root := _load("police_drone")
+	if root == null:
+		return false
 	var ok := true
-	var lamp_f := _aabb_centre(root, "Lamp_F")
-	var lamp_r := _aabb_centre(root, "Lamp_R")
+	var names := _collect(root)
+	for node_name in DRONE_NODES:
+		if not names.has(node_name):
+			print("FAIL police_drone missing %s" % node_name)
+			ok = false
+	var surfaces := _surface_count(root)
+	var tris := _triangles(root)
+	if surfaces > DRONE_SURFACES or tris > DRONE_BUDGET:
+		print("FAIL police_drone has %d surfaces and %d triangles" % [surfaces, tris])
+		ok = false
+	if ok:
+		print("PASS police_drone has its nodes (surfaces=%d tris=%d)" % [surfaces, tris])
+	root.queue_free()
+	return ok
+
+
+## Godot -Z is forward, so the front lamp sits at negative z.
+func _check_lamp_ends(root: Node, model_name: String) -> bool:
+	var lamp_f := _aabb(root, "Lamp_F")
+	var lamp_r := _aabb(root, "Lamp_R")
 	if lamp_f.is_empty() or lamp_r.is_empty():
 		print("FAIL %s is missing a lamp" % model_name)
 		return false
-	if (lamp_f[1] as Vector3).z >= 0.0:
-		print("FAIL %s Lamp_F is at z=%.2f (the front is -Z)"
-				% [model_name, (lamp_f[1] as Vector3).z])
+	var ok := true
+	var front: Vector3 = ((lamp_f[0] as Transform3D) * (lamp_f[1] as AABB)).get_center()
+	var rear: Vector3 = ((lamp_r[0] as Transform3D) * (lamp_r[1] as AABB)).get_center()
+	if front.z >= 0.0:
+		print("FAIL %s Lamp_F is at z=%.2f (the front is -Z)" % [model_name, front.z])
 		ok = false
-	if (lamp_r[1] as Vector3).z <= 0.0:
-		print("FAIL %s Lamp_R is at z=%.2f (the rear is +Z)"
-				% [model_name, (lamp_r[1] as Vector3).z])
+	if rear.z <= 0.0:
+		print("FAIL %s Lamp_R is at z=%.2f (the rear is +Z)" % [model_name, rear.z])
 		ok = false
 	if ok:
 		print("PASS %s lamps are on the right ends" % model_name)
 	return ok
 
 
+## No mesh may reach under the road.
 func _check_on_ground(root: Node, model_name: String) -> bool:
-	"""No mesh may reach under the road (r3 item 7).
-
-	The drone flies, so it is not on the road.
-	"""
 	var ok := true
-	if model_name == "police_drone":
-		return true
 	for child in root.find_children("*", "MeshInstance3D", true, false):
 		var mi := child as MeshInstance3D
 		if mi.mesh == null:
 			continue
 		var low := (mi.global_transform * mi.get_aabb()).position.y
 		if low < MIN_Y:
-			print("FAIL %s %s reaches y=%.3f (the floor is %.3f)"
-					% [model_name, mi.name, low, MIN_Y])
+			print("FAIL %s %s reaches y=%.3f (the floor is %.3f)" % [model_name, mi.name, low, MIN_Y])
 			ok = false
 	if ok:
 		print("PASS %s everything is on the ground" % model_name)
 	return ok
 
 
-func _check_plate_in_front(root: Node, model_name: String) -> bool:
-	"""The number plate must be the front-most surface of the nose and tail."""
+## The wheel nodes are the contract of the car physics: the origin is the centre of the wheel (the radius over the road), the
+## left wheels are at -X, the front wheels at -Z, and the wheels of an axle are mirror images.
+func _check_wheels(root: Node, model_name: String) -> bool:
 	var ok := true
-	for front in [true, false]:
-		var plate := _aabb(root, "Plate")
-		if plate.is_empty():
-			print("FAIL %s is missing the plate" % model_name)
-			return false
-		var pbox: AABB = plate[1]
-		var y0 := pbox.position.y - 0.02
-		var y1 := pbox.end.y + 0.02
-		var plate_z := _frontmost(root, "Plate", y0, y1, front)
-		if is_inf(plate_z):
-			print("FAIL %s the plate has no vertices" % model_name)
-			ok = false
+	var centres := {}
+	for wheel_name in WHEEL_NODES:
+		var wheel := root.find_child(wheel_name, true, false) as Node3D
+		if wheel == null:
 			continue
-		for child in root.find_children("*", "MeshInstance3D", true, false):
-			var mi := child as MeshInstance3D
-			if mi.mesh == null or String(mi.name) == "Plate":
-				continue
-			var other := _frontmost_one(mi, y0, y1, front)
-			if is_inf(other):
-				continue
-			if front and other < plate_z - 0.001:
-				print("FAIL %s %s is in front of the plate" % [model_name, mi.name])
-				ok = false
-			if not front and other > plate_z + 0.001:
-				print("FAIL %s %s is behind the plate" % [model_name, mi.name])
-				ok = false
+		var mesh := wheel as MeshInstance3D
+		var radius := mesh.get_aabb().size.y * 0.5 if mesh != null else 0.0
+		centres[wheel_name] = wheel.global_position
+		if absf(wheel.global_position.y - radius) > WHEEL_TOLERANCE:
+			print("FAIL %s %s is at y=%.3f, its radius is %.3f" % [model_name, wheel_name, wheel.global_position.y, radius])
+			ok = false
+		if mesh != null and absf(mesh.get_aabb().get_center().x) > 0.02:
+			print("FAIL %s %s is not centred on its origin (x %.3f)" % [model_name, wheel_name, mesh.get_aabb().get_center().x])
+			ok = false
+	if centres.size() == 4:
+		var fl: Vector3 = centres["Wheel_FL"]
+		var fr: Vector3 = centres["Wheel_FR"]
+		var rl: Vector3 = centres["Wheel_RL"]
+		var rr: Vector3 = centres["Wheel_RR"]
+		if not (fl.x < 0.0 and rl.x < 0.0 and fr.x > 0.0 and rr.x > 0.0):
+			print("FAIL %s the left wheels have to be at -X" % model_name)
+			ok = false
+		if not (fl.z < rl.z and fr.z < rr.z):
+			print("FAIL %s the front wheels have to be at -Z" % model_name)
+			ok = false
+		if absf(fl.x + fr.x) > 0.02 or absf(rl.x + rr.x) > 0.02 or absf(fl.z - fr.z) > 0.02 or absf(rl.z - rr.z) > 0.02:
+			print("FAIL %s the wheels of an axle are not mirror images" % model_name)
+			ok = false
 	if ok:
-		print("PASS %s the plates are the front-most surfaces" % model_name)
+		print("PASS %s the wheels are where the physics expects them" % model_name)
 	return ok
 
 
-func _check_front_plate_readable(root: Node, model_name: String) -> bool:
-	"""On the front plate the u must grow towards the viewer's right (r3 item 6).
-
-	The viewer of a -Z face sees +X on their left, so u has to fall when x
-	rises: the characters must not be mirrored.
-	"""
+## The Body (without the mirrors) is the size that the fleet table of the traffic says: the box collider and the gaps are made from
+## either of them.
+func _check_fleet_table(root: Node, model_name: String) -> bool:
+	var entry := {}
+	for id: StringName in TrafficFleet.MODELS:
+		var data: Dictionary = TrafficFleet.MODELS[id]
+		if String(data["glb"]) == model_name:
+			entry = data
+	if entry.is_empty():
+		return true       # the police cars are not in the table of the traffic
+	var body := _aabb(root, "Body")
+	if body.is_empty():
+		return false
+	var box: AABB = body[1]
 	var ok := true
-	for child in root.find_children("Plate", "MeshInstance3D", true, false):
-		var mi := child as MeshInstance3D
-		if mi.mesh == null:
-			continue
-		for i in mi.mesh.get_surface_count():
-			var arrays := mi.mesh.surface_get_arrays(i)
-			var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
-			var uvs: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV]
-			if verts.is_empty() or uvs.is_empty():
-				continue
-			# the outer skin of the plate: the biggest u at the smallest x
-			# must be bigger than the biggest u at the largest x
-			var min_x := 99.0
-			var max_x := -99.0
-			for k in range(verts.size()):
-				if verts[k].z > 0.0:
-					continue      # the rear plate reads the other way round
-				min_x = minf(min_x, verts[k].x)
-				max_x = maxf(max_x, verts[k].x)
-			if min_x > 90.0 or max_x < -90.0:
-				continue
-			var left_u := -1.0
-			var right_u := -1.0
-			for k in range(verts.size()):
-				if verts[k].z > 0.0:
-					continue
-				if absf(verts[k].x - min_x) < 0.005:
-					left_u = maxf(left_u, uvs[k].x)
-				if absf(verts[k].x - max_x) < 0.005:
-					right_u = maxf(right_u, uvs[k].x)
-			if left_u < 0.0 or right_u < 0.0:
-				continue
-			if left_u <= right_u:
-				print("FAIL %s the front plate is mirrored (u %.3f at -X, %.3f at +X)"
-						% [model_name, left_u, right_u])
-				ok = false
+	for pair in [["length", box.size.z], ["width", box.size.x], ["height", box.end.y]]:
+		var want := float(entry[String(pair[0])])
+		if absf(want - float(pair[1])) > TABLE_TOLERANCE:
+			print("FAIL %s Body %s %.2f but the traffic table says %.2f" % [model_name, pair[0], pair[1], want])
+			ok = false
 	if ok:
-		print("PASS %s the front plate is not mirrored" % model_name)
+		print("PASS %s matches the fleet table of the traffic" % model_name)
 	return ok
 
 
-func _check_bus(root: Node) -> bool:
-	"""The bus: the bumpers sit low and the route sign uses its whole image."""
+## The mirrors stand outside the Body: the box collider is measured from the Body.
+func _check_mirrors(root: Node, model_name: String) -> bool:
+	var body := _aabb(root, "Body")
+	var left := _aabb(root, "Mirror_L")
+	var right := _aabb(root, "Mirror_R")
+	if body.is_empty() or left.is_empty() or right.is_empty():
+		return false
+	var box: AABB = body[1]
 	var ok := true
-	for node_name in ["Bumper_F", "Bumper_R"]:
-		var box := _aabb(root, node_name)
-		if box.is_empty():
-			print("FAIL bus is missing %s" % node_name)
-			ok = false
-			continue
-		var top: float = (box[1] as AABB).end.y
-		if top > 0.9:
-			print("FAIL bus %s reaches %.2f m (the bumpers belong at the bottom)"
-					% [node_name, top])
-			ok = false
-	var sign := _aabb(root, "SignRoute")
-	if sign.is_empty():
-		print("FAIL bus is missing SignRoute")
+	if (left[1] as AABB).position.x > box.position.x or (right[1] as AABB).end.x < box.end.x:
+		print("FAIL %s the mirrors do not reach out of the Body" % model_name)
 		ok = false
 	if ok:
-		print("PASS bus the bumpers are low and the route sign is there")
+		print("PASS %s the mirrors are outside the Body" % model_name)
 	return ok
 
 
-func _check_door_tops(root: Node, model_name: String) -> bool:
-	"""The left and the right doors must have the same belt line."""
+## The tear-off parts sit on the origin of the car (the damage unit reads the side of a part from its mesh, the hanging bumper turns
+## about the corner of its AABB), the bumpers are at the ends of the car and the Hood is in front of the middle.
+func _check_parts(root: Node, model_name: String) -> bool:
 	var ok := true
-	for tag in ["F", "R"]:
-		var left := _aabb(root, "Door_%sL" % tag)
-		var right := _aabb(root, "Door_%sR" % tag)
-		if left.is_empty() or right.is_empty():
-			continue
-		var dl: float = (left[1] as AABB).end.y
-		var dr: float = (right[1] as AABB).end.y
-		if absf(dl - dr) > 0.005:
-			print("FAIL %s Door_%sL (%.3f) and Door_%sR (%.3f) differ"
-					% [model_name, tag, dl, tag, dr])
+	for part_name: String in PART_NODES + ["Hood"]:
+		var mi := root.find_child(part_name, true, false) as MeshInstance3D
+		if mi == null or mi.mesh == null:
+			continue            # a missing part is reported by the node check
+		if mi.position.length() > 0.01:
+			print("FAIL %s %s is not on the origin of the car: %s" % [model_name, part_name, mi.position])
+			ok = false
+		var centre: Vector3 = (mi.global_transform * mi.get_aabb()).get_center()
+		var wanted := 0.0
+		match part_name:
+			"Bumper_F":
+				wanted = -1.0
+			"Bumper_R":
+				wanted = 1.0
+			"Hood":
+				wanted = -1.0
+		if centre.z * wanted < 0.4 and part_name != "Hood" or part_name == "Hood" and centre.z * wanted < 0.2:
+			print("FAIL %s %s is at z=%.2f (it belongs at %s)" % [model_name, part_name, centre.z, "the front" if wanted < 0.0 else "the rear"])
+			ok = false
+		if mi.mesh.get_surface_count() == 0:
+			print("FAIL %s %s is empty" % [model_name, part_name])
 			ok = false
 	if ok:
-		print("PASS %s the doors are level" % model_name)
+		print("PASS %s the tear-off parts are on the origin and at their ends" % model_name)
 	return ok
 
 
-func _check_police_livery(root: Node, model_name: String) -> bool:
-	"""Every police car carries the livery paint on its second UV set."""
-	var ok := true
-	for child in root.find_children("Body", "MeshInstance3D", true, false):
-		var mi := child as MeshInstance3D
-		var named := false
-		for i in mi.mesh.get_surface_count():
-			var mat := mi.get_active_material(i)
-			if mat != null and String(mat.resource_name) == "SH_car_paint_police":
-				named = true
-			var arrays := mi.mesh.surface_get_arrays(i)
-			if arrays[Mesh.ARRAY_TEX_UV2] == null \
-					or (arrays[Mesh.ARRAY_TEX_UV2] as PackedVector2Array).is_empty():
-				print("FAIL %s the body has no livery UV set" % model_name)
-				ok = false
-		if not named:
-			print("FAIL %s the body does not use SH_car_paint_police" % model_name)
-			ok = false
-	if ok:
-		print("PASS %s carries the police livery" % model_name)
-	return ok
-
-
-func _frontmost(root: Node, node_name: String, y0: float, y1: float,
-		front: bool) -> float:
-	for child in root.find_children(node_name, "MeshInstance3D", true, false):
-		return _frontmost_one(child as MeshInstance3D, y0, y1, front)
-	return INF
-
-
-func _frontmost_one(mi: MeshInstance3D, y0: float, y1: float, front: bool) -> float:
-	"""The most extreme z of the mesh vertices inside a height band."""
-	var best := INF if front else -INF
-	for i in mi.mesh.get_surface_count():
-		var arrays := mi.mesh.surface_get_arrays(i)
-		var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
-		for v in verts:
-			if v.y < y0 or v.y > y1:
-				continue
-			if front:
-				best = min(best, v.z)
-			else:
-				best = max(best, v.z)
-	return best
-
-
-func _aabb_centre(node: Node, node_name: String) -> Array:
-	"""[found, centre] of a named mesh, or an empty array."""
-	for child in node.find_children(node_name, "MeshInstance3D", true, false):
-		var mi := child as MeshInstance3D
-		if mi.mesh == null:
-			continue
-		return [true, mi.get_aabb().get_center()]
-	return []
-
-
+## [transform, aabb] of a named mesh, or an empty array.
 func _aabb(node: Node, node_name: String) -> Array:
-	"""[found, aabb] of a named mesh, or an empty array."""
 	for child in node.find_children(node_name, "MeshInstance3D", true, false):
 		var mi := child as MeshInstance3D
 		if mi.mesh == null:
 			continue
-		return [true, mi.get_aabb()]
+		return [mi.global_transform, mi.get_aabb()]
 	return []
 
 
@@ -383,8 +311,8 @@ func _collect(node: Node) -> Array:
 	return out
 
 
+## Every node name in the tree must be unique (Godot renames '.' to '_').
 func _duplicates(node: Node) -> Array:
-	"""Every node name in the tree must be unique (Godot renames '.' to '_')."""
 	var seen := {}
 	var out: Array = []
 	for name in _collect(node):

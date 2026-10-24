@@ -1,5 +1,6 @@
 """glTF export with the project settings (core-owned). See CONTRACTS.md §2."""
 import os
+import shutil
 
 import bpy
 
@@ -40,6 +41,14 @@ def export_glb(path, objects=None, collection=None, jpeg_quality=90, extras=True
         os.makedirs(tmp_dir, exist_ok=True)
         tmp = os.path.join(tmp_dir, "%d_%s" % (os.getpid(), os.path.basename(path)))
         bpy.ops.export_scene.gltf(filepath=tmp, export_format="GLB", **common_args)
-        os.replace(tmp, path)
+        try:
+            os.replace(tmp, path)
+        except OSError:
+            # The scratch folder is on another volume than the project (the tmp folder is a junction to a bigger disk): a rename
+            # cannot cross volumes, so the file is copied next to its target and renamed there.
+            staging = path + ".part"
+            shutil.copyfile(tmp, staging)
+            os.replace(staging, path)
+            os.remove(tmp)
     print("EXPORT %s (%d objects)" % (path, len(objects) if use_sel else len(bpy.data.objects)))
     return path

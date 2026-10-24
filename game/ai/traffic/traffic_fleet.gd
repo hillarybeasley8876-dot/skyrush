@@ -11,21 +11,21 @@ const TAXI_COLOR := Color("1e8c8a")
 ## id -> {name, type, length, width, height, mass, health, glb}
 ## type: &"car", &"taxi", &"van", &"bus_truck"
 const MODELS: Dictionary = {
-	&"sedan_ev": {"name": "轿车", "type": &"car", "length": 4.85, "width": 1.90, "height": 1.47,
+	&"sedan_ev": {"name": "轿车", "type": &"car", "length": 4.84, "width": 1.97, "height": 1.52,
 		"mass": 1500.0, "health": 40.0, "glb": "sedan_ev"},
-	&"hatch_ev": {"name": "两厢", "type": &"car", "length": 3.95, "width": 1.77, "height": 1.55,
+	&"hatch_ev": {"name": "两厢", "type": &"car", "length": 3.94, "width": 1.83, "height": 1.51,
 		"mass": 1350.0, "health": 40.0, "glb": "hatch_ev"},
-	&"suv_ev": {"name": "SUV", "type": &"car", "length": 4.75, "width": 1.93, "height": 1.68,
+	&"suv_ev": {"name": "SUV", "type": &"car", "length": 4.74, "width": 2.01, "height": 1.91,
 		"mass": 1900.0, "health": 45.0, "glb": "suv_ev"},
-	&"taxi_ev": {"name": "申城出租", "type": &"taxi", "length": 4.60, "width": 1.90, "height": 1.50,
+	&"taxi_ev": {"name": "申城出租", "type": &"taxi", "length": 4.84, "width": 1.97, "height": 1.80,
 		"mass": 1500.0, "health": 40.0, "glb": "taxi"},
-	&"robotaxi": {"name": "无人出租车", "type": &"taxi", "length": 4.60, "width": 1.90, "height": 1.50,
+	&"robotaxi": {"name": "无人出租车", "type": &"taxi", "length": 4.60, "width": 1.86, "height": 1.61,
 		"mass": 1500.0, "health": 40.0, "glb": "robotaxi"},
-	&"van_ev": {"name": "厢式货车", "type": &"van", "length": 5.30, "width": 2.00, "height": 2.10,
+	&"van_ev": {"name": "厢式货车", "type": &"van", "length": 5.30, "width": 2.07, "height": 2.16,
 		"mass": 2400.0, "health": 60.0, "glb": "van"},
-	&"bus_city": {"name": "公交车", "type": &"bus_truck", "length": 12.00, "width": 2.55, "height": 3.20,
+	&"bus_city": {"name": "公交车", "type": &"bus_truck", "length": 12.00, "width": 2.60, "height": 3.40,
 		"mass": 12000.0, "health": 300.0, "glb": "bus"},
-	&"truck_box": {"name": "货车", "type": &"bus_truck", "length": 7.50, "width": 2.35, "height": 3.30,
+	&"truck_box": {"name": "货车", "type": &"bus_truck", "length": 5.51, "width": 2.41, "height": 3.08,
 		"mass": 9000.0, "health": 200.0, "glb": "truck"},
 }
 

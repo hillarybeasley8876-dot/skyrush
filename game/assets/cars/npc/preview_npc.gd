@@ -3,8 +3,7 @@ extends Node3D
 ## gives every car a body colour from the ref/art §4.7 traffic mix so the sheet
 ## shows the fleet as it will appear in game.
 ##
-## The police cars keep their livery (it lives in the second UV set), so only
-## the plain traffic paint is tinted here.
+## The police cars keep their black and white paint (plain materials), so only the traffic paint is tinted here.
 
 const PAINT := {
 	"sedan_ev": Color("e8e8e6"),          # white 35 %
@@ -30,6 +29,7 @@ func _ready() -> void:
 
 
 func _tint(node: Node, colour: Color) -> void:
+	# the paint of the fleet is the shared material SH_car_paint_npc: the colour is an instance uniform (TrafficVisual.apply_colour)
 	for child in node.find_children("*", "MeshInstance3D", true, false):
 		var mi := child as MeshInstance3D
 		if mi.mesh == null:
@@ -38,9 +38,5 @@ func _tint(node: Node, colour: Color) -> void:
 			var src := mi.get_active_material(i)
 			if src == null or not src.resource_name.begins_with("SH_car_paint"):
 				continue
-			var copy := src.duplicate() as Material
-			if copy is StandardMaterial3D:
-				(copy as StandardMaterial3D).albedo_color = colour
-			elif copy is ShaderMaterial:
-				(copy as ShaderMaterial).set_shader_parameter("base_color", colour)
-			mi.set_surface_override_material(i, copy)
+			mi.set_instance_shader_parameter(&"base_color_override", Color(colour.r, colour.g, colour.b, 1.0))
+			break
