@@ -122,6 +122,20 @@ into the tunnel from both ends, up out of it, a car at the tube from the side; 3
 `tools/ramp_sweep_probe.gd` (a box of the size of a car swept along the ramps). A test that drives the player car with the input
 sets `Game.options["skip-menu"]` before it builds the game: the title menu holds the car otherwise (the suite runs every unit).
 
+## The steering (the player: "the handling is terrible")
+
+`vehicle/tests/steer_report.gd` measures how the car answers the wheel (the yaw rate it builds, how fast, the lateral g, the slip,
+the speed it keeps, how it settles), and sweeps the wheel from a tenth to the full lock. The full wheel (a keyboard knows nothing
+else) turned the car 20-24 % less than a third of it at 80-120 km/h: the wheel angle fell linearly from 32 deg at rest to 7 deg at
+the top speed, 24 deg at 80 km/h, and the grip curve of the tyres falls after 8 deg of slip. The steering assist of the player
+(`Drive.assist`, `DriveTuning.STEER_GRIP_*`) makes the full wheel the angle where the front tyres give the most (20 deg at 40 km/h,
+11 at 80, 8.7 at 120, 7.3 at 200): the full wheel turns the car 23-31 % harder at 40-120 km/h (80 km/h: 23.9 -> 31.4 deg/s, 0.95 ->
+1.24 g), a gamepad gets the whole travel of the stick for the useful angles. The response stays quick (63 % in 0.05-0.2 s), the car
+settles in 0.17 s after the release, the drift, the hops, the roll and the brake are unchanged (`feel_report.gd --assist=1`). The AI
+cars keep the linear fall: the police and the rivals turn a wanted side force or a heading error into an input with it.
+Over 120 km/h the car is at the friction of its tyres (1.3-1.46 g): a sharper car needs more grip, a decision of the brief.
+Check: `vehicle/test_steer_assist.gd` (mutation-checked).
+
 ## Tools added (game/tools, tools/)
 
 `fuzz_drive.gd` (random whole-game drives with a flight recorder), `soak_traffic.gd`, `height_map.gd`, `touch_probe.gd` (what a car

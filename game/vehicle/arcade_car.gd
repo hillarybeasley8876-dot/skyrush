@@ -70,6 +70,9 @@ const IncidentRecorder := preload("res://vehicle/incident_recorder.gd")
 ## True for a car that turns itself back onto its wheels when it lies on its side or on its roof (BodyTuning.RIGHTING_*). The car
 ## of the player always does. An AI car does not: a police unit on its roof is disabled (dossier 6.3), a turned over rival is out.
 @export var self_righting: bool = false
+## True for a car whose full wheel is the angle where the front tyres give the most (DriveTuning.STEER_GRIP_*). The car of the
+## player always has it; the tests of the steering switch it on for their cars.
+@export var steering_assist: bool = false
 
 var wheels: Array[WheelMod] = []
 var drive: DriveMod = DriveMod.new()
@@ -308,6 +311,8 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	readout.ground_y = flight.ground_y()
 	dynamics.ground_y = readout.ground_y
 	dynamics.righting = self_righting or player_controlled or Game.player == self
+	# the steering assist is a driver aid of the player (the AI drivers were tuned with the linear fall of the wheel angle)
+	drive.assist = steering_assist or player_controlled or Game.player == self
 	dynamics.apply(state, dt)
 	if dynamics.hopped:
 		Events.hop.emit(self, thruster.last_hop)

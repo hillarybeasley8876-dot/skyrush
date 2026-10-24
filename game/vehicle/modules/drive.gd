@@ -14,6 +14,9 @@ var steer_angle: float = 0.0
 var motor_load: float = 0.0
 
 var _steer: float = 0.0
+## The steering assist (DriveTuning.STEER_GRIP_*) is on: the car of the player. The AI cars keep the linear fall of the wheel angle
+## their drivers were tuned with (the police and the rivals turn a wanted side force or a heading error into an input with it).
+var assist: bool = false
 var _spec: CarSpec
 
 
@@ -35,10 +38,21 @@ func update_steer(steer_input: float, dt: float, speed: float, ramp: bool = true
 	else:
 		_steer = target
 	motor_load = 0.0
-	# Max wheel angle falls from 32 deg at rest to 7 deg at the top speed.
+	steer_angle = deg_to_rad(max_steer_deg(speed, assist)) * _steer
+
+
+## The angle of the full wheel at a speed (m/s): the linear fall from 32 deg at rest to 7 deg at the top speed, and with the
+## steering assist (`assist`, the car of the player) at most the angle where the front tyres give the most
+## (DriveTuning.STEER_GRIP_*).
+static func max_steer_deg(speed: float, assist: bool = true) -> float:
 	var t: float = clampf(absf(speed) / DriveTuning.V_TOP, 0.0, 1.0)
-	var max_deg: float = lerpf(DriveTuning.STEER_MAX_DEG, DriveTuning.STEER_MIN_DEG, t)
-	steer_angle = deg_to_rad(max_deg) * _steer
+	var linear: float = lerpf(DriveTuning.STEER_MAX_DEG, DriveTuning.STEER_MIN_DEG, t)
+	if not assist:
+		return linear
+	var kmh: float = maxf(absf(speed) * DriveTuning.KMH, 1.0)
+	var grip: float = DriveTuning.STEER_GRIP_DEG + DriveTuning.STEER_GRIP_ADD \
+			* pow(DriveTuning.STEER_GRIP_KMH / kmh, DriveTuning.STEER_GRIP_POW)
+	return minf(linear, grip)
 
 
 ## The smoothed steering value in [-1, 1].

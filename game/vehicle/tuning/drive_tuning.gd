@@ -37,6 +37,20 @@ const STEER_MAX_DEG := 32.0
 
 const STEER_MIN_DEG := 7.0
 
+## The steering assist: the full wheel is the angle where the front tyres give the most. A keyboard only knows the full wheel, and
+## the linear fall from 32 deg at rest to 7 deg at the top speed left the front tyres far past their grip (24 deg at 80 km/h, the
+## grip curve falls after 8 deg of slip): the full wheel turned the car 20-24 % less than a third of it at 80-120 km/h
+## (vehicle/tests/steer_report.gd). The full wheel is now STEER_GRIP_DEG + STEER_GRIP_ADD * (STEER_GRIP_KMH / speed)^1.5, at most
+## the linear fall: 20 deg at 40 km/h, 11 at 80, 8.7 at 120, 7.3 at 200. The car of the player only (Drive.assist): the AI drivers
+## turn a wanted side force or a heading error into an input with the linear fall.
+const STEER_GRIP_DEG := 6.0
+
+const STEER_GRIP_ADD := 14.0
+
+const STEER_GRIP_KMH := 40.0
+
+const STEER_GRIP_POW := 1.5
+
 ## Keyboard steer ramp: 4.0 /s toward the target, 6.0 /s back to centre.
 const STEER_RAMP := 4.0
 

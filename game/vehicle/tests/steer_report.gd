@@ -19,6 +19,8 @@ const ROW_Z0 := -1000.0
 
 var _t: T
 var _row := 0
+## The cars of the report have the steering assist of the player (--assist=0: without it, as the AI cars drive).
+var _assist := true
 
 
 func _ready() -> void:
@@ -28,6 +30,8 @@ func _ready() -> void:
 func _run() -> void:
 	_t = T.new(get_tree())
 	await _t.build_world()
+	_assist = Game.option("assist", "1") != "0"
+	print("STEER the steering assist of the player is %s" % ("on" if _assist else "off (the AI cars)"))
 	print("STEER speed | yaw plateau | t63 | lateral | body slip | speed kept 2 s | settle | swing back")
 	for kmh: float in SPEEDS:
 		var r := await _turn(kmh, 1.0, true)
@@ -59,6 +63,7 @@ func _next_row() -> Vector3:
 func _turn(kmh: float, input: float, release: bool) -> Dictionary:
 	var at: Vector3 = await _next_row()
 	var car: ArcadeCar = await _t.spawn_car(_t.roadster(), at, -PI * 0.5)
+	car.steering_assist = _assist
 	await _t.run(0.3)
 	var target := kmh / 3.6
 	car.linear_velocity = -car.global_transform.basis.z * target

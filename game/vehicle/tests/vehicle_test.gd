@@ -31,6 +31,8 @@ func spawn_car(spec: CarSpec, pos: Vector3, yaw: float) -> ArcadeCar:
 	var car: ArcadeCar = packed.instantiate() as ArcadeCar
 	car.spec = spec
 	car.player_controlled = false
+	# --assist=1: the cars of a test have the steering assist of the player (the feel report compares the two)
+	car.steering_assist = Game.option("assist", "0") == "1"
 	tree.root.add_child(car)
 	car.reset_to(Transform3D(Basis(Vector3.UP, yaw), pos))
 	await step()
