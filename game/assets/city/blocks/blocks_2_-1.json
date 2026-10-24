@@ -8,10 +8,10 @@
   -512.0
  ],
  "size_m": 512.0,
- "city_sha256": "72ddd6f0dac54d9dc3dfc7905205b7ccabea5dbde12a81c7694bef7a83f8e120",
+ "city_sha256": "a140a2ad8d9a6b8671fe103c058a74a42cf606f5d2f8f261467944c0606dcce5",
  "buildings": [
   {
-   "id": "b_d7_032_p0_0",
+   "id": "b_d7_039_p0_0",
    "style": "office_tower",
    "seed": 9896,
    "building_seed": 0.6435,
@@ -22,27 +22,27 @@
    "floors": 8,
    "poly": [
     [
-     1486.02,
-     -480.0
+     1353.98,
+     -520.0
     ],
     [
-     1486.02,
-     -470.0
+     1353.98,
+     -530.0
     ],
     [
-     1358.66,
-     -470.0
+     1481.34,
+     -530.0
     ],
     [
-     1358.66,
-     -480.0
+     1481.34,
+     -520.0
     ]
    ],
    "near_road": true,
    "ground": false
   },
   {
-   "id": "b_d7_032_p1_1",
+   "id": "b_d7_039_p1_1",
    "style": "office_tower",
    "seed": 3081,
    "building_seed": 0.2413,
@@ -53,27 +53,27 @@
    "floors": 8,
    "poly": [
     [
-     1363.78,
-     -540.0
+     1486.02,
+     -480.0
     ],
     [
-     1363.78,
-     -550.0
+     1486.02,
+     -470.0
     ],
     [
-     1483.14,
-     -550.0
+     1358.66,
+     -470.0
     ],
     [
-     1483.14,
-     -540.0
+     1358.66,
+     -480.0
     ]
    ],
    "near_road": true,
    "ground": false
   },
   {
-   "id": "b_d7_032_p2_2",
+   "id": "b_d7_039_p2_2",
    "style": "office_tower",
    "seed": 9489,
    "building_seed": 0.5684,
@@ -85,6 +85,37 @@
    "poly": [
     [
      1363.78,
+     -540.0
+    ],
+    [
+     1363.78,
+     -550.0
+    ],
+    [
+     1483.14,
+     -550.0
+    ],
+    [
+     1483.14,
+     -540.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_039_p3_3",
+   "style": "office_tower",
+   "seed": 184,
+   "building_seed": 0.0334,
+   "lit_ratio": 0.279,
+   "band_ratio": 0.25,
+   "cool_mix": 0.749,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1363.78,
      -530.0
     ],
     [
@@ -104,38 +135,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_032_p3_3",
-   "style": "office_tower",
-   "seed": 184,
-   "building_seed": 0.0334,
-   "lit_ratio": 0.279,
-   "band_ratio": 0.25,
-   "cool_mix": 0.749,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1506.22,
-     -530.0
-    ],
-    [
-     1506.22,
-     -520.0
-    ],
-    [
-     1386.86,
-     -520.0
-    ],
-    [
-     1386.86,
-     -530.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_032_p4_4",
+   "id": "b_d7_039_p4_4",
    "style": "office_tower",
    "seed": 9772,
    "building_seed": 0.3595,
@@ -166,7 +166,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_032_p5_5",
+   "id": "b_d7_039_p5_5",
    "style": "office_tower",
    "seed": 2372,
    "building_seed": 0.4329,
@@ -197,7 +197,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_032_p6_6",
+   "id": "b_d7_039_p6_6",
    "style": "office_tower",
    "seed": 3899,
    "building_seed": 0.8999,
@@ -228,7 +228,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_032_p7_7",
+   "id": "b_d7_039_p7_7",
    "style": "office_tower",
    "seed": 9873,
    "building_seed": 0.9522,
@@ -259,7 +259,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_032_p8_8",
+   "id": "b_d7_039_p8_8",
    "style": "office_tower",
    "seed": 5167,
    "building_seed": 0.2807,
@@ -290,7 +290,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_032_p9_9",
+   "id": "b_d7_039_p9_9",
    "style": "office_tower",
    "seed": 9073,
    "building_seed": 0.869,
@@ -301,27 +301,27 @@
    "floors": 8,
    "poly": [
     [
-     1486.82,
-     -560.0
+     1476.82,
+     -460.0
     ],
     [
-     1486.82,
-     -550.0
+     1476.82,
+     -450.0
     ],
     [
-     1391.46,
-     -550.0
+     1381.46,
+     -450.0
     ],
     [
-     1391.46,
-     -560.0
+     1381.46,
+     -460.0
     ]
    ],
    "near_road": true,
    "ground": false
   },
   {
-   "id": "b_d7_032_p10_10",
+   "id": "b_d7_039_p10_10",
    "style": "office_tower",
    "seed": 4746,
    "building_seed": 0.545,
@@ -332,27 +332,27 @@
    "floors": 8,
    "poly": [
     [
-     1476.82,
-     -460.0
+     1372.98,
+     -550.0
     ],
     [
-     1476.82,
-     -450.0
+     1372.98,
+     -560.0
     ],
     [
-     1381.46,
-     -450.0
+     1460.34,
+     -560.0
     ],
     [
-     1381.46,
-     -460.0
+     1460.34,
+     -550.0
     ]
    ],
    "near_road": true,
    "ground": false
   },
   {
-   "id": "b_d7_032_p11_11",
+   "id": "b_d7_039_p11_11",
    "style": "office_tower",
    "seed": 1088,
    "building_seed": 0.4518,
@@ -383,7 +383,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_032_p12_12",
+   "id": "b_d7_039_p12_12",
    "style": "office_tower",
    "seed": 3574,
    "building_seed": 0.3806,
@@ -414,7 +414,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_032_p13_13",
+   "id": "b_d7_039_p13_13",
    "style": "office_tower",
    "seed": 3158,
    "building_seed": 0.1295,
@@ -425,27 +425,27 @@
    "floors": 8,
    "poly": [
     [
-     1438.02,
-     -580.0
+     1402.18,
+     -430.0
     ],
     [
-     1438.02,
-     -570.0
+     1402.18,
+     -440.0
     ],
     [
-     1390.66,
-     -570.0
+     1457.54,
+     -440.0
     ],
     [
-     1390.66,
-     -580.0
+     1457.54,
+     -430.0
     ]
    ],
    "near_road": true,
    "ground": false
   },
   {
-   "id": "b_d7_032_p14_14",
+   "id": "b_d7_039_p14_14",
    "style": "office_tower",
    "seed": 3325,
    "building_seed": 0.963,
@@ -456,27 +456,27 @@
    "floors": 8,
    "poly": [
     [
-     1468.02,
-     -440.0
+     1438.02,
+     -580.0
     ],
     [
-     1468.02,
-     -430.0
+     1438.02,
+     -570.0
     ],
     [
-     1420.66,
-     -430.0
+     1390.66,
+     -570.0
     ],
     [
-     1420.66,
-     -440.0
+     1390.66,
+     -580.0
     ]
    ],
    "near_road": true,
    "ground": false
   },
   {
-   "id": "b_d7_032_p15_15",
+   "id": "b_d7_039_p15_15",
    "style": "office_tower",
    "seed": 4137,
    "building_seed": 0.943,
@@ -507,7 +507,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_032_p16_16",
+   "id": "b_d7_039_p16_16",
    "style": "office_tower",
    "seed": 3989,
    "building_seed": 0.1212,
@@ -538,7 +538,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_032_p17_17",
+   "id": "b_d7_039_p17_17",
    "style": "office_tower",
    "seed": 6722,
    "building_seed": 0.709,
@@ -549,37 +549,6 @@
    "floors": 8,
    "poly": [
     [
-     1380.06,
-     -590.0
-    ],
-    [
-     1380.06,
-     -600.0
-    ],
-    [
-     1389.26,
-     -600.0
-    ],
-    [
-     1389.26,
-     -590.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_032_p18_18",
-   "style": "office_tower",
-   "seed": 2569,
-   "building_seed": 0.8863,
-   "lit_ratio": 0.286,
-   "band_ratio": 0.253,
-   "cool_mix": 0.758,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
      1460.0,
      -410.06
     ],
@@ -600,13 +569,13 @@
    "ground": false
   },
   {
-   "id": "b_d7_033_p0_19",
+   "id": "b_d7_041_p0_18",
    "style": "office_tower",
-   "seed": 9517,
-   "building_seed": 0.3293,
-   "lit_ratio": 0.29,
-   "band_ratio": 0.255,
-   "cool_mix": 0.762,
+   "seed": 8142,
+   "building_seed": 0.0877,
+   "lit_ratio": 0.263,
+   "band_ratio": 0.242,
+   "cool_mix": 0.729,
    "height": 40.7,
    "floors": 8,
    "poly": [
@@ -631,13 +600,13 @@
    "ground": false
   },
   {
-   "id": "b_d7_033_p1_20",
+   "id": "b_d7_041_p1_19",
    "style": "office_tower",
-   "seed": 9508,
-   "building_seed": 0.3746,
-   "lit_ratio": 0.267,
-   "band_ratio": 0.244,
-   "cool_mix": 0.734,
+   "seed": 9363,
+   "building_seed": 0.7937,
+   "lit_ratio": 0.278,
+   "band_ratio": 0.249,
+   "cool_mix": 0.748,
    "height": 40.7,
    "floors": 8,
    "poly": [
@@ -662,13 +631,13 @@
    "ground": false
   },
   {
-   "id": "b_d7_033_p2_21",
+   "id": "b_d7_041_p2_20",
    "style": "office_tower",
-   "seed": 3274,
-   "building_seed": 0.9681,
-   "lit_ratio": 0.248,
-   "band_ratio": 0.234,
-   "cool_mix": 0.71,
+   "seed": 5745,
+   "building_seed": 0.2026,
+   "lit_ratio": 0.259,
+   "band_ratio": 0.24,
+   "cool_mix": 0.724,
    "height": 40.7,
    "floors": 8,
    "poly": [
@@ -693,1126 +662,10 @@
    "ground": false
   },
   {
-   "id": "b_d7_033_p3_22",
+   "id": "b_d7_041_p3_21",
    "style": "office_tower",
-   "seed": 2500,
-   "building_seed": 0.8394,
-   "lit_ratio": 0.305,
-   "band_ratio": 0.262,
-   "cool_mix": 0.781,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1116.42,
-     -490.0
-    ],
-    [
-     1116.42,
-     -480.0
-    ],
-    [
-     1005.06,
-     -480.0
-    ],
-    [
-     1005.06,
-     -490.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_033_p4_23",
-   "style": "office_tower",
-   "seed": 9266,
-   "building_seed": 0.521,
-   "lit_ratio": 0.251,
-   "band_ratio": 0.236,
-   "cool_mix": 0.714,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1106.62,
-     -530.0
-    ],
-    [
-     1106.62,
-     -520.0
-    ],
-    [
-     1003.26,
-     -520.0
-    ],
-    [
-     1003.26,
-     -530.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_033_p5_24",
-   "style": "office_tower",
-   "seed": 2464,
-   "building_seed": 0.1112,
-   "lit_ratio": 0.275,
-   "band_ratio": 0.248,
-   "cool_mix": 0.744,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1107.02,
-     -480.0
-    ],
-    [
-     1107.02,
-     -470.0
-    ],
-    [
-     1019.66,
-     -470.0
-    ],
-    [
-     1019.66,
-     -480.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_033_p6_25",
-   "style": "office_tower",
-   "seed": 5830,
-   "building_seed": 0.925,
-   "lit_ratio": 0.286,
-   "band_ratio": 0.253,
-   "cool_mix": 0.757,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     982.78,
-     -530.0
-    ],
-    [
-     982.78,
-     -540.0
-    ],
-    [
-     1062.14,
-     -540.0
-    ],
-    [
-     1062.14,
-     -530.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_033_p7_26",
-   "style": "office_tower",
-   "seed": 4385,
-   "building_seed": 0.5147,
-   "lit_ratio": 0.25,
-   "band_ratio": 0.235,
-   "cool_mix": 0.712,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1107.42,
-     -470.0
-    ],
-    [
-     1107.42,
-     -460.0
-    ],
-    [
-     1036.06,
-     -460.0
-    ],
-    [
-     1036.06,
-     -470.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_033_p8_27",
-   "style": "office_tower",
-   "seed": 7248,
-   "building_seed": 0.0908,
-   "lit_ratio": 0.299,
-   "band_ratio": 0.26,
-   "cool_mix": 0.774,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1057.82,
-     -550.0
-    ],
-    [
-     1057.82,
-     -540.0
-    ],
-    [
-     1002.46,
-     -540.0
-    ],
-    [
-     1002.46,
-     -550.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_033_p9_28",
-   "style": "office_tower",
-   "seed": 5894,
-   "building_seed": 0.111,
-   "lit_ratio": 0.26,
-   "band_ratio": 0.24,
-   "cool_mix": 0.725,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1098.02,
-     -460.0
-    ],
-    [
-     1098.02,
-     -450.0
-    ],
-    [
-     1050.66,
-     -450.0
-    ],
-    [
-     1050.66,
-     -460.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_033_p10_29",
-   "style": "office_tower",
-   "seed": 2091,
-   "building_seed": 0.2202,
-   "lit_ratio": 0.256,
-   "band_ratio": 0.238,
-   "cool_mix": 0.72,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     991.78,
-     -550.0
-    ],
-    [
-     991.78,
-     -560.0
-    ],
-    [
-     1031.14,
-     -560.0
-    ],
-    [
-     1031.14,
-     -550.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_033_p11_30",
-   "style": "office_tower",
-   "seed": 7475,
-   "building_seed": 0.8241,
-   "lit_ratio": 0.254,
-   "band_ratio": 0.237,
-   "cool_mix": 0.717,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1098.42,
-     -450.0
-    ],
-    [
-     1098.42,
-     -440.0
-    ],
-    [
-     1067.06,
-     -440.0
-    ],
-    [
-     1067.06,
-     -450.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_033_p12_31",
-   "style": "office_tower",
-   "seed": 5016,
-   "building_seed": 0.4481,
-   "lit_ratio": 0.29,
-   "band_ratio": 0.255,
-   "cool_mix": 0.763,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1088.82,
-     -440.0
-    ],
-    [
-     1088.82,
-     -430.0
-    ],
-    [
-     1073.46,
-     -430.0
-    ],
-    [
-     1073.46,
-     -440.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_033_p13_32",
-   "style": "office_tower",
-   "seed": 8251,
-   "building_seed": 0.6272,
-   "lit_ratio": 0.319,
-   "band_ratio": 0.27,
-   "cool_mix": 0.799,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1000.0,
-     -569.94
-    ],
-    [
-     1010.0,
-     -569.94
-    ],
-    [
-     1010.0,
-     -560.74
-    ],
-    [
-     1000.0,
-     -560.74
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_037_p0_33",
-   "style": "office_tower",
-   "seed": 6489,
-   "building_seed": 0.1426,
-   "lit_ratio": 0.296,
-   "band_ratio": 0.258,
-   "cool_mix": 0.77,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1256.02,
-     -380.0
-    ],
-    [
-     1256.02,
-     -370.0
-    ],
-    [
-     1128.66,
-     -370.0
-    ],
-    [
-     1128.66,
-     -380.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_037_p1_34",
-   "style": "office_tower",
-   "seed": 3918,
-   "building_seed": 0.7114,
-   "lit_ratio": 0.318,
-   "band_ratio": 0.269,
-   "cool_mix": 0.798,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1123.78,
-     -410.0
-    ],
-    [
-     1123.78,
-     -420.0
-    ],
-    [
-     1243.14,
-     -420.0
-    ],
-    [
-     1243.14,
-     -410.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_037_p2_35",
-   "style": "office_tower",
-   "seed": 7653,
-   "building_seed": 0.0411,
-   "lit_ratio": 0.258,
-   "band_ratio": 0.239,
-   "cool_mix": 0.722,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1266.22,
-     -410.0
-    ],
-    [
-     1266.22,
-     -400.0
-    ],
-    [
-     1146.86,
-     -400.0
-    ],
-    [
-     1146.86,
-     -410.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_037_p3_36",
-   "style": "office_tower",
-   "seed": 6396,
-   "building_seed": 0.1979,
-   "lit_ratio": 0.256,
-   "band_ratio": 0.238,
-   "cool_mix": 0.72,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1113.78,
-     -390.0
-    ],
-    [
-     1113.78,
-     -400.0
-    ],
-    [
-     1233.14,
-     -400.0
-    ],
-    [
-     1233.14,
-     -390.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_037_p4_37",
-   "style": "office_tower",
-   "seed": 2941,
-   "building_seed": 0.3709,
-   "lit_ratio": 0.282,
-   "band_ratio": 0.251,
-   "cool_mix": 0.753,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1256.22,
-     -390.0
-    ],
-    [
-     1256.22,
-     -380.0
-    ],
-    [
-     1136.86,
-     -380.0
-    ],
-    [
-     1136.86,
-     -390.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_037_p5_38",
-   "style": "office_tower",
-   "seed": 2645,
-   "building_seed": 0.346,
-   "lit_ratio": 0.264,
-   "band_ratio": 0.242,
-   "cool_mix": 0.73,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1133.58,
-     -440.0
-    ],
-    [
-     1133.58,
-     -450.0
-    ],
-    [
-     1244.94,
-     -450.0
-    ],
-    [
-     1244.94,
-     -440.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_037_p6_39",
-   "style": "office_tower",
-   "seed": 6460,
-   "building_seed": 0.0687,
-   "lit_ratio": 0.246,
-   "band_ratio": 0.233,
-   "cool_mix": 0.707,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1133.58,
-     -430.0
-    ],
-    [
-     1133.58,
-     -440.0
-    ],
-    [
-     1244.94,
-     -440.0
-    ],
-    [
-     1244.94,
-     -430.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_037_p7_40",
-   "style": "office_tower",
-   "seed": 3096,
-   "building_seed": 0.6991,
-   "lit_ratio": 0.267,
-   "band_ratio": 0.244,
-   "cool_mix": 0.734,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1133.58,
-     -420.0
-    ],
-    [
-     1133.58,
-     -430.0
-    ],
-    [
-     1244.94,
-     -430.0
-    ],
-    [
-     1244.94,
-     -420.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_037_p8_41",
-   "style": "office_tower",
-   "seed": 4428,
-   "building_seed": 0.8872,
-   "lit_ratio": 0.296,
-   "band_ratio": 0.258,
-   "cool_mix": 0.77,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1266.62,
-     -460.0
-    ],
-    [
-     1266.62,
-     -450.0
-    ],
-    [
-     1163.26,
-     -450.0
-    ],
-    [
-     1163.26,
-     -460.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_037_p9_42",
-   "style": "office_tower",
-   "seed": 8659,
-   "building_seed": 0.0616,
-   "lit_ratio": 0.29,
-   "band_ratio": 0.255,
-   "cool_mix": 0.763,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1123.38,
-     -360.0
-    ],
-    [
-     1123.38,
-     -370.0
-    ],
-    [
-     1226.74,
-     -370.0
-    ],
-    [
-     1226.74,
-     -360.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_037_p10_43",
-   "style": "office_tower",
-   "seed": 7671,
-   "building_seed": 0.2904,
-   "lit_ratio": 0.318,
-   "band_ratio": 0.269,
-   "cool_mix": 0.797,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1142.98,
-     -460.0
-    ],
-    [
-     1142.98,
-     -470.0
-    ],
-    [
-     1230.34,
-     -470.0
-    ],
-    [
-     1230.34,
-     -460.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_037_p11_44",
-   "style": "office_tower",
-   "seed": 7038,
-   "building_seed": 0.0494,
-   "lit_ratio": 0.307,
-   "band_ratio": 0.264,
-   "cool_mix": 0.784,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1247.02,
-     -360.0
-    ],
-    [
-     1247.02,
-     -350.0
-    ],
-    [
-     1159.66,
-     -350.0
-    ],
-    [
-     1159.66,
-     -360.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_037_p12_45",
-   "style": "office_tower",
-   "seed": 5616,
-   "building_seed": 0.8766,
-   "lit_ratio": 0.29,
-   "band_ratio": 0.255,
-   "cool_mix": 0.763,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1217.82,
-     -480.0
-    ],
-    [
-     1217.82,
-     -470.0
-    ],
-    [
-     1162.46,
-     -470.0
-    ],
-    [
-     1162.46,
-     -480.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_037_p13_46",
-   "style": "office_tower",
-   "seed": 7912,
-   "building_seed": 0.6707,
-   "lit_ratio": 0.275,
-   "band_ratio": 0.248,
-   "cool_mix": 0.744,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1172.18,
-     -340.0
-    ],
-    [
-     1172.18,
-     -350.0
-    ],
-    [
-     1227.54,
-     -350.0
-    ],
-    [
-     1227.54,
-     -340.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_037_p14_47",
-   "style": "office_tower",
-   "seed": 4078,
-   "building_seed": 0.0755,
-   "lit_ratio": 0.318,
-   "band_ratio": 0.269,
-   "cool_mix": 0.798,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1151.78,
-     -480.0
-    ],
-    [
-     1151.78,
-     -490.0
-    ],
-    [
-     1191.14,
-     -490.0
-    ],
-    [
-     1191.14,
-     -480.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_037_p15_48",
-   "style": "office_tower",
-   "seed": 5059,
-   "building_seed": 0.9414,
-   "lit_ratio": 0.31,
-   "band_ratio": 0.265,
-   "cool_mix": 0.787,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1238.22,
-     -340.0
-    ],
-    [
-     1238.22,
-     -330.0
-    ],
-    [
-     1198.86,
-     -330.0
-    ],
-    [
-     1198.86,
-     -340.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_037_p16_49",
-   "style": "office_tower",
-   "seed": 1476,
-   "building_seed": 0.7234,
-   "lit_ratio": 0.268,
-   "band_ratio": 0.244,
-   "cool_mix": 0.735,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1151.38,
-     -490.0
-    ],
-    [
-     1151.38,
-     -500.0
-    ],
-    [
-     1174.74,
-     -500.0
-    ],
-    [
-     1174.74,
-     -490.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_037_p17_50",
-   "style": "office_tower",
-   "seed": 7854,
-   "building_seed": 0.7664,
-   "lit_ratio": 0.299,
-   "band_ratio": 0.26,
-   "cool_mix": 0.774,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1230.0,
-     -320.06
-    ],
-    [
-     1220.0,
-     -320.06
-    ],
-    [
-     1220.0,
-     -329.26
-    ],
-    [
-     1230.0,
-     -329.26
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_041_p0_51",
-   "style": "office_tower",
-   "seed": 1511,
-   "building_seed": 0.7347,
-   "lit_ratio": 0.262,
-   "band_ratio": 0.241,
-   "cool_mix": 0.727,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1437.42,
-     -390.0
-    ],
-    [
-     1437.42,
-     -380.0
-    ],
-    [
-     1366.06,
-     -380.0
-    ],
-    [
-     1366.06,
-     -390.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_041_p1_52",
-   "style": "office_tower",
-   "seed": 5202,
-   "building_seed": 0.6152,
-   "lit_ratio": 0.254,
-   "band_ratio": 0.237,
-   "cool_mix": 0.718,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1352.58,
-     -370.0
-    ],
-    [
-     1352.58,
-     -380.0
-    ],
-    [
-     1423.94,
-     -380.0
-    ],
-    [
-     1423.94,
-     -370.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_041_p2_53",
-   "style": "office_tower",
-   "seed": 4995,
-   "building_seed": 0.2304,
-   "lit_ratio": 0.285,
-   "band_ratio": 0.252,
-   "cool_mix": 0.756,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1437.42,
-     -370.0
-    ],
-    [
-     1437.42,
-     -360.0
-    ],
-    [
-     1366.06,
-     -360.0
-    ],
-    [
-     1366.06,
-     -370.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_041_p3_54",
-   "style": "office_tower",
-   "seed": 5402,
-   "building_seed": 0.8312,
-   "lit_ratio": 0.264,
-   "band_ratio": 0.242,
-   "cool_mix": 0.73,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1352.38,
-     -350.0
-    ],
-    [
-     1352.38,
-     -360.0
-    ],
-    [
-     1415.74,
-     -360.0
-    ],
-    [
-     1415.74,
-     -350.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_041_p4_55",
-   "style": "office_tower",
-   "seed": 2343,
-   "building_seed": 0.1463,
-   "lit_ratio": 0.26,
-   "band_ratio": 0.24,
-   "cool_mix": 0.725,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1342.18,
-     -390.0
-    ],
-    [
-     1342.18,
-     -400.0
-    ],
-    [
-     1397.54,
-     -400.0
-    ],
-    [
-     1397.54,
-     -390.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_041_p5_56",
-   "style": "office_tower",
-   "seed": 5146,
-   "building_seed": 0.5239,
-   "lit_ratio": 0.295,
-   "band_ratio": 0.258,
-   "cool_mix": 0.769,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1427.82,
-     -350.0
-    ],
-    [
-     1427.82,
-     -340.0
-    ],
-    [
-     1372.46,
-     -340.0
-    ],
-    [
-     1372.46,
-     -350.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_041_p6_57",
-   "style": "office_tower",
-   "seed": 523,
-   "building_seed": 0.3447,
-   "lit_ratio": 0.314,
-   "band_ratio": 0.267,
-   "cool_mix": 0.792,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1427.82,
-     -340.0
-    ],
-    [
-     1427.82,
-     -330.0
-    ],
-    [
-     1372.46,
-     -330.0
-    ],
-    [
-     1372.46,
-     -340.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_041_p7_58",
-   "style": "office_tower",
-   "seed": 9825,
-   "building_seed": 0.6934,
+   "seed": 5965,
+   "building_seed": 0.4175,
    "lit_ratio": 0.265,
    "band_ratio": 0.242,
    "cool_mix": 0.731,
@@ -1820,340 +673,30 @@
    "floors": 8,
    "poly": [
     [
-     1361.98,
-     -320.0
+     1106.62,
+     -530.0
     ],
     [
-     1361.98,
-     -330.0
+     1106.62,
+     -520.0
     ],
     [
-     1409.34,
-     -330.0
+     1003.26,
+     -520.0
     ],
     [
-     1409.34,
-     -320.0
+     1003.26,
+     -530.0
     ]
    ],
    "near_road": true,
    "ground": false
   },
   {
-   "id": "b_d7_041_p8_59",
+   "id": "b_d7_041_p4_22",
    "style": "office_tower",
-   "seed": 7641,
-   "building_seed": 0.0318,
-   "lit_ratio": 0.293,
-   "band_ratio": 0.256,
-   "cool_mix": 0.766,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1418.02,
-     -320.0
-    ],
-    [
-     1418.02,
-     -310.0
-    ],
-    [
-     1370.66,
-     -310.0
-    ],
-    [
-     1370.66,
-     -320.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_041_p9_60",
-   "style": "office_tower",
-   "seed": 1080,
-   "building_seed": 0.7933,
-   "lit_ratio": 0.299,
-   "band_ratio": 0.26,
-   "cool_mix": 0.774,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1341.78,
-     -400.0
-    ],
-    [
-     1341.78,
-     -410.0
-    ],
-    [
-     1381.14,
-     -410.0
-    ],
-    [
-     1381.14,
-     -400.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_041_p10_61",
-   "style": "office_tower",
-   "seed": 496,
-   "building_seed": 0.8776,
-   "lit_ratio": 0.294,
-   "band_ratio": 0.257,
-   "cool_mix": 0.767,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1361.78,
-     -300.0
-    ],
-    [
-     1361.78,
-     -310.0
-    ],
-    [
-     1401.14,
-     -310.0
-    ],
-    [
-     1401.14,
-     -300.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_041_p11_62",
-   "style": "office_tower",
-   "seed": 6740,
-   "building_seed": 0.8168,
-   "lit_ratio": 0.313,
-   "band_ratio": 0.266,
-   "cool_mix": 0.791,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1361.78,
-     -290.0
-    ],
-    [
-     1361.78,
-     -300.0
-    ],
-    [
-     1401.14,
-     -300.0
-    ],
-    [
-     1401.14,
-     -290.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_041_p12_63",
-   "style": "office_tower",
-   "seed": 8276,
-   "building_seed": 0.855,
-   "lit_ratio": 0.294,
-   "band_ratio": 0.257,
-   "cool_mix": 0.768,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1408.42,
-     -290.0
-    ],
-    [
-     1408.42,
-     -280.0
-    ],
-    [
-     1377.06,
-     -280.0
-    ],
-    [
-     1377.06,
-     -290.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_041_p13_64",
-   "style": "office_tower",
-   "seed": 7419,
-   "building_seed": 0.0662,
-   "lit_ratio": 0.245,
-   "band_ratio": 0.232,
-   "cool_mix": 0.706,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1368.62,
-     -420.0
-    ],
-    [
-     1368.62,
-     -410.0
-    ],
-    [
-     1345.26,
-     -410.0
-    ],
-    [
-     1345.26,
-     -420.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_041_p14_65",
-   "style": "office_tower",
-   "seed": 3183,
-   "building_seed": 0.864,
-   "lit_ratio": 0.308,
-   "band_ratio": 0.264,
-   "cool_mix": 0.785,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1398.62,
-     -280.0
-    ],
-    [
-     1398.62,
-     -270.0
-    ],
-    [
-     1375.26,
-     -270.0
-    ],
-    [
-     1375.26,
-     -280.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_041_p15_66",
-   "style": "office_tower",
-   "seed": 3208,
-   "building_seed": 0.7569,
-   "lit_ratio": 0.262,
-   "band_ratio": 0.241,
-   "cool_mix": 0.728,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1398.62,
-     -270.0
-    ],
-    [
-     1398.62,
-     -260.0
-    ],
-    [
-     1375.26,
-     -260.0
-    ],
-    [
-     1375.26,
-     -270.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_041_p16_67",
-   "style": "office_tower",
-   "seed": 7078,
-   "building_seed": 0.3775,
-   "lit_ratio": 0.254,
-   "band_ratio": 0.237,
-   "cool_mix": 0.717,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1390.0,
-     -250.06
-    ],
-    [
-     1380.0,
-     -250.06
-    ],
-    [
-     1380.0,
-     -259.26
-    ],
-    [
-     1390.0,
-     -259.26
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_045_p0_68",
-   "style": "office_tower",
-   "seed": 2196,
-   "building_seed": 0.2755,
-   "lit_ratio": 0.281,
-   "band_ratio": 0.25,
-   "cool_mix": 0.751,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1261.78,
-     -300.0
-    ],
-    [
-     1261.78,
-     -310.0
-    ],
-    [
-     1301.14,
-     -310.0
-    ],
-    [
-     1301.14,
-     -300.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_045_p1_69",
-   "style": "office_tower",
-   "seed": 7428,
-   "building_seed": 0.6081,
+   "seed": 7143,
+   "building_seed": 0.2774,
    "lit_ratio": 0.276,
    "band_ratio": 0.248,
    "cool_mix": 0.745,
@@ -2161,213 +704,27 @@
    "floors": 8,
    "poly": [
     [
-     1308.42,
-     -330.0
+     1106.62,
+     -490.0
     ],
     [
-     1308.42,
-     -320.0
+     1106.62,
+     -480.0
     ],
     [
-     1277.06,
-     -320.0
+     1003.26,
+     -480.0
     ],
     [
-     1277.06,
-     -330.0
+     1003.26,
+     -490.0
     ]
    ],
    "near_road": true,
    "ground": false
   },
   {
-   "id": "b_d7_045_p2_70",
-   "style": "office_tower",
-   "seed": 8207,
-   "building_seed": 0.3166,
-   "lit_ratio": 0.254,
-   "band_ratio": 0.237,
-   "cool_mix": 0.718,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1308.42,
-     -320.0
-    ],
-    [
-     1308.42,
-     -310.0
-    ],
-    [
-     1277.06,
-     -310.0
-    ],
-    [
-     1277.06,
-     -320.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_045_p3_71",
-   "style": "office_tower",
-   "seed": 2300,
-   "building_seed": 0.4142,
-   "lit_ratio": 0.254,
-   "band_ratio": 0.237,
-   "cool_mix": 0.717,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1308.62,
-     -340.0
-    ],
-    [
-     1308.62,
-     -330.0
-    ],
-    [
-     1285.26,
-     -330.0
-    ],
-    [
-     1285.26,
-     -340.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_045_p4_72",
-   "style": "office_tower",
-   "seed": 7550,
-   "building_seed": 0.5591,
-   "lit_ratio": 0.27,
-   "band_ratio": 0.245,
-   "cool_mix": 0.737,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1281.18,
-     -350.0
-    ],
-    [
-     1281.18,
-     -360.0
-    ],
-    [
-     1296.54,
-     -360.0
-    ],
-    [
-     1296.54,
-     -350.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_045_p5_73",
-   "style": "office_tower",
-   "seed": 119,
-   "building_seed": 0.3589,
-   "lit_ratio": 0.258,
-   "band_ratio": 0.239,
-   "cool_mix": 0.722,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1281.18,
-     -340.0
-    ],
-    [
-     1281.18,
-     -350.0
-    ],
-    [
-     1296.54,
-     -350.0
-    ],
-    [
-     1296.54,
-     -340.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_045_p6_74",
-   "style": "office_tower",
-   "seed": 7096,
-   "building_seed": 0.1128,
-   "lit_ratio": 0.292,
-   "band_ratio": 0.256,
-   "cool_mix": 0.765,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1308.0,
-     -290.06
-    ],
-    [
-     1292.0,
-     -290.06
-    ],
-    [
-     1292.0,
-     -299.26
-    ],
-    [
-     1308.0,
-     -299.26
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_045_p7_75",
-   "style": "office_tower",
-   "seed": 2337,
-   "building_seed": 0.155,
-   "lit_ratio": 0.31,
-   "band_ratio": 0.265,
-   "cool_mix": 0.787,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1299.94,
-     -380.0
-    ],
-    [
-     1299.94,
-     -370.0
-    ],
-    [
-     1290.74,
-     -370.0
-    ],
-    [
-     1290.74,
-     -380.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_045_p8_76",
+   "id": "b_d7_041_p5_23",
    "style": "office_tower",
    "seed": 2905,
    "building_seed": 0.3512,
@@ -2378,6 +735,1618 @@
    "floors": 8,
    "poly": [
     [
+     1107.02,
+     -480.0
+    ],
+    [
+     1107.02,
+     -470.0
+    ],
+    [
+     1019.66,
+     -470.0
+    ],
+    [
+     1019.66,
+     -480.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_041_p6_24",
+   "style": "office_tower",
+   "seed": 9228,
+   "building_seed": 0.7755,
+   "lit_ratio": 0.283,
+   "band_ratio": 0.252,
+   "cool_mix": 0.754,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1077.42,
+     -540.0
+    ],
+    [
+     1077.42,
+     -530.0
+    ],
+    [
+     1006.06,
+     -530.0
+    ],
+    [
+     1006.06,
+     -540.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_041_p7_25",
+   "style": "office_tower",
+   "seed": 9384,
+   "building_seed": 0.5415,
+   "lit_ratio": 0.301,
+   "band_ratio": 0.26,
+   "cool_mix": 0.776,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1107.42,
+     -470.0
+    ],
+    [
+     1107.42,
+     -460.0
+    ],
+    [
+     1036.06,
+     -460.0
+    ],
+    [
+     1036.06,
+     -470.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_041_p8_26",
+   "style": "office_tower",
+   "seed": 5594,
+   "building_seed": 0.933,
+   "lit_ratio": 0.293,
+   "band_ratio": 0.256,
+   "cool_mix": 0.766,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1057.82,
+     -550.0
+    ],
+    [
+     1057.82,
+     -540.0
+    ],
+    [
+     1002.46,
+     -540.0
+    ],
+    [
+     1002.46,
+     -550.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_041_p9_27",
+   "style": "office_tower",
+   "seed": 722,
+   "building_seed": 0.6795,
+   "lit_ratio": 0.259,
+   "band_ratio": 0.24,
+   "cool_mix": 0.724,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1098.02,
+     -460.0
+    ],
+    [
+     1098.02,
+     -450.0
+    ],
+    [
+     1050.66,
+     -450.0
+    ],
+    [
+     1050.66,
+     -460.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_041_p10_28",
+   "style": "office_tower",
+   "seed": 1192,
+   "building_seed": 0.3947,
+   "lit_ratio": 0.275,
+   "band_ratio": 0.248,
+   "cool_mix": 0.744,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     991.78,
+     -550.0
+    ],
+    [
+     991.78,
+     -560.0
+    ],
+    [
+     1031.14,
+     -560.0
+    ],
+    [
+     1031.14,
+     -550.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_041_p11_29",
+   "style": "office_tower",
+   "seed": 9511,
+   "building_seed": 0.5875,
+   "lit_ratio": 0.294,
+   "band_ratio": 0.257,
+   "cool_mix": 0.767,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1098.42,
+     -450.0
+    ],
+    [
+     1098.42,
+     -440.0
+    ],
+    [
+     1067.06,
+     -440.0
+    ],
+    [
+     1067.06,
+     -450.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_041_p12_30",
+   "style": "office_tower",
+   "seed": 7800,
+   "building_seed": 0.7827,
+   "lit_ratio": 0.293,
+   "band_ratio": 0.256,
+   "cool_mix": 0.766,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1088.82,
+     -440.0
+    ],
+    [
+     1088.82,
+     -430.0
+    ],
+    [
+     1073.46,
+     -430.0
+    ],
+    [
+     1073.46,
+     -440.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_041_p13_31",
+   "style": "office_tower",
+   "seed": 6262,
+   "building_seed": 0.0145,
+   "lit_ratio": 0.274,
+   "band_ratio": 0.247,
+   "cool_mix": 0.742,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1000.0,
+     -569.94
+    ],
+    [
+     1010.0,
+     -569.94
+    ],
+    [
+     1010.0,
+     -560.74
+    ],
+    [
+     1000.0,
+     -560.74
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_045_p0_32",
+   "style": "office_tower",
+   "seed": 9052,
+   "building_seed": 0.8471,
+   "lit_ratio": 0.263,
+   "band_ratio": 0.242,
+   "cool_mix": 0.729,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1256.02,
+     -380.0
+    ],
+    [
+     1256.02,
+     -370.0
+    ],
+    [
+     1128.66,
+     -370.0
+    ],
+    [
+     1128.66,
+     -380.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_045_p1_33",
+   "style": "office_tower",
+   "seed": 6149,
+   "building_seed": 0.7823,
+   "lit_ratio": 0.249,
+   "band_ratio": 0.234,
+   "cool_mix": 0.711,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1123.78,
+     -410.0
+    ],
+    [
+     1123.78,
+     -420.0
+    ],
+    [
+     1243.14,
+     -420.0
+    ],
+    [
+     1243.14,
+     -410.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_045_p2_34",
+   "style": "office_tower",
+   "seed": 6238,
+   "building_seed": 0.4075,
+   "lit_ratio": 0.265,
+   "band_ratio": 0.242,
+   "cool_mix": 0.731,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1266.22,
+     -410.0
+    ],
+    [
+     1266.22,
+     -400.0
+    ],
+    [
+     1146.86,
+     -400.0
+    ],
+    [
+     1146.86,
+     -410.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_045_p3_35",
+   "style": "office_tower",
+   "seed": 9379,
+   "building_seed": 0.6402,
+   "lit_ratio": 0.256,
+   "band_ratio": 0.238,
+   "cool_mix": 0.72,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1113.78,
+     -390.0
+    ],
+    [
+     1113.78,
+     -400.0
+    ],
+    [
+     1233.14,
+     -400.0
+    ],
+    [
+     1233.14,
+     -390.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_045_p4_36",
+   "style": "office_tower",
+   "seed": 7517,
+   "building_seed": 0.3561,
+   "lit_ratio": 0.305,
+   "band_ratio": 0.262,
+   "cool_mix": 0.781,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1256.22,
+     -390.0
+    ],
+    [
+     1256.22,
+     -380.0
+    ],
+    [
+     1136.86,
+     -380.0
+    ],
+    [
+     1136.86,
+     -390.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_045_p5_37",
+   "style": "office_tower",
+   "seed": 3402,
+   "building_seed": 0.8349,
+   "lit_ratio": 0.254,
+   "band_ratio": 0.237,
+   "cool_mix": 0.717,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1133.58,
+     -440.0
+    ],
+    [
+     1133.58,
+     -450.0
+    ],
+    [
+     1244.94,
+     -450.0
+    ],
+    [
+     1244.94,
+     -440.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_045_p6_38",
+   "style": "office_tower",
+   "seed": 6547,
+   "building_seed": 0.6258,
+   "lit_ratio": 0.28,
+   "band_ratio": 0.25,
+   "cool_mix": 0.75,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1133.58,
+     -430.0
+    ],
+    [
+     1133.58,
+     -440.0
+    ],
+    [
+     1244.94,
+     -440.0
+    ],
+    [
+     1244.94,
+     -430.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_045_p7_39",
+   "style": "office_tower",
+   "seed": 3495,
+   "building_seed": 0.5629,
+   "lit_ratio": 0.294,
+   "band_ratio": 0.257,
+   "cool_mix": 0.767,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1133.58,
+     -420.0
+    ],
+    [
+     1133.58,
+     -430.0
+    ],
+    [
+     1244.94,
+     -430.0
+    ],
+    [
+     1244.94,
+     -420.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_045_p8_40",
+   "style": "office_tower",
+   "seed": 124,
+   "building_seed": 0.47,
+   "lit_ratio": 0.295,
+   "band_ratio": 0.258,
+   "cool_mix": 0.769,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1266.62,
+     -460.0
+    ],
+    [
+     1266.62,
+     -450.0
+    ],
+    [
+     1163.26,
+     -450.0
+    ],
+    [
+     1163.26,
+     -460.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_045_p9_41",
+   "style": "office_tower",
+   "seed": 1260,
+   "building_seed": 0.1324,
+   "lit_ratio": 0.284,
+   "band_ratio": 0.252,
+   "cool_mix": 0.755,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1123.38,
+     -360.0
+    ],
+    [
+     1123.38,
+     -370.0
+    ],
+    [
+     1226.74,
+     -370.0
+    ],
+    [
+     1226.74,
+     -360.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_045_p10_42",
+   "style": "office_tower",
+   "seed": 3888,
+   "building_seed": 0.0914,
+   "lit_ratio": 0.284,
+   "band_ratio": 0.252,
+   "cool_mix": 0.755,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1142.98,
+     -460.0
+    ],
+    [
+     1142.98,
+     -470.0
+    ],
+    [
+     1230.34,
+     -470.0
+    ],
+    [
+     1230.34,
+     -460.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_045_p11_43",
+   "style": "office_tower",
+   "seed": 8294,
+   "building_seed": 0.0768,
+   "lit_ratio": 0.253,
+   "band_ratio": 0.236,
+   "cool_mix": 0.716,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1247.22,
+     -360.0
+    ],
+    [
+     1247.22,
+     -350.0
+    ],
+    [
+     1167.86,
+     -350.0
+    ],
+    [
+     1167.86,
+     -360.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_045_p12_44",
+   "style": "office_tower",
+   "seed": 2884,
+   "building_seed": 0.043,
+   "lit_ratio": 0.266,
+   "band_ratio": 0.243,
+   "cool_mix": 0.732,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1227.62,
+     -480.0
+    ],
+    [
+     1227.62,
+     -470.0
+    ],
+    [
+     1164.26,
+     -470.0
+    ],
+    [
+     1164.26,
+     -480.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_045_p13_45",
+   "style": "office_tower",
+   "seed": 2559,
+   "building_seed": 0.7192,
+   "lit_ratio": 0.263,
+   "band_ratio": 0.242,
+   "cool_mix": 0.729,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1172.18,
+     -340.0
+    ],
+    [
+     1172.18,
+     -350.0
+    ],
+    [
+     1227.54,
+     -350.0
+    ],
+    [
+     1227.54,
+     -340.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_045_p14_46",
+   "style": "office_tower",
+   "seed": 2492,
+   "building_seed": 0.1157,
+   "lit_ratio": 0.276,
+   "band_ratio": 0.248,
+   "cool_mix": 0.745,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1151.78,
+     -480.0
+    ],
+    [
+     1151.78,
+     -490.0
+    ],
+    [
+     1191.14,
+     -490.0
+    ],
+    [
+     1191.14,
+     -480.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_045_p15_47",
+   "style": "office_tower",
+   "seed": 3573,
+   "building_seed": 0.6196,
+   "lit_ratio": 0.311,
+   "band_ratio": 0.266,
+   "cool_mix": 0.789,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1238.22,
+     -340.0
+    ],
+    [
+     1238.22,
+     -330.0
+    ],
+    [
+     1198.86,
+     -330.0
+    ],
+    [
+     1198.86,
+     -340.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_045_p16_48",
+   "style": "office_tower",
+   "seed": 6732,
+   "building_seed": 0.3066,
+   "lit_ratio": 0.291,
+   "band_ratio": 0.256,
+   "cool_mix": 0.764,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1162.0,
+     -499.94
+    ],
+    [
+     1178.0,
+     -499.94
+    ],
+    [
+     1178.0,
+     -490.74
+    ],
+    [
+     1162.0,
+     -490.74
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_045_p17_49",
+   "style": "office_tower",
+   "seed": 6542,
+   "building_seed": 0.0716,
+   "lit_ratio": 0.245,
+   "band_ratio": 0.232,
+   "cool_mix": 0.706,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1230.0,
+     -320.06
+    ],
+    [
+     1220.0,
+     -320.06
+    ],
+    [
+     1220.0,
+     -329.26
+    ],
+    [
+     1230.0,
+     -329.26
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_049_p0_50",
+   "style": "office_tower",
+   "seed": 2851,
+   "building_seed": 0.2399,
+   "lit_ratio": 0.27,
+   "band_ratio": 0.245,
+   "cool_mix": 0.738,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1437.42,
+     -390.0
+    ],
+    [
+     1437.42,
+     -380.0
+    ],
+    [
+     1366.06,
+     -380.0
+    ],
+    [
+     1366.06,
+     -390.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_049_p1_51",
+   "style": "office_tower",
+   "seed": 9806,
+   "building_seed": 0.271,
+   "lit_ratio": 0.246,
+   "band_ratio": 0.233,
+   "cool_mix": 0.708,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1352.58,
+     -370.0
+    ],
+    [
+     1352.58,
+     -380.0
+    ],
+    [
+     1423.94,
+     -380.0
+    ],
+    [
+     1423.94,
+     -370.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_049_p2_52",
+   "style": "office_tower",
+   "seed": 1919,
+   "building_seed": 0.4056,
+   "lit_ratio": 0.309,
+   "band_ratio": 0.264,
+   "cool_mix": 0.786,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1437.42,
+     -370.0
+    ],
+    [
+     1437.42,
+     -360.0
+    ],
+    [
+     1366.06,
+     -360.0
+    ],
+    [
+     1366.06,
+     -370.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_049_p3_53",
+   "style": "office_tower",
+   "seed": 2690,
+   "building_seed": 0.6127,
+   "lit_ratio": 0.243,
+   "band_ratio": 0.232,
+   "cool_mix": 0.704,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1352.38,
+     -350.0
+    ],
+    [
+     1352.38,
+     -360.0
+    ],
+    [
+     1415.74,
+     -360.0
+    ],
+    [
+     1415.74,
+     -350.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_049_p4_54",
+   "style": "office_tower",
+   "seed": 1113,
+   "building_seed": 0.6791,
+   "lit_ratio": 0.296,
+   "band_ratio": 0.258,
+   "cool_mix": 0.77,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1342.18,
+     -390.0
+    ],
+    [
+     1342.18,
+     -400.0
+    ],
+    [
+     1397.54,
+     -400.0
+    ],
+    [
+     1397.54,
+     -390.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_049_p5_55",
+   "style": "office_tower",
+   "seed": 856,
+   "building_seed": 0.5253,
+   "lit_ratio": 0.26,
+   "band_ratio": 0.24,
+   "cool_mix": 0.725,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1427.82,
+     -350.0
+    ],
+    [
+     1427.82,
+     -340.0
+    ],
+    [
+     1372.46,
+     -340.0
+    ],
+    [
+     1372.46,
+     -350.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_049_p6_56",
+   "style": "office_tower",
+   "seed": 8986,
+   "building_seed": 0.1172,
+   "lit_ratio": 0.265,
+   "band_ratio": 0.242,
+   "cool_mix": 0.731,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1427.82,
+     -340.0
+    ],
+    [
+     1427.82,
+     -330.0
+    ],
+    [
+     1372.46,
+     -330.0
+    ],
+    [
+     1372.46,
+     -340.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_049_p7_57",
+   "style": "office_tower",
+   "seed": 8152,
+   "building_seed": 0.4624,
+   "lit_ratio": 0.278,
+   "band_ratio": 0.249,
+   "cool_mix": 0.748,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1361.98,
+     -320.0
+    ],
+    [
+     1361.98,
+     -330.0
+    ],
+    [
+     1409.34,
+     -330.0
+    ],
+    [
+     1409.34,
+     -320.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_049_p8_58",
+   "style": "office_tower",
+   "seed": 9619,
+   "building_seed": 0.0732,
+   "lit_ratio": 0.302,
+   "band_ratio": 0.261,
+   "cool_mix": 0.777,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1418.02,
+     -320.0
+    ],
+    [
+     1418.02,
+     -310.0
+    ],
+    [
+     1370.66,
+     -310.0
+    ],
+    [
+     1370.66,
+     -320.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_049_p9_59",
+   "style": "office_tower",
+   "seed": 8232,
+   "building_seed": 0.22,
+   "lit_ratio": 0.292,
+   "band_ratio": 0.256,
+   "cool_mix": 0.765,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1341.78,
+     -400.0
+    ],
+    [
+     1341.78,
+     -410.0
+    ],
+    [
+     1381.14,
+     -410.0
+    ],
+    [
+     1381.14,
+     -400.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_049_p10_60",
+   "style": "office_tower",
+   "seed": 7904,
+   "building_seed": 0.2916,
+   "lit_ratio": 0.298,
+   "band_ratio": 0.259,
+   "cool_mix": 0.772,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1361.78,
+     -300.0
+    ],
+    [
+     1361.78,
+     -310.0
+    ],
+    [
+     1401.14,
+     -310.0
+    ],
+    [
+     1401.14,
+     -300.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_049_p11_61",
+   "style": "office_tower",
+   "seed": 6030,
+   "building_seed": 0.7371,
+   "lit_ratio": 0.294,
+   "band_ratio": 0.257,
+   "cool_mix": 0.767,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1361.78,
+     -290.0
+    ],
+    [
+     1361.78,
+     -300.0
+    ],
+    [
+     1401.14,
+     -300.0
+    ],
+    [
+     1401.14,
+     -290.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_049_p12_62",
+   "style": "office_tower",
+   "seed": 622,
+   "building_seed": 0.7867,
+   "lit_ratio": 0.264,
+   "band_ratio": 0.242,
+   "cool_mix": 0.73,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1368.62,
+     -420.0
+    ],
+    [
+     1368.62,
+     -410.0
+    ],
+    [
+     1345.26,
+     -410.0
+    ],
+    [
+     1345.26,
+     -420.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_049_p13_63",
+   "style": "office_tower",
+   "seed": 7159,
+   "building_seed": 0.6568,
+   "lit_ratio": 0.318,
+   "band_ratio": 0.269,
+   "cool_mix": 0.797,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1371.38,
+     -280.0
+    ],
+    [
+     1371.38,
+     -290.0
+    ],
+    [
+     1394.74,
+     -290.0
+    ],
+    [
+     1394.74,
+     -280.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_049_p14_64",
+   "style": "office_tower",
+   "seed": 2999,
+   "building_seed": 0.5743,
+   "lit_ratio": 0.249,
+   "band_ratio": 0.234,
+   "cool_mix": 0.711,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1398.62,
+     -280.0
+    ],
+    [
+     1398.62,
+     -270.0
+    ],
+    [
+     1375.26,
+     -270.0
+    ],
+    [
+     1375.26,
+     -280.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_049_p15_65",
+   "style": "office_tower",
+   "seed": 2863,
+   "building_seed": 0.7813,
+   "lit_ratio": 0.291,
+   "band_ratio": 0.256,
+   "cool_mix": 0.764,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1398.62,
+     -270.0
+    ],
+    [
+     1398.62,
+     -260.0
+    ],
+    [
+     1375.26,
+     -260.0
+    ],
+    [
+     1375.26,
+     -270.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_049_p16_66",
+   "style": "office_tower",
+   "seed": 1757,
+   "building_seed": 0.5185,
+   "lit_ratio": 0.29,
+   "band_ratio": 0.255,
+   "cool_mix": 0.763,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1390.0,
+     -250.06
+    ],
+    [
+     1380.0,
+     -250.06
+    ],
+    [
+     1380.0,
+     -259.26
+    ],
+    [
+     1390.0,
+     -259.26
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_052_p0_67",
+   "style": "office_tower",
+   "seed": 2551,
+   "building_seed": 0.5844,
+   "lit_ratio": 0.254,
+   "band_ratio": 0.237,
+   "cool_mix": 0.717,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1261.78,
+     -300.0
+    ],
+    [
+     1261.78,
+     -310.0
+    ],
+    [
+     1301.14,
+     -310.0
+    ],
+    [
+     1301.14,
+     -300.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_052_p1_68",
+   "style": "office_tower",
+   "seed": 3408,
+   "building_seed": 0.799,
+   "lit_ratio": 0.253,
+   "band_ratio": 0.236,
+   "cool_mix": 0.716,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1271.58,
+     -330.0
+    ],
+    [
+     1271.58,
+     -340.0
+    ],
+    [
+     1302.94,
+     -340.0
+    ],
+    [
+     1302.94,
+     -330.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_052_p2_69",
+   "style": "office_tower",
+   "seed": 4913,
+   "building_seed": 0.7684,
+   "lit_ratio": 0.274,
+   "band_ratio": 0.247,
+   "cool_mix": 0.743,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1308.42,
+     -330.0
+    ],
+    [
+     1308.42,
+     -320.0
+    ],
+    [
+     1277.06,
+     -320.0
+    ],
+    [
+     1277.06,
+     -330.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_052_p3_70",
+   "style": "office_tower",
+   "seed": 2038,
+   "building_seed": 0.703,
+   "lit_ratio": 0.304,
+   "band_ratio": 0.262,
+   "cool_mix": 0.78,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1308.42,
+     -320.0
+    ],
+    [
+     1308.42,
+     -310.0
+    ],
+    [
+     1277.06,
+     -310.0
+    ],
+    [
+     1277.06,
+     -320.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_052_p4_71",
+   "style": "office_tower",
+   "seed": 9669,
+   "building_seed": 0.7485,
+   "lit_ratio": 0.303,
+   "band_ratio": 0.262,
+   "cool_mix": 0.779,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1281.18,
+     -350.0
+    ],
+    [
+     1281.18,
+     -360.0
+    ],
+    [
+     1296.54,
+     -360.0
+    ],
+    [
+     1296.54,
+     -350.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_052_p5_72",
+   "style": "office_tower",
+   "seed": 9424,
+   "building_seed": 0.2122,
+   "lit_ratio": 0.293,
+   "band_ratio": 0.256,
+   "cool_mix": 0.766,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1281.18,
+     -340.0
+    ],
+    [
+     1281.18,
+     -350.0
+    ],
+    [
+     1296.54,
+     -350.0
+    ],
+    [
+     1296.54,
+     -340.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_052_p6_73",
+   "style": "office_tower",
+   "seed": 3564,
+   "building_seed": 0.3521,
+   "lit_ratio": 0.27,
+   "band_ratio": 0.245,
+   "cool_mix": 0.737,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1308.0,
+     -290.06
+    ],
+    [
+     1292.0,
+     -290.06
+    ],
+    [
+     1292.0,
+     -299.26
+    ],
+    [
+     1308.0,
+     -299.26
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_052_p7_74",
+   "style": "office_tower",
+   "seed": 9304,
+   "building_seed": 0.4027,
+   "lit_ratio": 0.258,
+   "band_ratio": 0.239,
+   "cool_mix": 0.722,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1299.94,
+     -380.0
+    ],
+    [
+     1299.94,
+     -370.0
+    ],
+    [
+     1290.74,
+     -370.0
+    ],
+    [
+     1290.74,
+     -380.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_052_p8_75",
+   "style": "office_tower",
+   "seed": 2108,
+   "building_seed": 0.9322,
+   "lit_ratio": 0.318,
+   "band_ratio": 0.269,
+   "cool_mix": 0.797,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
      1299.94,
      -370.0
     ],
@@ -2398,7 +2367,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_046_p0_77",
+   "id": "b_d7_053_p0_76",
    "style": "office_tower",
    "seed": 3753,
    "building_seed": 0.0299,
@@ -2409,27 +2378,27 @@
    "floors": 8,
    "poly": [
     [
-     1443.98,
-     -290.0
+     1453.78,
+     -310.0
     ],
     [
-     1443.98,
-     -300.0
+     1453.78,
+     -320.0
     ],
     [
-     1571.34,
-     -300.0
+     1573.14,
+     -320.0
     ],
     [
-     1571.34,
-     -290.0
+     1573.14,
+     -310.0
     ]
    ],
    "near_road": true,
    "ground": false
   },
   {
-   "id": "b_d7_046_p1_78",
+   "id": "b_d7_053_p1_77",
    "style": "office_tower",
    "seed": 8992,
    "building_seed": 0.7223,
@@ -2440,19 +2409,19 @@
    "floors": 8,
    "poly": [
     [
-     1453.78,
+     1596.22,
      -310.0
     ],
     [
-     1453.78,
-     -320.0
+     1596.22,
+     -300.0
     ],
     [
-     1573.14,
-     -320.0
+     1476.86,
+     -300.0
     ],
     [
-     1573.14,
+     1476.86,
      -310.0
     ]
    ],
@@ -2460,7 +2429,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_046_p2_79",
+   "id": "b_d7_053_p2_78",
    "style": "office_tower",
    "seed": 6441,
    "building_seed": 0.1299,
@@ -2472,26 +2441,26 @@
    "poly": [
     [
      1596.22,
-     -310.0
+     -300.0
     ],
     [
      1596.22,
-     -300.0
+     -290.0
+    ],
+    [
+     1476.86,
+     -290.0
     ],
     [
      1476.86,
      -300.0
-    ],
-    [
-     1476.86,
-     -310.0
     ]
    ],
    "near_road": true,
    "ground": false
   },
   {
-   "id": "b_d7_046_p3_80",
+   "id": "b_d7_053_p3_79",
    "style": "office_tower",
    "seed": 2052,
    "building_seed": 0.1561,
@@ -2522,7 +2491,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_046_p4_81",
+   "id": "b_d7_053_p4_80",
    "style": "office_tower",
    "seed": 2838,
    "building_seed": 0.1702,
@@ -2553,7 +2522,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_046_p5_82",
+   "id": "b_d7_053_p5_81",
    "style": "office_tower",
    "seed": 1248,
    "building_seed": 0.9966,
@@ -2584,7 +2553,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_046_p6_83",
+   "id": "b_d7_053_p6_82",
    "style": "office_tower",
    "seed": 3526,
    "building_seed": 0.6134,
@@ -2615,7 +2584,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_046_p7_84",
+   "id": "b_d7_053_p7_83",
    "style": "office_tower",
    "seed": 2829,
    "building_seed": 0.6271,
@@ -2646,7 +2615,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_046_p8_85",
+   "id": "b_d7_053_p8_84",
    "style": "office_tower",
    "seed": 5300,
    "building_seed": 0.4522,
@@ -2677,7 +2646,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_046_p9_86",
+   "id": "b_d7_053_p9_85",
    "style": "office_tower",
    "seed": 9047,
    "building_seed": 0.8459,
@@ -2688,27 +2657,27 @@
    "floors": 8,
    "poly": [
     [
-     1567.22,
-     -240.0
+     1557.22,
+     -340.0
     ],
     [
-     1567.22,
-     -230.0
+     1557.22,
+     -330.0
     ],
     [
-     1487.86,
-     -230.0
+     1477.86,
+     -330.0
     ],
     [
-     1487.86,
-     -240.0
+     1477.86,
+     -340.0
     ]
    ],
    "near_road": true,
    "ground": false
   },
   {
-   "id": "b_d7_046_p10_87",
+   "id": "b_d7_053_p10_86",
    "style": "office_tower",
    "seed": 7431,
    "building_seed": 0.2817,
@@ -2719,27 +2688,27 @@
    "floors": 8,
    "poly": [
     [
-     1462.58,
-     -330.0
+     1567.22,
+     -240.0
     ],
     [
-     1462.58,
-     -340.0
+     1567.22,
+     -230.0
     ],
     [
-     1533.94,
-     -340.0
+     1487.86,
+     -230.0
     ],
     [
-     1533.94,
-     -330.0
+     1487.86,
+     -240.0
     ]
    ],
    "near_road": true,
    "ground": false
   },
   {
-   "id": "b_d7_046_p11_88",
+   "id": "b_d7_053_p11_87",
    "style": "office_tower",
    "seed": 4370,
    "building_seed": 0.5579,
@@ -2770,7 +2739,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_046_p12_89",
+   "id": "b_d7_053_p12_88",
    "style": "office_tower",
    "seed": 8493,
    "building_seed": 0.978,
@@ -2801,7 +2770,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_046_p13_90",
+   "id": "b_d7_053_p13_89",
    "style": "office_tower",
    "seed": 4840,
    "building_seed": 0.4691,
@@ -2832,7 +2801,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_046_p14_91",
+   "id": "b_d7_053_p14_90",
    "style": "office_tower",
    "seed": 3860,
    "building_seed": 0.5994,
@@ -2863,7 +2832,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_046_p15_92",
+   "id": "b_d7_053_p15_91",
    "style": "office_tower",
    "seed": 6085,
    "building_seed": 0.8651,
@@ -2894,7 +2863,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_046_p16_93",
+   "id": "b_d7_053_p16_92",
    "style": "office_tower",
    "seed": 3369,
    "building_seed": 0.6071,
@@ -2925,7 +2894,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_046_p17_94",
+   "id": "b_d7_053_p17_93",
    "style": "office_tower",
    "seed": 7490,
    "building_seed": 0.0452,
@@ -2956,7 +2925,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_046_p18_95",
+   "id": "b_d7_053_p18_94",
    "style": "office_tower",
    "seed": 5491,
    "building_seed": 0.6572,
@@ -2967,64 +2936,64 @@
    "floors": 8,
    "poly": [
     [
-     1480.0,
-     -369.94
+     1470.06,
+     -360.0
     ],
     [
-     1490.0,
-     -369.94
+     1470.06,
+     -370.0
     ],
     [
-     1490.0,
-     -360.74
+     1479.26,
+     -370.0
     ],
     [
-     1480.0,
-     -360.74
+     1479.26,
+     -360.0
     ]
    ],
    "near_road": true,
    "ground": false
   },
   {
-   "id": "b_d7_050_p0_96",
+   "id": "b_d7_057_p0_95",
    "style": "office_tower",
-   "seed": 1376,
-   "building_seed": 0.8964,
-   "lit_ratio": 0.308,
-   "band_ratio": 0.264,
-   "cool_mix": 0.785,
+   "seed": 1370,
+   "building_seed": 0.7597,
+   "lit_ratio": 0.253,
+   "band_ratio": 0.236,
+   "cool_mix": 0.716,
    "height": 40.7,
    "floors": 8,
    "poly": [
     [
-     1186.42,
-     -240.0
-    ],
-    [
-     1186.42,
+     1043.78,
      -230.0
     ],
     [
-     1075.06,
-     -230.0
+     1043.78,
+     -240.0
     ],
     [
-     1075.06,
+     1163.14,
      -240.0
+    ],
+    [
+     1163.14,
+     -230.0
     ]
    ],
    "near_road": true,
    "ground": false
   },
   {
-   "id": "b_d7_050_p1_97",
+   "id": "b_d7_057_p1_96",
    "style": "office_tower",
-   "seed": 1826,
-   "building_seed": 0.8564,
-   "lit_ratio": 0.267,
-   "band_ratio": 0.244,
-   "cool_mix": 0.734,
+   "seed": 5094,
+   "building_seed": 0.133,
+   "lit_ratio": 0.282,
+   "band_ratio": 0.251,
+   "cool_mix": 0.752,
    "height": 40.7,
    "floors": 8,
    "poly": [
@@ -3049,13 +3018,13 @@
    "ground": false
   },
   {
-   "id": "b_d7_050_p2_98",
+   "id": "b_d7_057_p2_97",
    "style": "office_tower",
-   "seed": 5749,
-   "building_seed": 0.0076,
-   "lit_ratio": 0.317,
-   "band_ratio": 0.268,
-   "cool_mix": 0.796,
+   "seed": 5450,
+   "building_seed": 0.8113,
+   "lit_ratio": 0.313,
+   "band_ratio": 0.266,
+   "cool_mix": 0.791,
    "height": 40.7,
    "floors": 8,
    "poly": [
@@ -3080,13 +3049,13 @@
    "ground": false
   },
   {
-   "id": "b_d7_050_p3_99",
+   "id": "b_d7_057_p3_98",
    "style": "office_tower",
-   "seed": 5642,
-   "building_seed": 0.5662,
-   "lit_ratio": 0.262,
-   "band_ratio": 0.241,
-   "cool_mix": 0.727,
+   "seed": 2667,
+   "building_seed": 0.2968,
+   "lit_ratio": 0.314,
+   "band_ratio": 0.267,
+   "cool_mix": 0.793,
    "height": 40.7,
    "floors": 8,
    "poly": [
@@ -3111,13 +3080,13 @@
    "ground": false
   },
   {
-   "id": "b_d7_050_p4_100",
+   "id": "b_d7_057_p4_99",
    "style": "office_tower",
-   "seed": 662,
-   "building_seed": 0.6588,
-   "lit_ratio": 0.255,
-   "band_ratio": 0.238,
-   "cool_mix": 0.719,
+   "seed": 9786,
+   "building_seed": 0.9308,
+   "lit_ratio": 0.263,
+   "band_ratio": 0.242,
+   "cool_mix": 0.729,
    "height": 40.7,
    "floors": 8,
    "poly": [
@@ -3142,44 +3111,44 @@
    "ground": false
   },
   {
-   "id": "b_d7_050_p5_101",
+   "id": "b_d7_057_p5_100",
    "style": "office_tower",
-   "seed": 4375,
-   "building_seed": 0.021,
-   "lit_ratio": 0.262,
-   "band_ratio": 0.241,
-   "cool_mix": 0.728,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1072.78,
-     -190.0
-    ],
-    [
-     1072.78,
-     -200.0
-    ],
-    [
-     1152.14,
-     -200.0
-    ],
-    [
-     1152.14,
-     -190.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_050_p6_102",
-   "style": "office_tower",
-   "seed": 7225,
-   "building_seed": 0.1241,
-   "lit_ratio": 0.273,
+   "seed": 5596,
+   "building_seed": 0.8484,
+   "lit_ratio": 0.271,
    "band_ratio": 0.246,
-   "cool_mix": 0.741,
+   "cool_mix": 0.739,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1072.78,
+     -190.0
+    ],
+    [
+     1072.78,
+     -200.0
+    ],
+    [
+     1152.14,
+     -200.0
+    ],
+    [
+     1152.14,
+     -190.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_057_p6_101",
+   "style": "office_tower",
+   "seed": 8853,
+   "building_seed": 0.3881,
+   "lit_ratio": 0.252,
+   "band_ratio": 0.236,
+   "cool_mix": 0.715,
    "height": 40.7,
    "floors": 8,
    "poly": [
@@ -3204,44 +3173,44 @@
    "ground": false
   },
   {
-   "id": "b_d7_050_p7_103",
+   "id": "b_d7_057_p7_102",
    "style": "office_tower",
-   "seed": 3099,
-   "building_seed": 0.6902,
-   "lit_ratio": 0.297,
-   "band_ratio": 0.258,
-   "cool_mix": 0.771,
+   "seed": 6035,
+   "building_seed": 0.0298,
+   "lit_ratio": 0.265,
+   "band_ratio": 0.242,
+   "cool_mix": 0.731,
    "height": 40.7,
    "floors": 8,
    "poly": [
     [
-     1177.62,
-     -190.0
-    ],
-    [
-     1177.62,
+     1102.18,
      -180.0
     ],
     [
-     1114.26,
-     -180.0
+     1102.18,
+     -190.0
     ],
     [
-     1114.26,
+     1157.54,
      -190.0
+    ],
+    [
+     1157.54,
+     -180.0
     ]
    ],
    "near_road": true,
    "ground": false
   },
   {
-   "id": "b_d7_050_p8_104",
+   "id": "b_d7_057_p8_103",
    "style": "office_tower",
-   "seed": 5356,
-   "building_seed": 0.2633,
-   "lit_ratio": 0.31,
-   "band_ratio": 0.265,
-   "cool_mix": 0.788,
+   "seed": 2306,
+   "building_seed": 0.0083,
+   "lit_ratio": 0.307,
+   "band_ratio": 0.264,
+   "cool_mix": 0.784,
    "height": 40.7,
    "floors": 8,
    "poly": [
@@ -3266,13 +3235,13 @@
    "ground": false
   },
   {
-   "id": "b_d7_050_p9_105",
+   "id": "b_d7_057_p9_104",
    "style": "office_tower",
-   "seed": 7609,
-   "building_seed": 0.0774,
-   "lit_ratio": 0.268,
-   "band_ratio": 0.244,
-   "cool_mix": 0.735,
+   "seed": 9419,
+   "building_seed": 0.1081,
+   "lit_ratio": 0.318,
+   "band_ratio": 0.269,
+   "cool_mix": 0.797,
    "height": 40.7,
    "floors": 8,
    "poly": [
@@ -3297,13 +3266,44 @@
    "ground": false
   },
   {
-   "id": "b_d7_050_p10_106",
+   "id": "b_d7_057_p10_105",
    "style": "office_tower",
-   "seed": 5240,
-   "building_seed": 0.6324,
-   "lit_ratio": 0.267,
-   "band_ratio": 0.244,
-   "cool_mix": 0.734,
+   "seed": 1060,
+   "building_seed": 0.3777,
+   "lit_ratio": 0.249,
+   "band_ratio": 0.234,
+   "cool_mix": 0.711,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1168.62,
+     -170.0
+    ],
+    [
+     1168.62,
+     -160.0
+    ],
+    [
+     1145.26,
+     -160.0
+    ],
+    [
+     1145.26,
+     -170.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_057_p11_106",
+   "style": "office_tower",
+   "seed": 6000,
+   "building_seed": 0.3762,
+   "lit_ratio": 0.246,
+   "band_ratio": 0.233,
+   "cool_mix": 0.708,
    "height": 40.7,
    "floors": 8,
    "poly": [
@@ -3328,38 +3328,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_050_p11_107",
-   "style": "office_tower",
-   "seed": 7578,
-   "building_seed": 0.8658,
-   "lit_ratio": 0.287,
-   "band_ratio": 0.254,
-   "cool_mix": 0.759,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1168.82,
-     -170.0
-    ],
-    [
-     1168.82,
-     -160.0
-    ],
-    [
-     1153.46,
-     -160.0
-    ],
-    [
-     1153.46,
-     -170.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_054_p0_108",
+   "id": "b_d7_061_p0_107",
    "style": "office_tower",
    "seed": 218,
    "building_seed": 0.3547,
@@ -3390,7 +3359,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_054_p1_109",
+   "id": "b_d7_061_p1_108",
    "style": "office_tower",
    "seed": 2530,
    "building_seed": 0.8466,
@@ -3421,7 +3390,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_054_p2_110",
+   "id": "b_d7_061_p2_109",
    "style": "office_tower",
    "seed": 7485,
    "building_seed": 0.999,
@@ -3452,7 +3421,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_054_p3_111",
+   "id": "b_d7_061_p3_110",
    "style": "office_tower",
    "seed": 4158,
    "building_seed": 0.4946,
@@ -3483,7 +3452,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_054_p4_112",
+   "id": "b_d7_061_p4_111",
    "style": "office_tower",
    "seed": 1431,
    "building_seed": 0.9065,
@@ -3514,7 +3483,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_054_p5_113",
+   "id": "b_d7_061_p5_112",
    "style": "office_tower",
    "seed": 6479,
    "building_seed": 0.2425,
@@ -3545,7 +3514,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_054_p6_114",
+   "id": "b_d7_061_p6_113",
    "style": "office_tower",
    "seed": 7370,
    "building_seed": 0.5445,
@@ -3556,27 +3525,27 @@
    "floors": 8,
    "poly": [
     [
-     1287.82,
-     -190.0
+     1337.62,
+     -120.0
     ],
     [
-     1287.82,
-     -180.0
+     1337.62,
+     -110.0
     ],
     [
-     1232.46,
-     -180.0
+     1274.26,
+     -110.0
     ],
     [
-     1232.46,
-     -190.0
+     1274.26,
+     -120.0
     ]
    ],
    "near_road": true,
    "ground": false
   },
   {
-   "id": "b_d7_054_p7_115",
+   "id": "b_d7_061_p7_114",
    "style": "office_tower",
    "seed": 7455,
    "building_seed": 0.0917,
@@ -3587,27 +3556,27 @@
    "floors": 8,
    "poly": [
     [
-     1262.18,
-     -110.0
+     1287.82,
+     -190.0
     ],
     [
-     1262.18,
-     -120.0
+     1287.82,
+     -180.0
     ],
     [
-     1317.54,
-     -120.0
+     1232.46,
+     -180.0
     ],
     [
-     1317.54,
-     -110.0
+     1232.46,
+     -190.0
     ]
    ],
    "near_road": true,
    "ground": false
   },
   {
-   "id": "b_d7_054_p8_116",
+   "id": "b_d7_061_p8_115",
    "style": "office_tower",
    "seed": 3915,
    "building_seed": 0.6193,
@@ -3638,7 +3607,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_054_p9_117",
+   "id": "b_d7_061_p9_116",
    "style": "office_tower",
    "seed": 1904,
    "building_seed": 0.7053,
@@ -3649,27 +3618,27 @@
    "floors": 8,
    "poly": [
     [
-     1281.78,
-     -100.0
-    ],
-    [
-     1281.78,
+     1328.42,
      -110.0
     ],
     [
-     1321.14,
-     -110.0
+     1328.42,
+     -100.0
     ],
     [
-     1321.14,
+     1297.06,
      -100.0
+    ],
+    [
+     1297.06,
+     -110.0
     ]
    ],
    "near_road": true,
    "ground": false
   },
   {
-   "id": "b_d7_054_p10_118",
+   "id": "b_d7_061_p10_117",
    "style": "office_tower",
    "seed": 901,
    "building_seed": 0.4047,
@@ -3700,7 +3669,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_054_p11_119",
+   "id": "b_d7_061_p11_118",
    "style": "office_tower",
    "seed": 698,
    "building_seed": 0.8378,
@@ -3731,7 +3700,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_054_p12_120",
+   "id": "b_d7_061_p12_119",
    "style": "office_tower",
    "seed": 1344,
    "building_seed": 0.8739,
@@ -3762,7 +3731,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_055_p0_121",
+   "id": "b_d7_063_p0_120",
    "style": "office_tower",
    "seed": 7213,
    "building_seed": 0.2327,
@@ -3773,27 +3742,27 @@
    "floors": 8,
    "poly": [
     [
-     1146.22,
-     -130.0
-    ],
-    [
-     1146.22,
+     1146.02,
      -120.0
     ],
     [
-     1026.86,
-     -120.0
+     1146.02,
+     -110.0
     ],
     [
-     1026.86,
-     -130.0
+     1018.66,
+     -110.0
+    ],
+    [
+     1018.66,
+     -120.0
     ]
    ],
    "near_road": true,
    "ground": false
   },
   {
-   "id": "b_d7_055_p1_122",
+   "id": "b_d7_063_p1_121",
    "style": "office_tower",
    "seed": 1335,
    "building_seed": 0.3409,
@@ -3804,27 +3773,27 @@
    "floors": 8,
    "poly": [
     [
-     993.78,
-     -110.0
+     1146.22,
+     -130.0
     ],
     [
-     993.78,
+     1146.22,
      -120.0
     ],
     [
-     1113.14,
+     1026.86,
      -120.0
     ],
     [
-     1113.14,
-     -110.0
+     1026.86,
+     -130.0
     ]
    ],
    "near_road": true,
    "ground": false
   },
   {
-   "id": "b_d7_055_p2_123",
+   "id": "b_d7_063_p2_122",
    "style": "office_tower",
    "seed": 8810,
    "building_seed": 0.267,
@@ -3855,7 +3824,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_055_p3_124",
+   "id": "b_d7_063_p3_123",
    "style": "office_tower",
    "seed": 2307,
    "building_seed": 0.114,
@@ -3886,7 +3855,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_055_p4_125",
+   "id": "b_d7_063_p4_124",
    "style": "office_tower",
    "seed": 5466,
    "building_seed": 0.1441,
@@ -3917,7 +3886,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_055_p5_126",
+   "id": "b_d7_063_p5_125",
    "style": "office_tower",
    "seed": 8772,
    "building_seed": 0.8007,
@@ -3948,7 +3917,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_055_p6_127",
+   "id": "b_d7_063_p6_126",
    "style": "office_tower",
    "seed": 5293,
    "building_seed": 0.3342,
@@ -3959,27 +3928,27 @@
    "floors": 8,
    "poly": [
     [
-     1127.02,
-     -80.0
+     1107.22,
+     -150.0
     ],
     [
-     1127.02,
-     -70.0
+     1107.22,
+     -140.0
     ],
     [
-     1039.66,
-     -70.0
+     1027.86,
+     -140.0
     ],
     [
-     1039.66,
-     -80.0
+     1027.86,
+     -150.0
     ]
    ],
    "near_road": true,
    "ground": false
   },
   {
-   "id": "b_d7_055_p7_128",
+   "id": "b_d7_063_p7_127",
    "style": "office_tower",
    "seed": 6725,
    "building_seed": 0.2027,
@@ -3990,27 +3959,27 @@
    "floors": 8,
    "poly": [
     [
-     1107.22,
-     -150.0
+     1127.22,
+     -80.0
     ],
     [
-     1107.22,
-     -140.0
+     1127.22,
+     -70.0
     ],
     [
-     1027.86,
-     -140.0
+     1047.86,
+     -70.0
     ],
     [
-     1027.86,
-     -150.0
+     1047.86,
+     -80.0
     ]
    ],
    "near_road": true,
    "ground": false
   },
   {
-   "id": "b_d7_055_p8_129",
+   "id": "b_d7_063_p8_128",
    "style": "office_tower",
    "seed": 6835,
    "building_seed": 0.7648,
@@ -4041,7 +4010,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_055_p9_130",
+   "id": "b_d7_063_p9_129",
    "style": "office_tower",
    "seed": 9348,
    "building_seed": 0.7011,
@@ -4072,7 +4041,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_055_p10_131",
+   "id": "b_d7_063_p10_130",
    "style": "office_tower",
    "seed": 4981,
    "building_seed": 0.5667,
@@ -4103,7 +4072,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_055_p11_132",
+   "id": "b_d7_063_p11_131",
    "style": "office_tower",
    "seed": 6919,
    "building_seed": 0.0983,
@@ -4134,7 +4103,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_056_p0_133",
+   "id": "b_d7_064_p0_132",
    "style": "office_tower",
    "seed": 1925,
    "building_seed": 0.9781,
@@ -4165,7 +4134,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_057_p0_134",
+   "id": "b_d7_065_p0_133",
    "style": "office_tower",
    "seed": 5973,
    "building_seed": 0.4816,
@@ -4196,7 +4165,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_057_p1_135",
+   "id": "b_d7_065_p1_134",
    "style": "office_tower",
    "seed": 7381,
    "building_seed": 0.3983,
@@ -4227,7 +4196,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_057_p2_136",
+   "id": "b_d7_065_p2_135",
    "style": "office_tower",
    "seed": 6897,
    "building_seed": 0.7315,
@@ -4258,7 +4227,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_057_p3_137",
+   "id": "b_d7_065_p3_136",
    "style": "office_tower",
    "seed": 4232,
    "building_seed": 0.4804,
@@ -4289,13 +4258,13 @@
    "ground": false
   },
   {
-   "id": "b_d7_059_p0_138",
+   "id": "b_d7_067_p0_137",
    "style": "office_tower",
-   "seed": 1345,
-   "building_seed": 0.9658,
-   "lit_ratio": 0.252,
-   "band_ratio": 0.236,
-   "cool_mix": 0.715,
+   "seed": 4486,
+   "building_seed": 0.6341,
+   "lit_ratio": 0.271,
+   "band_ratio": 0.246,
+   "cool_mix": 0.739,
    "height": 40.7,
    "floors": 8,
    "poly": [
@@ -4320,106 +4289,106 @@
    "ground": false
   },
   {
-   "id": "b_d7_059_p1_139",
+   "id": "b_d7_067_p1_138",
    "style": "office_tower",
-   "seed": 8024,
-   "building_seed": 0.4793,
-   "lit_ratio": 0.314,
-   "band_ratio": 0.267,
-   "cool_mix": 0.793,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1487.22,
-     -80.0
-    ],
-    [
-     1487.22,
-     -70.0
-    ],
-    [
-     1407.86,
-     -70.0
-    ],
-    [
-     1407.86,
-     -80.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_059_p2_140",
-   "style": "office_tower",
-   "seed": 1112,
-   "building_seed": 0.3933,
+   "seed": 9434,
+   "building_seed": 0.2351,
    "lit_ratio": 0.274,
    "band_ratio": 0.247,
-   "cool_mix": 0.742,
+   "cool_mix": 0.743,
    "height": 40.7,
    "floors": 8,
    "poly": [
     [
-     1467.62,
-     -90.0
-    ],
-    [
-     1467.62,
+     1487.22,
      -80.0
     ],
     [
-     1404.26,
-     -80.0
+     1487.22,
+     -70.0
     ],
     [
-     1404.26,
-     -90.0
+     1407.86,
+     -70.0
+    ],
+    [
+     1407.86,
+     -80.0
     ]
    ],
    "near_road": true,
    "ground": false
   },
   {
-   "id": "b_d7_059_p3_141",
+   "id": "b_d7_067_p2_139",
    "style": "office_tower",
-   "seed": 9699,
-   "building_seed": 0.505,
-   "lit_ratio": 0.29,
-   "band_ratio": 0.255,
-   "cool_mix": 0.763,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1457.82,
-     -100.0
-    ],
-    [
-     1457.82,
-     -90.0
-    ],
-    [
-     1402.46,
-     -90.0
-    ],
-    [
-     1402.46,
-     -100.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_059_p4_142",
-   "style": "office_tower",
-   "seed": 7920,
-   "building_seed": 0.0023,
-   "lit_ratio": 0.261,
+   "seed": 2913,
+   "building_seed": 0.4207,
+   "lit_ratio": 0.259,
    "band_ratio": 0.24,
-   "cool_mix": 0.726,
+   "cool_mix": 0.724,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1467.62,
+     -90.0
+    ],
+    [
+     1467.62,
+     -80.0
+    ],
+    [
+     1404.26,
+     -80.0
+    ],
+    [
+     1404.26,
+     -90.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_067_p3_140",
+   "style": "office_tower",
+   "seed": 9734,
+   "building_seed": 0.4568,
+   "lit_ratio": 0.263,
+   "band_ratio": 0.242,
+   "cool_mix": 0.729,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1457.82,
+     -100.0
+    ],
+    [
+     1457.82,
+     -90.0
+    ],
+    [
+     1402.46,
+     -90.0
+    ],
+    [
+     1402.46,
+     -100.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_067_p4_141",
+   "style": "office_tower",
+   "seed": 172,
+   "building_seed": 0.4423,
+   "lit_ratio": 0.304,
+   "band_ratio": 0.262,
+   "cool_mix": 0.78,
    "height": 40.7,
    "floors": 8,
    "poly": [
@@ -4444,13 +4413,13 @@
    "ground": false
   },
   {
-   "id": "b_d7_059_p5_143",
+   "id": "b_d7_067_p5_142",
    "style": "office_tower",
-   "seed": 8594,
-   "building_seed": 0.3762,
-   "lit_ratio": 0.296,
-   "band_ratio": 0.258,
-   "cool_mix": 0.77,
+   "seed": 6092,
+   "building_seed": 0.5977,
+   "lit_ratio": 0.318,
+   "band_ratio": 0.269,
+   "cool_mix": 0.798,
    "height": 40.7,
    "floors": 8,
    "poly": [
@@ -4475,10 +4444,10 @@
    "ground": false
   },
   {
-   "id": "b_d7_059_p6_144",
+   "id": "b_d7_067_p6_143",
    "style": "office_tower",
-   "seed": 7129,
-   "building_seed": 0.87,
+   "seed": 2721,
+   "building_seed": 0.4125,
    "lit_ratio": 0.316,
    "band_ratio": 0.268,
    "cool_mix": 0.795,
@@ -4506,13 +4475,44 @@
    "ground": false
   },
   {
-   "id": "b_d7_059_p7_145",
+   "id": "b_d7_067_p7_144",
    "style": "office_tower",
-   "seed": 6968,
-   "building_seed": 0.5607,
-   "lit_ratio": 0.275,
-   "band_ratio": 0.248,
-   "cool_mix": 0.744,
+   "seed": 6692,
+   "building_seed": 0.7187,
+   "lit_ratio": 0.312,
+   "band_ratio": 0.266,
+   "cool_mix": 0.79,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1431.58,
+     -40.0
+    ],
+    [
+     1431.58,
+     -50.0
+    ],
+    [
+     1462.94,
+     -50.0
+    ],
+    [
+     1462.94,
+     -40.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_067_p8_145",
+   "style": "office_tower",
+   "seed": 480,
+   "building_seed": 0.0253,
+   "lit_ratio": 0.281,
+   "band_ratio": 0.25,
+   "cool_mix": 0.751,
    "height": 40.7,
    "floors": 8,
    "poly": [
@@ -4537,72 +4537,10 @@
    "ground": false
   },
   {
-   "id": "b_d7_059_p8_146",
+   "id": "b_d7_067_p9_146",
    "style": "office_tower",
-   "seed": 4530,
-   "building_seed": 0.7986,
-   "lit_ratio": 0.247,
-   "band_ratio": 0.234,
-   "cool_mix": 0.709,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1431.38,
-     -40.0
-    ],
-    [
-     1431.38,
-     -50.0
-    ],
-    [
-     1454.74,
-     -50.0
-    ],
-    [
-     1454.74,
-     -40.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_059_p9_147",
-   "style": "office_tower",
-   "seed": 7578,
-   "building_seed": 0.8658,
-   "lit_ratio": 0.287,
-   "band_ratio": 0.254,
-   "cool_mix": 0.759,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1381.18,
-     -130.0
-    ],
-    [
-     1381.18,
-     -140.0
-    ],
-    [
-     1396.54,
-     -140.0
-    ],
-    [
-     1396.54,
-     -130.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_059_p10_148",
-   "style": "office_tower",
-   "seed": 3255,
-   "building_seed": 0.3313,
+   "seed": 9589,
+   "building_seed": 0.5835,
    "lit_ratio": 0.301,
    "band_ratio": 0.26,
    "cool_mix": 0.776,
@@ -4610,19 +4548,50 @@
    "floors": 8,
    "poly": [
     [
-     1460.0,
+     1381.18,
+     -130.0
+    ],
+    [
+     1381.18,
+     -140.0
+    ],
+    [
+     1396.54,
+     -140.0
+    ],
+    [
+     1396.54,
+     -130.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_067_p10_147",
+   "style": "office_tower",
+   "seed": 2373,
+   "building_seed": 0.8739,
+   "lit_ratio": 0.286,
+   "band_ratio": 0.253,
+   "cool_mix": 0.758,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1468.0,
      -30.06
     ],
     [
-     1450.0,
+     1452.0,
      -30.06
     ],
     [
-     1450.0,
+     1452.0,
      -39.26
     ],
     [
-     1460.0,
+     1468.0,
      -39.26
     ]
    ],
@@ -4630,13 +4599,13 @@
    "ground": false
   },
   {
-   "id": "b_d7_062_p0_149",
+   "id": "b_d7_070_p0_148",
    "style": "office_tower",
-   "seed": 804,
-   "building_seed": 0.3653,
-   "lit_ratio": 0.317,
-   "band_ratio": 0.268,
-   "cool_mix": 0.796,
+   "seed": 6757,
+   "building_seed": 0.2585,
+   "lit_ratio": 0.271,
+   "band_ratio": 0.246,
+   "cool_mix": 0.739,
    "height": 40.7,
    "floors": 8,
    "poly": [
@@ -4661,199 +4630,199 @@
    "ground": false
   },
   {
-   "id": "b_d7_062_p1_150",
+   "id": "b_d7_070_p1_149",
    "style": "office_tower",
-   "seed": 148,
-   "building_seed": 0.268,
-   "lit_ratio": 0.274,
-   "band_ratio": 0.247,
-   "cool_mix": 0.742,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1296.42,
-     -70.0
-    ],
-    [
-     1296.42,
-     -60.0
-    ],
-    [
-     1185.06,
-     -60.0
-    ],
-    [
-     1185.06,
-     -70.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_062_p2_151",
-   "style": "office_tower",
-   "seed": 7692,
-   "building_seed": 0.9668,
-   "lit_ratio": 0.257,
-   "band_ratio": 0.238,
-   "cool_mix": 0.721,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1162.98,
-     -70.0
-    ],
-    [
-     1162.98,
-     -80.0
-    ],
-    [
-     1250.34,
-     -80.0
-    ],
-    [
-     1250.34,
-     -70.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_062_p3_152",
-   "style": "office_tower",
-   "seed": 4466,
-   "building_seed": 0.4563,
-   "lit_ratio": 0.267,
-   "band_ratio": 0.244,
-   "cool_mix": 0.734,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1192.98,
-     -40.0
-    ],
-    [
-     1192.98,
-     -50.0
-    ],
-    [
-     1280.34,
-     -50.0
-    ],
-    [
-     1280.34,
-     -40.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_062_p4_153",
-   "style": "office_tower",
-   "seed": 1382,
-   "building_seed": 0.8431,
-   "lit_ratio": 0.295,
-   "band_ratio": 0.258,
-   "cool_mix": 0.769,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1247.62,
-     -90.0
-    ],
-    [
-     1247.62,
-     -80.0
-    ],
-    [
-     1184.26,
-     -80.0
-    ],
-    [
-     1184.26,
-     -90.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_062_p5_154",
-   "style": "office_tower",
-   "seed": 4059,
-   "building_seed": 0.6017,
-   "lit_ratio": 0.246,
-   "band_ratio": 0.233,
-   "cool_mix": 0.708,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1171.78,
-     -90.0
-    ],
-    [
-     1171.78,
-     -100.0
-    ],
-    [
-     1211.14,
-     -100.0
-    ],
-    [
-     1211.14,
-     -90.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_062_p6_155",
-   "style": "office_tower",
-   "seed": 1174,
-   "building_seed": 0.4241,
-   "lit_ratio": 0.314,
-   "band_ratio": 0.267,
-   "cool_mix": 0.792,
-   "height": 40.7,
-   "floors": 8,
-   "poly": [
-    [
-     1298.22,
-     -40.0
-    ],
-    [
-     1298.22,
-     -30.0
-    ],
-    [
-     1258.86,
-     -30.0
-    ],
-    [
-     1258.86,
-     -40.0
-    ]
-   ],
-   "near_road": true,
-   "ground": false
-  },
-  {
-   "id": "b_d7_062_p7_156",
-   "style": "office_tower",
-   "seed": 8552,
-   "building_seed": 0.6247,
-   "lit_ratio": 0.288,
+   "seed": 5945,
+   "building_seed": 0.4381,
+   "lit_ratio": 0.289,
    "band_ratio": 0.254,
-   "cool_mix": 0.76,
+   "cool_mix": 0.761,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1163.38,
+     -60.0
+    ],
+    [
+     1163.38,
+     -70.0
+    ],
+    [
+     1266.74,
+     -70.0
+    ],
+    [
+     1266.74,
+     -60.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_070_p2_150",
+   "style": "office_tower",
+   "seed": 3345,
+   "building_seed": 0.8779,
+   "lit_ratio": 0.303,
+   "band_ratio": 0.262,
+   "cool_mix": 0.779,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1162.98,
+     -70.0
+    ],
+    [
+     1162.98,
+     -80.0
+    ],
+    [
+     1250.34,
+     -80.0
+    ],
+    [
+     1250.34,
+     -70.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_070_p3_151",
+   "style": "office_tower",
+   "seed": 3142,
+   "building_seed": 0.8446,
+   "lit_ratio": 0.254,
+   "band_ratio": 0.237,
+   "cool_mix": 0.718,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1192.98,
+     -40.0
+    ],
+    [
+     1192.98,
+     -50.0
+    ],
+    [
+     1280.34,
+     -50.0
+    ],
+    [
+     1280.34,
+     -40.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_070_p4_152",
+   "style": "office_tower",
+   "seed": 9903,
+   "building_seed": 0.7213,
+   "lit_ratio": 0.293,
+   "band_ratio": 0.256,
+   "cool_mix": 0.766,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1247.62,
+     -90.0
+    ],
+    [
+     1247.62,
+     -80.0
+    ],
+    [
+     1184.26,
+     -80.0
+    ],
+    [
+     1184.26,
+     -90.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_070_p5_153",
+   "style": "office_tower",
+   "seed": 3020,
+   "building_seed": 0.8712,
+   "lit_ratio": 0.309,
+   "band_ratio": 0.264,
+   "cool_mix": 0.786,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1171.78,
+     -90.0
+    ],
+    [
+     1171.78,
+     -100.0
+    ],
+    [
+     1211.14,
+     -100.0
+    ],
+    [
+     1211.14,
+     -90.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_070_p6_154",
+   "style": "office_tower",
+   "seed": 4271,
+   "building_seed": 0.822,
+   "lit_ratio": 0.277,
+   "band_ratio": 0.248,
+   "cool_mix": 0.746,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1298.22,
+     -40.0
+    ],
+    [
+     1298.22,
+     -30.0
+    ],
+    [
+     1258.86,
+     -30.0
+    ],
+    [
+     1258.86,
+     -40.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_070_p7_155",
+   "style": "office_tower",
+   "seed": 571,
+   "building_seed": 0.649,
+   "lit_ratio": 0.266,
+   "band_ratio": 0.243,
+   "cool_mix": 0.733,
    "height": 40.7,
    "floors": 8,
    "poly": [
@@ -4878,7 +4847,69 @@
    "ground": false
   },
   {
-   "id": "b_d7_063_p0_157",
+   "id": "b_d7_072_p0_156",
+   "style": "office_tower",
+   "seed": 1925,
+   "building_seed": 0.9781,
+   "lit_ratio": 0.302,
+   "band_ratio": 0.261,
+   "cool_mix": 0.777,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1330.06,
+     -30.0
+    ],
+    [
+     1330.06,
+     -40.0
+    ],
+    [
+     1339.26,
+     -40.0
+    ],
+    [
+     1339.26,
+     -30.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_072_p1_157",
+   "style": "office_tower",
+   "seed": 6796,
+   "building_seed": 0.4638,
+   "lit_ratio": 0.291,
+   "band_ratio": 0.256,
+   "cool_mix": 0.764,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1339.94,
+     -30.0
+    ],
+    [
+     1339.94,
+     -20.0
+    ],
+    [
+     1330.74,
+     -20.0
+    ],
+    [
+     1330.74,
+     -30.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_073_p0_158",
    "style": "office_tower",
    "seed": 2742,
    "building_seed": 0.5651,
@@ -4909,7 +4940,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_063_p1_158",
+   "id": "b_d7_073_p1_159",
    "style": "office_tower",
    "seed": 255,
    "building_seed": 0.531,
@@ -4940,7 +4971,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_063_p2_159",
+   "id": "b_d7_073_p2_160",
    "style": "office_tower",
    "seed": 2724,
    "building_seed": 0.8341,
@@ -4971,7 +5002,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_063_p3_160",
+   "id": "b_d7_073_p3_161",
    "style": "office_tower",
    "seed": 6028,
    "building_seed": 0.4229,
@@ -5002,7 +5033,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_065_p0_161",
+   "id": "b_d7_075_p0_162",
    "style": "office_tower",
    "seed": 7803,
    "building_seed": 0.3651,
@@ -5033,7 +5064,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_065_p1_162",
+   "id": "b_d7_075_p1_163",
    "style": "office_tower",
    "seed": 7137,
    "building_seed": 0.1278,
@@ -5064,7 +5095,131 @@
    "ground": false
   },
   {
-   "id": "plaza_jin_mao_163",
+   "id": "b_d7_076_s3_p0_164",
+   "style": "office_tower",
+   "seed": 1608,
+   "building_seed": 0.0296,
+   "lit_ratio": 0.285,
+   "band_ratio": 0.252,
+   "cool_mix": 0.756,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1401.58,
+     0.0
+    ],
+    [
+     1401.58,
+     -10.0
+    ],
+    [
+     1432.94,
+     -10.0
+    ],
+    [
+     1432.94,
+     0.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_076_s3_p1_165",
+   "style": "office_tower",
+   "seed": 3728,
+   "building_seed": 0.9127,
+   "lit_ratio": 0.24,
+   "band_ratio": 0.23,
+   "cool_mix": 0.7,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1411.58,
+     10.0
+    ],
+    [
+     1411.58,
+     0.0
+    ],
+    [
+     1442.94,
+     0.0
+    ],
+    [
+     1442.94,
+     10.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_076_s3_p2_166",
+   "style": "office_tower",
+   "seed": 3152,
+   "building_seed": 0.094,
+   "lit_ratio": 0.281,
+   "band_ratio": 0.25,
+   "cool_mix": 0.751,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1401.18,
+     20.0
+    ],
+    [
+     1401.18,
+     10.0
+    ],
+    [
+     1416.54,
+     10.0
+    ],
+    [
+     1416.54,
+     20.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_076_s3_p3_167",
+   "style": "office_tower",
+   "seed": 5321,
+   "building_seed": 0.6439,
+   "lit_ratio": 0.255,
+   "band_ratio": 0.238,
+   "cool_mix": 0.719,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     1400.0,
+     -19.94
+    ],
+    [
+     1410.0,
+     -19.94
+    ],
+    [
+     1410.0,
+     -10.74
+    ],
+    [
+     1400.0,
+     -10.74
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "plaza_jin_mao_168",
    "style": "plaza",
    "seed": 8363,
    "building_seed": 0.4193,
@@ -5075,27 +5230,27 @@
    "floors": null,
    "poly": [
     [
-     1106.7,
-     -177.1
+     1106.6,
+     -177.2
     ],
     [
-     1164.7,
-     -177.1
+     1164.6,
+     -177.2
     ],
     [
-     1164.7,
-     -235.1
+     1164.6,
+     -235.2
     ],
     [
-     1106.7,
-     -235.1
+     1106.6,
+     -235.2
     ]
    ],
    "near_road": false,
    "ground": true
   },
   {
-   "id": "plaza_swfc_164",
+   "id": "plaza_swfc_169",
    "style": "plaza",
    "seed": 8363,
    "building_seed": 0.4193,
@@ -5106,19 +5261,19 @@
    "floors": null,
    "poly": [
     [
-     1238.5,
+     1238.4,
      -121.3
     ],
     [
-     1298.5,
+     1298.4,
      -121.3
     ],
     [
-     1298.5,
+     1298.4,
      -181.3
     ],
     [
-     1238.5,
+     1238.4,
      -181.3
     ]
    ],
@@ -5126,7 +5281,7 @@
    "ground": true
   },
   {
-   "id": "plaza_shanghai_tower_165",
+   "id": "plaza_shanghai_tower_170",
    "style": "plaza",
    "seed": 7525,
    "building_seed": 0.2434,
@@ -5137,27 +5292,31 @@
    "floors": null,
    "poly": [
     [
-     1002.2,
-     -69.2
+     1093.7,
+     -66.8
     ],
     [
-     1088.2,
-     -69.2
+     1093.7,
+     -152.8
     ],
     [
-     1088.2,
-     -155.2
+     1007.7,
+     -152.8
     ],
     [
-     1002.2,
-     -155.2
+     1007.7,
+     -69.89
+    ],
+    [
+     1023.75,
+     -66.8
     ]
    ],
    "near_road": false,
    "ground": true
   },
   {
-   "id": "park_century_ave_north_3_166",
+   "id": "park_century_ave_north_3_171",
    "style": "park",
    "seed": 7719,
    "building_seed": 0.4807,
@@ -5168,12 +5327,8 @@
    "floors": null,
    "poly": [
     [
-     1038.9,
-     -253.8
-    ],
-    [
-     1041.1,
-     -252.4
+     1042.63,
+     -251.38
     ],
     [
      1043.5,
@@ -5206,13 +5361,17 @@
     [
      1055.4,
      -278.8
+    ],
+    [
+     1052.24,
+     -274.01
     ]
    ],
    "near_road": false,
    "ground": true
   },
   {
-   "id": "park_century_ave_north_4_167",
+   "id": "park_century_ave_north_4_172",
    "style": "park",
    "seed": 8088,
    "building_seed": 0.8265,
@@ -5259,10 +5418,6 @@
      -220.6
     ],
     [
-     1188.3,
-     -221.3
-    ],
-    [
      1186.5,
      -222.0
     ],
@@ -5275,7 +5430,7 @@
    "ground": true
   },
   {
-   "id": "park_century_ave_north_5_168",
+   "id": "park_century_ave_north_5_173",
    "style": "park",
    "seed": 5560,
    "building_seed": 0.8876,
@@ -5322,10 +5477,6 @@
      -207.6
     ],
     [
-     1221.3,
-     -208.3
-    ],
-    [
      1219.7,
      -209.0
     ],
@@ -5338,70 +5489,7 @@
    "ground": true
   },
   {
-   "id": "park_century_ave_north_6_169",
-   "style": "park",
-   "seed": 8388,
-   "building_seed": 0.3699,
-   "lit_ratio": 0.003,
-   "band_ratio": 0.002,
-   "cool_mix": 0.504,
-   "height": 0.2,
-   "floors": null,
-   "poly": [
-    [
-     1355.3,
-     -109.9
-    ],
-    [
-     1356.8,
-     -109.0
-    ],
-    [
-     1358.3,
-     -108.1
-    ],
-    [
-     1359.7,
-     -107.2
-    ],
-    [
-     1361.2,
-     -106.3
-    ],
-    [
-     1362.7,
-     -105.3
-    ],
-    [
-     1378.9,
-     -130.5
-    ],
-    [
-     1377.4,
-     -131.5
-    ],
-    [
-     1375.8,
-     -132.5
-    ],
-    [
-     1374.3,
-     -133.5
-    ],
-    [
-     1372.7,
-     -134.4
-    ],
-    [
-     1371.2,
-     -135.4
-    ]
-   ],
-   "near_road": false,
-   "ground": true
-  },
-  {
-   "id": "park_century_ave_north_7_170",
+   "id": "park_century_ave_north_7_174",
    "style": "park",
    "seed": 1647,
    "building_seed": 0.8179,
@@ -5411,10 +5499,6 @@
    "height": 0.2,
    "floors": null,
    "poly": [
-    [
-     1465.2,
-     -34.2
-    ],
     [
      1466.8,
      -33.0
@@ -5436,6 +5520,14 @@
      -28.3
     ],
     [
+     1475.1,
+     -27.2
+    ],
+    [
+     1492.3,
+     -51.7
+    ],
+    [
      1490.7,
      -52.9
     ],
@@ -5454,352 +5546,33 @@
     [
      1484.1,
      -57.5
-    ],
-    [
-     1482.4,
-     -58.7
     ]
    ],
    "near_road": false,
    "ground": true
   },
   {
-   "id": "park_century_ave_north_8_171",
+   "id": "park_century_ave_south_2_175",
    "style": "park",
-   "seed": 8513,
-   "building_seed": 0.5048,
-   "lit_ratio": 0.034,
-   "band_ratio": 0.017,
-   "cool_mix": 0.542,
+   "seed": 5040,
+   "building_seed": 0.0175,
+   "lit_ratio": 0.0,
+   "band_ratio": 0.0,
+   "cool_mix": 0.489,
    "height": 0.2,
    "floors": null,
    "poly": [
-    [
-     1496.7,
-     -12.1
-    ],
-    [
-     1498.4,
-     -10.9
-    ],
-    [
-     1515.5,
-     -35.6
-    ],
-    [
-     1513.8,
-     -36.7
-    ]
-   ],
-   "near_road": false,
-   "ground": true
-  },
-  {
-   "id": "park_century_ave_south_2_172",
-   "style": "park",
-   "seed": 7719,
-   "building_seed": 0.4807,
-   "lit_ratio": 0.022,
-   "band_ratio": 0.011,
-   "cool_mix": 0.527,
-   "height": 0.2,
-   "floors": null,
-   "poly": [
-    [
-     1449.2,
-     -219.6
-    ],
-    [
-     1451.0,
-     -218.4
-    ],
-    [
-     1452.7,
-     -217.2
-    ],
-    [
-     1454.5,
-     -216.1
-    ],
-    [
-     1456.2,
-     -214.9
-    ],
-    [
-     1458.0,
-     -213.7
-    ],
     [
      1459.7,
      -212.5
     ],
     [
-     1461.4,
-     -211.4
+     1461.32,
+     -211.45
     ],
     [
-     1463.1,
-     -210.2
-    ],
-    [
-     1464.9,
-     -209.0
-    ],
-    [
-     1466.6,
-     -207.9
-    ],
-    [
-     1468.3,
-     -206.7
-    ],
-    [
-     1470.0,
-     -205.5
-    ],
-    [
-     1471.7,
-     -204.4
-    ],
-    [
-     1473.4,
-     -203.2
-    ],
-    [
-     1475.1,
-     -202.0
-    ],
-    [
-     1476.7,
-     -200.8
-    ],
-    [
-     1478.4,
-     -199.7
-    ],
-    [
-     1480.1,
-     -198.5
-    ],
-    [
-     1481.8,
-     -197.3
-    ],
-    [
-     1483.5,
-     -196.2
-    ],
-    [
-     1485.1,
-     -195.0
-    ],
-    [
-     1486.8,
-     -193.9
-    ],
-    [
-     1488.5,
-     -192.7
-    ],
-    [
-     1490.1,
-     -191.5
-    ],
-    [
-     1491.8,
-     -190.4
-    ],
-    [
-     1493.5,
-     -189.2
-    ],
-    [
-     1495.1,
-     -188.0
-    ],
-    [
-     1496.8,
-     -186.9
-    ],
-    [
-     1498.4,
-     -185.7
-    ],
-    [
-     1500.1,
-     -184.5
-    ],
-    [
-     1501.7,
-     -183.4
-    ],
-    [
-     1503.4,
-     -182.2
-    ],
-    [
-     1505.0,
-     -181.1
-    ],
-    [
-     1506.7,
-     -179.9
-    ],
-    [
-     1508.3,
-     -178.7
-    ],
-    [
-     1510.0,
-     -177.6
-    ],
-    [
-     1511.6,
-     -176.4
-    ],
-    [
-     1513.3,
-     -175.3
-    ],
-    [
-     1514.9,
-     -174.1
-    ],
-    [
-     1516.5,
-     -172.9
-    ],
-    [
-     1518.2,
-     -171.8
-    ],
-    [
-     1519.8,
-     -170.6
-    ],
-    [
-     1521.4,
-     -169.5
-    ],
-    [
-     1523.1,
-     -168.3
-    ],
-    [
-     1524.7,
-     -167.2
-    ],
-    [
-     1526.4,
-     -166.0
-    ],
-    [
-     1528.0,
-     -164.8
-    ],
-    [
-     1529.6,
-     -163.7
-    ],
-    [
-     1531.2,
-     -162.5
-    ],
-    [
-     1532.9,
-     -161.4
-    ],
-    [
-     1534.5,
-     -160.2
-    ],
-    [
-     1536.1,
-     -159.1
-    ],
-    [
-     1537.8,
-     -157.9
-    ],
-    [
-     1539.4,
-     -156.8
-    ],
-    [
-     1541.0,
-     -155.6
-    ],
-    [
-     1542.6,
-     -154.5
-    ],
-    [
-     1544.3,
-     -153.4
-    ],
-    [
-     1552.9,
-     -165.6
-    ],
-    [
-     1551.3,
-     -166.8
-    ],
-    [
-     1549.7,
-     -167.9
-    ],
-    [
-     1548.0,
-     -169.0
-    ],
-    [
-     1546.4,
-     -170.2
-    ],
-    [
-     1544.8,
-     -171.3
-    ],
-    [
-     1543.2,
-     -172.5
-    ],
-    [
-     1541.5,
-     -173.6
-    ],
-    [
-     1539.9,
-     -174.8
-    ],
-    [
-     1538.3,
-     -175.9
-    ],
-    [
-     1536.6,
-     -177.1
-    ],
-    [
-     1535.0,
-     -178.2
-    ],
-    [
-     1533.4,
-     -179.4
-    ],
-    [
-     1531.7,
-     -180.6
-    ],
-    [
-     1530.1,
-     -181.7
-    ],
-    [
-     1528.5,
-     -182.9
+     1528.35,
+     -183.0
     ],
     [
      1526.8,
@@ -5882,10 +5655,6 @@
      -206.1
     ],
     [
-     1493.7,
-     -207.3
-    ],
-    [
      1492.0,
      -208.5
     ],
@@ -5898,14 +5667,6 @@
      -210.8
     ],
     [
-     1487.0,
-     -212.0
-    ],
-    [
-     1485.3,
-     -213.2
-    ],
-    [
      1483.6,
      -214.4
     ],
@@ -5914,24 +5675,12 @@
      -215.5
     ],
     [
-     1480.2,
-     -216.7
-    ],
-    [
-     1478.5,
-     -217.9
-    ],
-    [
      1476.8,
      -219.1
     ],
     [
      1475.0,
      -220.2
-    ],
-    [
-     1473.3,
-     -221.4
     ],
     [
      1471.6,
@@ -5950,14 +5699,6 @@
      -226.1
     ],
     [
-     1464.6,
-     -227.3
-    ],
-    [
-     1462.8,
-     -228.5
-    ],
-    [
      1461.0,
      -229.7
     ],
@@ -5968,37 +5709,30 @@
     [
      1457.5,
      -232.1
-    ]
-   ],
-   "near_road": false,
-   "ground": true
-  },
-  {
-   "id": "plaza_poi_police_lujiazui_173",
-   "style": "plaza",
-   "seed": 2603,
-   "building_seed": 0.1368,
-   "lit_ratio": 0.026,
-   "band_ratio": 0.013,
-   "cool_mix": 0.532,
-   "height": 0.2,
-   "floors": null,
-   "poly": [
-    [
-     1270.0,
-     -402.0
     ],
     [
-     1310.0,
-     -402.0
+     1449.2,
+     -219.6
     ],
     [
-     1310.0,
-     -442.0
+     1451.0,
+     -218.4
     ],
     [
-     1270.0,
-     -442.0
+     1452.7,
+     -217.2
+    ],
+    [
+     1454.5,
+     -216.1
+    ],
+    [
+     1456.2,
+     -214.9
+    ],
+    [
+     1458.0,
+     -213.7
     ]
    ],
    "near_road": false,
@@ -6006,6 +5740,13 @@
   }
  ],
  "occluders": [
+  [
+   393.66,
+   -13.0,
+   127.36,
+   10.0,
+   40.7
+  ],
   [
    398.34,
    37.0,
@@ -6023,13 +5764,6 @@
   [
    399.46,
    -23.0,
-   119.36,
-   10.0,
-   40.7
-  ],
-  [
-   422.54,
-   -13.0,
    119.36,
    10.0,
    40.7
@@ -6070,16 +5804,16 @@
    40.7
   ],
   [
-   415.14,
-   -43.0,
+   405.14,
+   57.0,
    95.36,
    10.0,
    40.7
   ],
   [
-   405.14,
-   57.0,
-   95.36,
+   392.66,
+   -43.0,
+   87.36,
    10.0,
    40.7
   ],
@@ -6098,15 +5832,15 @@
    40.7
   ],
   [
-   390.34,
-   -63.0,
-   47.36,
+   405.86,
+   77.0,
+   55.36,
    10.0,
    40.7
   ],
   [
-   420.34,
-   77.0,
+   390.34,
+   -63.0,
    47.36,
    10.0,
    40.7
@@ -6122,13 +5856,6 @@
    419.06,
    87.0,
    23.36,
-   10.0,
-   40.7
-  ],
-  [
-   360.66,
-   -83.0,
-   9.2,
    10.0,
    40.7
   ],
@@ -6161,15 +5888,15 @@
    40.7
   ],
   [
-   36.74,
-   27.0,
-   111.36,
+   30.94,
+   -13.0,
+   103.36,
    10.0,
    40.7
   ],
   [
    30.94,
-   -13.0,
+   27.0,
    103.36,
    10.0,
    40.7
@@ -6182,9 +5909,9 @@
    40.7
   ],
   [
-   -1.54,
+   17.74,
    -23.0,
-   79.36,
+   71.36,
    10.0,
    40.7
   ],
@@ -6315,16 +6042,16 @@
    40.7
   ],
   [
-   179.34,
+   183.54,
    157.0,
-   87.36,
+   79.36,
    10.0,
    40.7
   ],
   [
-   166.14,
+   171.94,
    37.0,
-   55.36,
+   63.36,
    10.0,
    40.7
   ],
@@ -6350,10 +6077,10 @@
    40.7
   ],
   [
-   139.06,
-   17.0,
-   23.36,
-   10.0,
+   146.0,
+   16.66,
+   16.0,
+   9.2,
    40.7
   ],
   [
@@ -6448,15 +6175,15 @@
    40.7
   ],
   [
-   368.74,
-   227.0,
-   31.36,
+   332.94,
+   97.0,
+   23.36,
    10.0,
    40.7
   ],
   [
-   332.94,
-   97.0,
+   359.06,
+   227.0,
    23.36,
    10.0,
    40.7
@@ -6490,6 +6217,13 @@
    40.7
   ],
   [
+   263.26,
+   177.0,
+   31.36,
+   10.0,
+   40.7
+  ],
+  [
    268.74,
    187.0,
    31.36,
@@ -6500,13 +6234,6 @@
    268.74,
    197.0,
    31.36,
-   10.0,
-   40.7
-  ],
-  [
-   272.94,
-   177.0,
-   23.36,
    10.0,
    40.7
   ],
@@ -6546,13 +6273,6 @@
    40.7
   ],
   [
-   483.66,
-   217.0,
-   127.36,
-   10.0,
-   40.7
-  ],
-  [
    489.46,
    197.0,
    119.36,
@@ -6562,6 +6282,13 @@
   [
    512.54,
    207.0,
+   119.36,
+   10.0,
+   40.7
+  ],
+  [
+   512.54,
+   217.0,
    119.36,
    10.0,
    40.7
@@ -6609,16 +6336,16 @@
    40.7
   ],
   [
-   503.54,
-   277.0,
+   493.54,
+   177.0,
    79.36,
    10.0,
    40.7
   ],
   [
-   474.26,
-   177.0,
-   71.36,
+   503.54,
+   277.0,
+   79.36,
    10.0,
    40.7
   ],
@@ -6672,16 +6399,16 @@
    40.7
   ],
   [
-   461.0,
-   146.66,
-   10.0,
+   450.66,
+   147.0,
    9.2,
+   10.0,
    40.7
   ],
   [
-   106.74,
+   79.46,
    277.0,
-   111.36,
+   119.36,
    10.0,
    40.7
   ],
@@ -6728,9 +6455,9 @@
    40.7
   ],
   [
-   121.94,
+   105.86,
    327.0,
-   63.36,
+   55.36,
    10.0,
    40.7
   ],
@@ -6749,15 +6476,15 @@
    40.7
   ],
   [
-   57.14,
-   237.0,
-   15.36,
+   132.94,
+   347.0,
+   23.36,
    10.0,
    40.7
   ],
   [
-   137.14,
-   347.0,
+   57.14,
+   237.0,
    15.36,
    10.0,
    40.7
@@ -6805,15 +6532,15 @@
    40.7
   ],
   [
-   236.14,
-   327.0,
-   55.36,
+   281.94,
+   397.0,
+   63.36,
    10.0,
    40.7
   ],
   [
-   265.86,
-   397.0,
+   236.14,
+   327.0,
    55.36,
    10.0,
    40.7
@@ -6826,9 +6553,9 @@
    40.7
   ],
   [
-   277.46,
+   288.74,
    407.0,
-   39.36,
+   31.36,
    10.0,
    40.7
   ],
@@ -6854,15 +6581,15 @@
    40.7
   ],
   [
-   62.54,
-   387.0,
-   119.36,
+   58.34,
+   397.0,
+   127.36,
    10.0,
    40.7
   ],
   [
-   29.46,
-   397.0,
+   62.54,
+   387.0,
    119.36,
    10.0,
    40.7
@@ -6896,15 +6623,15 @@
    40.7
   ],
   [
-   59.34,
-   437.0,
-   87.36,
+   43.54,
+   367.0,
+   79.36,
    10.0,
    40.7
   ],
   [
-   43.54,
-   367.0,
+   63.54,
+   437.0,
    79.36,
    10.0,
    40.7
@@ -7022,15 +6749,15 @@
    40.7
   ],
   [
-   369.06,
-   387.0,
-   23.36,
+   423.26,
+   467.0,
+   31.36,
    10.0,
    40.7
   ],
   [
-   419.06,
-   467.0,
+   369.06,
+   387.0,
    23.36,
    10.0,
    40.7
@@ -7043,9 +6770,9 @@
    40.7
   ],
   [
-   431.0,
+   436.0,
    477.34,
-   10.0,
+   16.0,
    9.2,
    40.7
   ],
@@ -7057,9 +6784,9 @@
    40.7
   ],
   [
-   216.74,
+   191.06,
    447.0,
-   111.36,
+   103.36,
    10.0,
    40.7
   ],
@@ -7106,6 +6833,20 @@
    40.7
   ],
   [
+   310.66,
+   477.0,
+   9.2,
+   10.0,
+   40.7
+  ],
+  [
+   311.34,
+   487.0,
+   9.2,
+   10.0,
+   40.7
+  ],
+  [
    499.06,
    497.0,
    23.36,
@@ -7146,57 +6887,85 @@
    23.36,
    10.0,
    40.7
+  ],
+  [
+   393.26,
+   507.0,
+   31.36,
+   10.0,
+   40.7
+  ],
+  [
+   403.26,
+   517.0,
+   31.36,
+   10.0,
+   40.7
+  ],
+  [
+   384.86,
+   527.0,
+   15.36,
+   10.0,
+   40.7
+  ],
+  [
+   381.0,
+   496.66,
+   10.0,
+   9.2,
+   40.7
   ]
  ],
  "stats": {
-  "blocks": 26,
-  "buildings": 174,
-  "tris": 159740,
+  "blocks": 25,
+  "buildings": 176,
+  "tris": 163218,
   "empty_blocks": {}
  },
  "blocks": [
   {
-   "id": "b_d7_032",
+   "id": "b_d7_039",
    "style": "office_tower",
    "area": 19800.0,
-   "built": 15755.2,
-   "buildings": 19,
-   "coverage": 0.796
-  },
-  {
-   "id": "b_d7_033",
-   "style": "office_tower",
-   "area": 12700.0,
-   "built": 10088.8,
-   "buildings": 14,
-   "coverage": 0.794
-  },
-  {
-   "id": "b_d7_037",
-   "style": "office_tower",
-   "area": 19400.0,
-   "built": 15423.2,
+   "built": 15743.2,
    "buildings": 18,
    "coverage": 0.795
   },
   {
    "id": "b_d7_041",
    "style": "office_tower",
-   "area": 9700.0,
-   "built": 7669.6,
-   "buildings": 17,
-   "coverage": 0.791
+   "area": 12500.0,
+   "built": 9928.8,
+   "buildings": 14,
+   "coverage": 0.794
   },
   {
    "id": "b_d7_045",
    "style": "office_tower",
-   "area": 2400.0,
-   "built": 1892.8,
+   "area": 19300.0,
+   "built": 15336.8,
+   "buildings": 18,
+   "coverage": 0.795
+  },
+  {
+   "id": "b_d7_049",
+   "style": "office_tower",
+   "area": 9600.0,
+   "built": 7589.6,
+   "buildings": 17,
+   "coverage": 0.791
+  },
+  {
+   "id": "b_d7_052",
+   "style": "office_tower",
+   "area": 2500.0,
+   "built": 1972.8,
    "buildings": 9,
    "coverage": 0.789
   },
   {
-   "id": "b_d7_046",
+   "id": "b_d7_053",
    "style": "office_tower",
    "area": 18900.0,
    "built": 15010.4,
@@ -7204,15 +6973,15 @@
    "coverage": 0.794
   },
   {
-   "id": "b_d7_050",
+   "id": "b_d7_057",
    "style": "office_tower",
-   "area": 10400.0,
-   "built": 8243.2,
+   "area": 10500.0,
+   "built": 8323.2,
    "buildings": 12,
    "coverage": 0.793
   },
   {
-   "id": "b_d7_054",
+   "id": "b_d7_061",
    "style": "office_tower",
    "area": 10000.0,
    "built": 7935.2,
@@ -7220,7 +6989,7 @@
    "coverage": 0.794
   },
   {
-   "id": "b_d7_055",
+   "id": "b_d7_063",
    "style": "office_tower",
    "area": 12600.0,
    "built": 10014.4,
@@ -7228,7 +6997,7 @@
    "coverage": 0.795
   },
   {
-   "id": "b_d7_056",
+   "id": "b_d7_064",
    "style": "office_tower",
    "area": 200.0,
    "built": 153.6,
@@ -7236,7 +7005,7 @@
    "coverage": 0.768
   },
   {
-   "id": "b_d7_057",
+   "id": "b_d7_065",
    "style": "office_tower",
    "area": 1100.0,
    "built": 872.8,
@@ -7244,23 +7013,31 @@
    "coverage": 0.793
   },
   {
-   "id": "b_d7_059",
+   "id": "b_d7_067",
    "style": "office_tower",
-   "area": 6100.0,
-   "built": 4828.0,
+   "area": 6300.0,
+   "built": 4963.2,
    "buildings": 11,
-   "coverage": 0.791
+   "coverage": 0.788
   },
   {
-   "id": "b_d7_062",
+   "id": "b_d7_070",
    "style": "office_tower",
-   "area": 7100.0,
-   "built": 5622.4,
+   "area": 7000.0,
+   "built": 5542.4,
    "buildings": 8,
    "coverage": 0.792
   },
   {
-   "id": "b_d7_063",
+   "id": "b_d7_072",
+   "style": "office_tower",
+   "area": 200.0,
+   "built": 184.0,
+   "buildings": 2,
+   "coverage": 0.92
+  },
+  {
+   "id": "b_d7_073",
    "style": "office_tower",
    "area": 700.0,
    "built": 564.8,
@@ -7268,12 +7045,20 @@
    "coverage": 0.807
   },
   {
-   "id": "b_d7_065",
+   "id": "b_d7_075",
    "style": "office_tower",
    "area": 600.0,
    "built": 472.8,
    "buildings": 2,
    "coverage": 0.788
+  },
+  {
+   "id": "b_d7_076_s3",
+   "style": "office_tower",
+   "area": 1003.3,
+   "built": 872.8,
+   "buildings": 4,
+   "coverage": 0.87
   },
   {
    "id": "plaza_jin_mao",
@@ -7294,16 +7079,16 @@
   {
    "id": "plaza_shanghai_tower",
    "style": "plaza",
-   "area": 7396.0,
-   "built": 7396.0,
+   "area": 7371.2,
+   "built": 7371.2,
    "buildings": 1,
    "coverage": 1.0
   },
   {
    "id": "park_century_ave_north_3",
    "style": "park",
-   "area": 308.5,
-   "built": 308.5,
+   "area": 254.7,
+   "built": 254.7,
    "buildings": 1,
    "coverage": 1.0
   },
@@ -7324,42 +7109,18 @@
    "coverage": 1.0
   },
   {
-   "id": "park_century_ave_north_6",
-   "style": "park",
-   "area": 267.5,
-   "built": 267.5,
-   "buildings": 1,
-   "coverage": 1.0
-  },
-  {
    "id": "park_century_ave_north_7",
    "style": "park",
-   "area": 303.4,
-   "built": 303.4,
-   "buildings": 1,
-   "coverage": 1.0
-  },
-  {
-   "id": "park_century_ave_north_8",
-   "style": "park",
-   "area": 61.6,
-   "built": 61.6,
+   "area": 302.7,
+   "built": 302.7,
    "buildings": 1,
    "coverage": 1.0
   },
   {
    "id": "park_century_ave_south_2",
    "style": "park",
-   "area": 1740.9,
-   "built": 1740.9,
-   "buildings": 1,
-   "coverage": 1.0
-  },
-  {
-   "id": "plaza_poi_police_lujiazui",
-   "style": "plaza",
-   "area": 1600.0,
-   "built": 1600.0,
+   "area": 761.9,
+   "built": 761.9,
    "buildings": 1,
    "coverage": 1.0
   }

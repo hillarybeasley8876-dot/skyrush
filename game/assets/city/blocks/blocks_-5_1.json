@@ -8,7 +8,7 @@
   512.0
  ],
  "size_m": 512.0,
- "city_sha256": "72ddd6f0dac54d9dc3dfc7905205b7ccabea5dbde12a81c7694bef7a83f8e120",
+ "city_sha256": "a140a2ad8d9a6b8671fe103c058a74a42cf606f5d2f8f261467944c0606dcce5",
  "buildings": [
   {
    "id": "b_d9_004_p0_0",
@@ -1065,7 +1065,7 @@
    "ground": false
   },
   {
-   "id": "b_d9_007_p0_34",
+   "id": "b_d9_008_p0_34",
    "style": "industrial",
    "seed": 7074,
    "building_seed": 0.0884,
@@ -1096,7 +1096,7 @@
    "ground": false
   },
   {
-   "id": "b_d9_007_p0_35",
+   "id": "b_d9_008_p0_35",
    "style": "industrial",
    "seed": 2136,
    "building_seed": 0.4574,
@@ -1127,7 +1127,7 @@
    "ground": false
   },
   {
-   "id": "b_d9_007_p0_36",
+   "id": "b_d9_008_p0_36",
    "style": "industrial",
    "seed": 9049,
    "building_seed": 0.2702,
@@ -1158,7 +1158,7 @@
    "ground": false
   },
   {
-   "id": "b_d9_007_p0_37",
+   "id": "b_d9_008_p0_37",
    "style": "industrial",
    "seed": 6568,
    "building_seed": 0.3223,
@@ -3450,37 +3450,6 @@
    ],
    "near_road": true,
    "ground": false
-  },
-  {
-   "id": "plaza_poi_toll_west_111",
-   "style": "plaza",
-   "seed": 9349,
-   "building_seed": 0.1929,
-   "lit_ratio": 0.0,
-   "band_ratio": 0.0,
-   "cool_mix": 0.485,
-   "height": 0.2,
-   "floors": null,
-   "poly": [
-    [
-     -2150.0,
-     764.6
-    ],
-    [
-     -1990.0,
-     764.6
-    ],
-    [
-     -1990.0,
-     704.6
-    ],
-    [
-     -2150.0,
-     704.6
-    ]
-   ],
-   "near_road": false,
-   "ground": true
   }
  ],
  "occluders": [
@@ -4263,9 +4232,9 @@
   ]
  ],
  "stats": {
-  "blocks": 4,
-  "buildings": 112,
-  "tris": 18752,
+  "blocks": 3,
+  "buildings": 111,
+  "tris": 16088,
   "empty_blocks": {}
  },
  "blocks": [
@@ -4278,7 +4247,7 @@
    "coverage": 0.876
   },
   {
-   "id": "b_d9_007",
+   "id": "b_d9_008",
    "style": "industrial",
    "area": 1500.0,
    "built": 1372.0,
@@ -4292,14 +4261,6 @@
    "built": 21328.1,
    "buildings": 73,
    "coverage": 0.889
-  },
-  {
-   "id": "plaza_poi_toll_west",
-   "style": "plaza",
-   "area": 9600.0,
-   "built": 9600.0,
-   "buildings": 1,
-   "coverage": 1.0
   }
  ]
 }
