@@ -1,18 +1,11 @@
 extends Node
-## The tunnel probe: the player car is driven down the lanes that go into the river tunnel (the Puxi portal near (-410, 200), the
-## Pudong portal near (709, -470)). The spawn clearance probe found the ground (World/Terrain/GroundBody) at y 0 over these
-## ramps, 2-4 m above the lane. The probe follows the lane from 50 m before the portal and writes down the height, the speed and
-## what the car touches every 0.25 s (a prop is named by its shape). A diagnostic tool, not a test.
+## The tunnel probe: the player car drives the lanes of the Yan'an tunnel (world/build/tunnel_trench.gd opens its ramps). Every lane
+## is driven from 220 m before its end (it comes up out of the tunnel then); the probe writes down the height, the speed and what
+## the car touches every 0.25 s (a prop is named by its shape). A diagnostic tool, not a test (world/tests/test_tunnel_portals.gd).
 ##
-##   python tools/gd.py test res://tools/tunnel_probe.gd -- --timeout=600 --stub=audio,menu,hud,rivals,traffic,police
+##   python tools/gd.py test res://tools/tunnel_probe.gd -- --timeout=600 --stub=audio,menu,hud,rivals,traffic,police [--lane=N]
 
 const MAIN := "res://main.tscn"
-## A point of each ramp (from tools/spawn_height_probe.gd): the run follows the lane through it.
-const RAMPS := [
-	{"name": "puxi portal", "point": Vector3(-410.2, -0.55, 198.7)},
-	{"name": "pudong portal", "point": Vector3(708.9, -0.57, -470.1)},
-]
-const LEAD_IN := 50.0
 const SECONDS := 10.0
 const AIM_AHEAD := 15.0
 
@@ -32,64 +25,56 @@ func _run() -> void:
 	await get_tree().create_timer(2.0).timeout
 	_car = Game.player as ArcadeCar
 	_car.freeze = false
-	for ramp: Dictionary in RAMPS:
-		_lane = _lane_through(ramp["point"])
-		if _lane == null:
-			print("TUNNEL %s: no lane" % ramp["name"])
+	var lanes: Array[LanePath] = []
+	for lane: LanePath in Game.world.get_lane_paths():
+		if String(lane.road_id) == "yanan_tunnel" and not bool(lane.get_meta(&"connector", false)) and lane.curve != null \
+				and lane.curve.get_baked_length() > 1000.0:
+			lanes.append(lane)
+	var only := int(Game.option("lane", "-1"))
+	for k in lanes.size():
+		if only >= 0 and k != only:
 			continue
-		var at := _lane.curve.get_closest_offset(ramp["point"])
-		var start := maxf(at - LEAD_IN, 0.0)
-		var p := _lane.curve.sample_baked(start, true)
-		var q := _lane.curve.sample_baked(start + 2.0, true)
-		_car.reset_to(Transform3D(Basis.IDENTITY, p + Vector3.UP * 0.6).looking_at(q + Vector3.UP * 0.6, Vector3.UP))
+		_lane = lanes[k]
+		# --down=1: from the start of the lane, down into the tunnel (else from 220 m before its end, up out of it)
+		var offset := 10.0 if Game.option("down", "0") == "1" else _lane.curve.get_baked_length() - 220.0
+		var p := _lane.curve.sample_baked(offset, true)
+		var q := _lane.curve.sample_baked(offset + 2.0, true)
+		_car.reset_to(Transform3D(Basis.IDENTITY, p + Vector3.UP * 0.6).looking_at(Vector3(q.x, p.y + 0.6, q.z), Vector3.UP))
 		_car.linear_velocity = (q - p).normalized() * 14.0
-		print("TUNNEL %s: lane %s, %.0f m long, the ramp point at %.0f m, start at %s" % [ramp["name"], _lane.road_id,
-			_lane.curve.get_baked_length(), at, str(p.snapped(Vector3.ONE * 0.1))])
+		print("TUNNEL lane %d: %.0f m long, start at %s" % [k, _lane.curve.get_baked_length(), str(p.snapped(Vector3.ONE * 0.1))])
 		var t := 0.0
 		var next := 0.0
 		while t < SECONDS:
+			_drive()
 			await get_tree().physics_frame
 			t += 1.0 / 120.0
-			_drive()
+			# every tick of the crash on the Pudong ramp
+			if _car.global_position.x > 696.0 and _car.global_position.x < 706.0 and t < SECONDS and _car.global_position.y < 0.0:
+				var v := _car.linear_velocity
+				var fwd := -_car.global_transform.basis.z
+				print("TICK t %.3f pos %s v %s (%.1f km/h) yaw-vs-v %.1f deg steer %.2f wheels %d %s" % [t,
+					str(_car.global_position.snapped(Vector3.ONE * 0.01)), str(v.snapped(Vector3.ONE * 0.1)), v.length() * 3.6,
+					rad_to_deg(Vector2(fwd.x, fwd.z).angle_to(Vector2(v.x, v.z))), float(_car.get("_in_steer")),
+					_car.telemetry.grounded_wheels, str(_touch)])
+				_touch.clear()
 			if t >= next:
 				next += 0.25
-				var lane_point := _lane.curve.sample_baked(_lane.curve.get_closest_offset(_car.global_position), true)
-				print("TUNNEL  t %.2f pos %s lane-y %.2f speed %.1f km/h wheels %d tilt %.0f touches %s" % [t,
-					str(_car.global_position.snapped(Vector3.ONE * 0.1)), lane_point.y, _car.linear_velocity.length() * 3.6,
-					_car.telemetry.grounded_wheels, rad_to_deg(acos(clampf(_car.global_transform.basis.y.y, -1.0, 1.0))),
-					str(_touch)])
+				var at := _lane.curve.get_closest_offset(_car.global_position)
+				var lane_point := _lane.curve.sample_baked(at, true)
+				print("TUNNEL  t %.2f pos %s lane-y %.2f off-lane %.2f speed %.1f km/h wheels %d touches %s" % [t,
+					str(_car.global_position.snapped(Vector3.ONE * 0.1)), lane_point.y,
+					Vector2(_car.global_position.x - lane_point.x, _car.global_position.z - lane_point.z).length(),
+					_car.linear_velocity.length() * 3.6, _car.telemetry.grounded_wheels, str(_touch)])
 				_touch.clear()
 		Input.action_release(&"accelerate")
 	get_tree().quit(0)
 
 
-## The lane that passes closest to `point`.
-func _lane_through(point: Vector3) -> LanePath:
-	var best: LanePath = null
-	var best_d := INF
-	for lane: LanePath in Game.world.get_lane_paths():
-		if lane.curve == null:
-			continue
-		var d := lane.curve.sample_baked(lane.curve.get_closest_offset(point), true).distance_to(point)
-		if d < best_d:
-			best_d = d
-			best = lane
-	return best
-
-
 ## The lane follower of tools/frame_probe.gd, with the input actions (the player car reads them).
 func _drive() -> void:
-	var offset := _lane.curve.get_closest_offset(_car.global_position)
-	var length := _lane.curve.get_baked_length()
-	if offset + AIM_AHEAD > length and not _lane.next_lanes.is_empty():
-		var lanes: Array = Game.world.get_lane_paths()
-		_lane = lanes[_lane.next_lanes[0]] as LanePath
-		offset = _lane.curve.get_closest_offset(_car.global_position)
-	var target := _lane.curve.sample_baked(minf(offset + AIM_AHEAD, _lane.curve.get_baked_length()), true)
-	var to := target - _car.global_position
-	var angle := atan2(to.dot(_car.global_transform.basis.x), to.dot(-_car.global_transform.basis.z))
-	var steer := clampf(angle * 2.5, -1.0, 1.0)
-	Input.action_press(&"accelerate", 0.5)
+	var speed := _car.linear_velocity.length()
+	var steer := lane_steer(_car, _lane)
+	Input.action_press(&"accelerate", 0.6 if speed < 25.0 else 0.0)
 	Input.action_release(&"steer_left")
 	Input.action_release(&"steer_right")
 	if steer > 0.05:
@@ -109,21 +94,36 @@ func _physics_process(_delta: float) -> void:
 		if other == null:
 			continue
 		var label := String(other.name)
-		if label.begins_with("PropCollision"):
-			var shape := PhysicsServer3D.body_get_shape(state.get_contact_collider(i), state.get_contact_collider_shape(i))
-			label += ":" + _shape_label(other, shape)
-		elif label == "GroundBody" or label.ends_with("_surface"):
+		# the road and the ground under the car are not news; a surface met from the side or from below is
+		if (label == "GroundBody" or label.ends_with("_surface")) and state.get_contact_local_normal(i).y > 0.7:
 			continue
+		if label == "TunnelTubes":
+			var shape := state.get_contact_collider_shape(i)
+			label += ":%d" % shape
+		if label.ends_with("_concrete") or label == "TunnelTubes" or label.ends_with("_surface") or label == "GroundBody":
+			# where the car meets it: the point (world), the normal, the point in the frame of the car
+			var point := state.get_contact_collider_position(i)
+			label += "@%s n%s local%s" % [str(point.snapped(Vector3.ONE * 0.01)),
+				str(state.get_contact_local_normal(i).snapped(Vector3.ONE * 0.01)),
+				str((_car.global_transform.affine_inverse() * point).snapped(Vector3.ONE * 0.01))]
 		if not _touch.has(label):
 			_touch.append(label)
 
 
-## The kind of a prop shape: the shared shape of the body that has this RID.
-func _shape_label(body: Node, rid: RID) -> String:
-	for s: Shape3D in body.get_meta(&"shapes", []):
-		if s.get_rid() == rid:
-			if s is CylinderShape3D:
-				return "cylinder r %.2f h %.1f" % [(s as CylinderShape3D).radius, (s as CylinderShape3D).height]
-			if s is BoxShape3D:
-				return "box %s" % str((s as BoxShape3D).size)
-	return "?"
+## A lane keeper that does not cut the corners (a pure pursuit 17 m ahead cut a curve of the ramp by 1 m and scraped the inner
+## wall): the heading of the lane a little ahead, and the distance of the car from the lane.
+static func lane_steer(car: VehicleBase, lane: LanePath) -> float:
+	var speed := car.linear_velocity.length()
+	var length := lane.curve.get_baked_length()
+	var offset := lane.curve.get_closest_offset(car.global_position)
+	var p0 := lane.curve.sample_baked(offset, true)
+	var p1 := lane.curve.sample_baked(minf(offset + 4.0 + speed * 0.15, length), true)
+	var tangent := Vector3(p1.x - p0.x, 0.0, p1.z - p0.z).normalized()
+	var forward := -car.global_transform.basis.z
+	forward = Vector3(forward.x, 0.0, forward.z).normalized()
+	var right := car.global_transform.basis.x
+	right = Vector3(right.x, 0.0, right.z).normalized()
+	# the lane turns right of the car: + ; the lane is right of the car: +
+	var heading := atan2(tangent.dot(right), tangent.dot(forward))
+	var cross := Vector3(p0.x - car.global_position.x, 0.0, p0.z - car.global_position.z).dot(right)
+	return clampf(heading * 1.6 + atan2(cross * 1.2, speed + 3.0) * 1.6, -1.0, 1.0)

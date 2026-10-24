@@ -74,9 +74,8 @@ thrown up without a hop, the last 6 s of the car (position, speed, wheels, what 
 
 ## Found and not fixed yet
 
-* The Yan'an tunnel: the ground covers both portal ramps (the ground builder cuts only the water). From Pudong a car drives over the
-  portal on the flat ground, through the walls of the bores (they have no collision above the ground); a car coming up the Puxi ramp
-  stops dead at the edge of the ground (`tools/tunnel_probe.gd`).
+* The plate of the junction at both ends of the Yan'an tunnel is drawn over the first metres of the ramps (its collision is cleared
+  there, `world/build/tunnel_trench.gd`): the roads unit has to cut it out of the tile.
 * `st_d7b_ew_11`: the right turn into it from `st_d7b_ns_7` goes to the far end of the lane of the other direction (92 m, over the
   river); `st_link_25/33` start 10-15 m out over the river (roads data; `tools/spawn_height_probe.gd` lists them).
 * 18,329 tree trunks (0.25 m) stop a car dead: they stand (a street tree is a tree), they cost 40 % of the damage of a wall.
@@ -109,6 +108,19 @@ its speed and loses 0.5-1 HP, a light knock plays (the glass only for the neon a
 keeps its speed: a few per cent at the start of a race moved a rival into the next one and the field piled up against a tree
 (`rivals/test_real_start`). The breaker reads packed arrays and 4 m cells: 13-15 us a tick with the 28,504 props.
 Checks: `world/test_prop_breakaway.gd` (a bin at 60 km/h; 2 mutations).
+
+## The Yan'an tunnel opens (the player: "the collisions are not accurate")
+
+The ground of the city was cut out of the water only, and it lay over both ramps of the tunnel: from Pudong a car drove over the
+portal on the flat ground, through the drawn bores; a car that came up the Puxi ramp stopped dead at the edge of the ground; the
+plate of the junction at each portal reaches over the ramp at street level, and a car coming up drove its nose into its edge and
+stopped from 145 km/h in one tick. `world/build/tunnel_trench.gd` (from the lanes of the data, before the lane graph): the ground is
+cut between the walls of a bore where its lanes are 0.03-6 m under the ground; the bores are solid where they stand out of the
+ground (walls to the crown at 6 m, a roof under it: from outside a wall, from inside a tube); the road surfaces of the tiles lose
+their collision where they lie 0.3 m or more over the road of a ramp (79 triangles). Check: `world/test_tunnel_portals.gd` (down
+into the tunnel from both ends, up out of it, a car at the tube from the side; 3 mutations), `tools/tunnel_probe.gd`,
+`tools/ramp_sweep_probe.gd` (a box of the size of a car swept along the ramps). A test that drives the player car with the input
+sets `Game.options["skip-menu"]` before it builds the game: the title menu holds the car otherwise (the suite runs every unit).
 
 ## Tools added (game/tools, tools/)
 

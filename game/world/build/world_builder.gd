@@ -12,6 +12,7 @@ const LandmarkManifest := preload("res://world/loader/landmark_manifest.gd")
 const TerrainBuilder := preload("res://world/build/terrain_builder.gd")
 const PropBreaker := preload("res://world/build/prop_breaker.gd")
 const GroundBuilder := preload("res://world/build/ground_builder.gd")
+const TunnelTrench := preload("res://world/build/tunnel_trench.gd")
 const RoadBuilder := preload("res://world/build/road_builder.gd")
 const BlockBuilder := preload("res://world/build/block_builder.gd")
 const FurnitureBuilder := preload("res://world/build/furniture_builder.gd")
@@ -60,6 +61,8 @@ var _terrain: TerrainBuilder
 var prop_breaker: PropBreaker = null
 ## The drivable graph of the lanes.
 var _graph: LaneGraphBuilder
+## The open ramps of the tunnels (built with the terrain, the road surfaces over them are cleared after the roads).
+var _trench: TunnelTrench = null
 ## The positions of the street furniture that was placed.
 var furniture_positions: Array[Vector3] = []
 ## The boxes of the buildings of the city (the gameplay sites step out of them).
@@ -115,6 +118,8 @@ func build(world: Node3D, city_data: CityData) -> void:
 	_build_terrain()
 	await _phase("terrain", 0.05)
 	_build_roads()
+	var cleared := _trench.clear_roads_over(_group("Roads"))
+	print("[world] tunnel ramps: %d triangles of road surface over them lose their collision" % cleared)
 	await _phase("roads", 0.25)
 	_build_blocks()
 	_build_landmarks()
@@ -175,7 +180,16 @@ func _build_terrain() -> void:
 	var ground := _group("Terrain")
 	# The ground goes on past the window and the walls close the world (TerrainBuilder.EDGE_RING).
 	var area := window.grow(TerrainBuilder.EDGE_RING)
-	GroundBuilder.new().build(ground, area, terrain.water_polygons())
+	# The open ramps of the tunnels: the ground is cut over them like over the water, and their bores are solid where they stand
+	# out of the ground (world/build/tunnel_trench.gd).
+	var trench := TunnelTrench.new()
+	_trench = trench
+	trench.build(data.lanes)
+	var cuts: Array[PackedVector2Array] = terrain.water_polygons().duplicate()
+	cuts.append_array(trench.cuts)
+	GroundBuilder.new().build(ground, area, cuts)
+	trench.add_tube(ground)
+	print("[world] tunnel ramps: %d cut outlines, %d pieces of tube" % [trench.cuts.size(), trench.pieces.size()])
 	terrain.build_water(ground, bodies)
 	terrain.build_kill_floor(ground, window)
 	terrain.build_edge_walls(ground, area)
