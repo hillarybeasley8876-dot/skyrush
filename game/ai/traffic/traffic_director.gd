@@ -10,10 +10,16 @@ extends Node3D
 ## on an elevated deck, one per 60 m on a surface road, scaled by `Settings.feature("traffic")`.
 ## The hard cap is 90 cars.
 ##
-## Every tick the director rebuilds the per-lane car index, ticks the cars, switches them
-## between the FAR (frozen) and NEAR (dynamic) modes and looks for the near misses of the player.
+## Every second physics tick (TICK_PERIOD) the director rebuilds the per-lane car index, ticks the
+## cars with a double step, switches them between the FAR (frozen) and NEAR (dynamic) modes and
+## looks for the near misses of the player. The dynamic cars move in every tick: their integrate
+## runs in the engine with the speed and the lane of the last decision.
 
 const HARD_CAP := 90              ## cars: the traffic never has more than this
+## The traffic thinks every this many physics ticks, with a step that long (60 Hz at 120 Hz physics). The index of the lanes, the
+## decisions of the cars, the modes, the near misses and the ring cost 1-1.5 ms, at 120 Hz a quarter of the physics of the game,
+## and every millisecond of a tick is paid two to eight times a frame (a long frame runs more ticks).
+const TICK_PERIOD := 2
 ## m: beyond this a car is a candidate for removal.
 var despawn_distance: float = 420.0
 const HIDDEN_TIME := 2.0          ## s: how long a car has to be out of sight before it goes
@@ -27,6 +33,9 @@ const SPAWN_CLEARANCE := 30.0     ## m: the free space a new car needs on the la
 const SPAWN_MIN_DISTANCE := 180.0 ## m: a car that appears out of the blue stays that far away
 const SPAWN_GUARD := 8            ## the number of spawn attempts per tick
 const PLAYER_ROAD_RADIUS := 40.0  ## m: how far the road of the player is looked up
+## ticks of the traffic: a spawn that found no place is tried again after this many (outside the prefill). A ring that is short of
+## cars tried every tick: six spots, a view check and a ray through the city, 120 times a second.
+const SPAWN_RETRY_TICKS := 3
 
 ## A car appeared in the ring. The other units (audio, HUD) can watch this.
 signal car_spawned(car: TrafficCar)
@@ -49,6 +58,11 @@ var cost_events_ms: float = 0.0
 var cost_ring_ms: float = 0.0
 ## A fixed number of cars, ignoring the density measurement (-1 = measure it).
 var density_override: int = -1
+## True when the traffic thought in this physics tick (the cost fields are the ones of this tick then).
+var ran_this_tick: bool = false
+## The period in use (TICK_PERIOD; tools/frame_probe.gd sets 1 to compare).
+var tick_period: int = TICK_PERIOD
+var _tick_counter: int = 0
 ## The lane grid of the world: the fast "which lane is near this point" index.
 var grid: LaneGrid = LaneGrid.new()
 
@@ -69,6 +83,7 @@ var _prefill_pending: bool = true
 ## How long the ring has been filled.
 var _prefill_timer: float = 0.0
 var _vehicles_timer: float = 0.0
+var _spawn_wait: int = 0
 ## The per-lane index of the traffic.
 var _index: TrafficIndex = TrafficIndex.new()
 ## The cars that wait for their next turn.
@@ -77,7 +92,11 @@ var _pool: TrafficPool = TrafficPool.new()
 
 func _ready() -> void:
 	add_to_group(&"traffic_director")
-	_rng.randomize()
+	# --seed=N: the same traffic every run (tools/frame_probe.gd compares two runs)
+	if Game.has_option("seed"):
+		_rng.seed = int(Game.option("seed"))
+	else:
+		_rng.randomize()
 	ctx.rng.seed = _rng.randi()
 	Events.race_started.connect(_on_race_started)
 	Events.pursuit_state_changed.connect(_on_pursuit_state_changed)
@@ -116,18 +135,23 @@ func _refresh_world() -> void:
 	_prefill()
 
 
-## One tick of the traffic.
+## One tick of the traffic (every TICK_PERIOD physics ticks, with a step that long).
 func _physics_process(delta: float) -> void:
+	# The player is set every physics tick, also in the ticks the traffic does not think in: the game creates the player car
+	# before the traffic, so the director must not wait for the player to change.
+	_player = Game.player
+	ctx.player = _player if _player != null and is_instance_valid(_player) else null
+	_tick_counter += 1
+	ran_this_tick = _tick_counter % tick_period == 0
+	if not ran_this_tick:
+		return
+	delta *= float(tick_period)
 	var started := Time.get_ticks_usec()
 	if ctx.graph == null or ctx.graph.lane_count() == 0:
 		if _world != Game.world or ctx.graph == null:
 			_refresh_world()
 		return
 	ctx.time += delta
-	# The player is set every tick: the game creates the player car before the traffic, so the
-	# director must not wait for the player to change.
-	_player = Game.player
-	ctx.player = _player if _player != null and is_instance_valid(_player) else null
 	if _world != Game.world:
 		_clear_cars()
 		_refresh_world()
@@ -151,7 +175,7 @@ func _physics_process(delta: float) -> void:
 	cost_events_ms = float(Time.get_ticks_usec() - mark) / 1000.0
 	mark = Time.get_ticks_usec()
 	_update_ring(delta)
-	_spawn_missing()
+	_spawn_missing(delta)
 	cost_ring_ms = float(Time.get_ticks_usec() - mark) / 1000.0
 	tick_last_ms = float(Time.get_ticks_usec() - started) / 1000.0
 	physics_last_ms = TrafficCar.integrate_total_ms
@@ -284,17 +308,19 @@ func _prefill() -> void:
 ##
 ## While the ring is being filled (the world has just loaded, the player has just respawned) the
 ## cars may appear close to the player: the player is looking at a loading screen then.
-func _spawn_missing() -> void:
+func _spawn_missing(delta: float) -> void:
 	var budget := PREFILL_PER_TICK if _prefill_pending else SPAWN_GUARD
 	var guard := 0
-	while cars.size() < _ring.target_count and guard < budget:
+	_spawn_wait -= 1
+	while cars.size() < _ring.target_count and guard < budget and (_prefill_pending or _spawn_wait <= 0):
 		guard += 1
 		if not _spawn_car(_prefill_pending):
+			_spawn_wait = SPAWN_RETRY_TICKS
 			break
 	if _prefill_pending:
 		# The fill ends when the road holds as many cars as it should, or after a few seconds -
 		# a road that cannot hold them all is full.
-		_prefill_timer += get_physics_process_delta_time()
+		_prefill_timer += delta
 		if cars.size() >= _ring.target_count or _prefill_timer > PREFILL_TIME:
 			_prefill_pending = false
 

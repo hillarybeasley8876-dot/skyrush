@@ -31,6 +31,7 @@ func option(key: String, default_value: String = "") -> String:
 	return String(options.get(key, default_value))
 
 
+## Options of the tools: --seed=N makes the traffic and the police draw the same random numbers every run.
 func has_option(key: String) -> bool:
 	return options.has(key)
 

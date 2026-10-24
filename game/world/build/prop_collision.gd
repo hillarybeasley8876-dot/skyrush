@@ -43,12 +43,12 @@ const SHAPES: Dictionary = {
 	"vms": {"size": Vector3(0.5, 7.0, 0.5)},
 }
 
-## The street furniture that a car does not hit: bollards, bins, hydrants, scooters, bike racks, road signs, shop signs, neon blades.
+## The street furniture that has no rigid shape: bollards, bins, hydrants, scooters, bike racks, road signs, shop signs, neon blades.
 ## They are small and thin. A rigid pillar of 20 cm stops a car of 1.9 t dead, and the AI (the racers, the police, the traffic)
 ## does not see them: a row of bollards across the racing line of the Lujiazui ring stopped the whole field of a race, and the
-## marshal had to put every rival back. The player drove through them as long as the props had no collision at all, so the street
-## looks the same and plays the same: a bollard is not a wall. Trees, lamps, masts, shelters, walls, planters and billboards are
-## solid (the filter keeps them off the lanes).
+## marshal had to put every rival back. They break away (world/build/prop_breaker.gd KINDS): a car knocks them over for a few per
+## cent of its speed (they had no collision at all, and the car drove through them as if they were not there). Trees, masts,
+## shelters, walls, planters and billboards are solid (the filter keeps them off the lanes).
 const SOFT: Array[String] = ["bollard", "bin", "hydrant", "e_scooter", "bike_share", "sign", "shop_sign", "neon_blade_frame"]
 
 ## The street lamps break away (world/build/prop_breaker.gd): they have no rigid shape, a car that drives into one knocks it
@@ -95,6 +95,14 @@ func build(parent: Node3D, entries: Array[Dictionary]) -> int:
 		body.set_meta(&"shapes", _shared_shapes.values())
 		parent.add_child(body)
 	return _count
+
+
+## The height of a prop that breaks away (m): the pole of a lamp, the box or the cylinder of the soft furniture.
+static func break_height(type: String, height_m: float) -> float:
+	var spec: Dictionary = SHAPES.get(type, {})
+	if spec.has("size"):
+		return (spec["size"] as Vector3).y
+	return pole_height(type, height_m)
 
 
 ## The height of the pole of a prop kind (a lamp of the data may be taller or shorter than the kit).

@@ -31,6 +31,20 @@ var target_count: int = 0
 ## The places a car may appear: {lane, s, pos, on_road}.
 var spots: Array[Dictionary] = []
 
+## The spots sorted by where they lie (on the road of the player or not, ahead or behind), and where the player was then. The
+## sort of every spot of the ring for every spawn attempt (thousands of spots, up to six attempts a tick) cost 0.2-0.3 ms a tick.
+const SORT_MOVE := 10.0       ## m: the player moved this far since the sort
+const SORT_TURN_COS := 0.966  ## cos(15 deg): the player turned this far since the sort
+var _on_road_ahead: Array[Dictionary] = []
+var _on_road_behind: Array[Dictionary] = []
+var _other_ahead: Array[Dictionary] = []
+var _other_behind: Array[Dictionary] = []
+var _sorted_count: int = -1
+var _sorted_at: Vector3 = Vector3.ZERO
+var _sorted_forward: Vector3 = Vector3.ZERO
+## The spots of the measurement that is running: `spots` keeps the last whole ring until it is done.
+var _building: Array[Dictionary] = []
+
 var _cells: Array[Vector2i] = []
 var _cell_cursor: int = 0
 var _measure_timer: float = 0.0
@@ -46,7 +60,7 @@ func begin_measurement(grid: LaneGrid, player_pos: Vector3) -> void:
 	_measuring = true
 	_road_metres = 0.0
 	_other_metres = 0.0
-	spots.clear()
+	_building = []
 
 
 ## Works on the measurement for one slice of the work. Returns true when the ring is measured.
@@ -77,7 +91,7 @@ func measure(grid: LaneGrid, graph: LaneGraph, player_pos: Vector3, player_forwa
 				continue
 			var s: float = entry[1]
 			var on_road := _on_player_road(graph, lane, s, player_road, player_forward)
-			spots.append({"lane": lane, "s": s, "pos": point, "on_road": on_road})
+			_building.append({"lane": lane, "s": s, "pos": point, "on_road": on_road})
 			if on_road:
 				if distance <= ROAD_DISTANCE:
 					_road_metres += grid.sample_step
@@ -86,6 +100,9 @@ func measure(grid: LaneGrid, graph: LaneGraph, player_pos: Vector3, player_forwa
 	if _cell_cursor < _cells.size():
 		return false
 	_measuring = false
+	spots = _building
+	_building = []
+	_sorted_count = -1
 	# The number of cars the road can hold: the lane metres in the band, one car per spacing.
 	# The road of the player carries the traffic; the other roads of the city never carry more
 	# than the road of the player, or the city would be a car park.
@@ -137,23 +154,11 @@ func pick_spot(rng: RandomNumberGenerator, player_forward: Vector3,
 		player_pos: Vector3) -> Dictionary:
 	if spots.is_empty():
 		return {}
-	var on_road_ahead: Array[Dictionary] = []
-	var on_road_behind: Array[Dictionary] = []
-	var other_ahead: Array[Dictionary] = []
-	var other_behind: Array[Dictionary] = []
-	for spot in spots:
-		var to_spot: Vector3 = (spot["pos"] as Vector3) - player_pos
-		var ahead := to_spot.dot(player_forward) >= 0.0
-		if bool(spot["on_road"]):
-			if ahead:
-				on_road_ahead.append(spot)
-			else:
-				on_road_behind.append(spot)
-		else:
-			if ahead:
-				other_ahead.append(spot)
-			else:
-				other_behind.append(spot)
+	_sort_spots(player_forward, player_pos)
+	var on_road_ahead := _on_road_ahead
+	var on_road_behind := _on_road_behind
+	var other_ahead := _other_ahead
+	var other_behind := _other_behind
 	var pool: Array[Dictionary] = []
 	if rng.randf() < ON_ROAD_SHARE:
 		pool = _pick(rng, on_road_ahead, on_road_behind, ON_ROAD_AHEAD_SHARE)
@@ -166,6 +171,33 @@ func pick_spot(rng: RandomNumberGenerator, player_forward: Vector3,
 	if pool.is_empty():
 		return {}
 	return pool[rng.randi() % pool.size()]
+
+
+## Sorts the spots by where they lie, unless they were sorted for (about) this place and heading of the player.
+func _sort_spots(player_forward: Vector3, player_pos: Vector3) -> void:
+	if _sorted_count == spots.size() and player_pos.distance_to(_sorted_at) < SORT_MOVE \
+			and player_forward.dot(_sorted_forward) > SORT_TURN_COS:
+		return
+	_sorted_count = spots.size()
+	_sorted_at = player_pos
+	_sorted_forward = player_forward
+	_on_road_ahead = []
+	_on_road_behind = []
+	_other_ahead = []
+	_other_behind = []
+	for spot in spots:
+		var to_spot: Vector3 = (spot["pos"] as Vector3) - player_pos
+		var ahead := to_spot.dot(player_forward) >= 0.0
+		if bool(spot["on_road"]):
+			if ahead:
+				_on_road_ahead.append(spot)
+			else:
+				_on_road_behind.append(spot)
+		else:
+			if ahead:
+				_other_ahead.append(spot)
+			else:
+				_other_behind.append(spot)
 
 
 ## The spots ahead of the player, or the ones behind when there are none ahead.

@@ -25,6 +25,8 @@ const Dev := preload("res://fx/fx_dev.gd")
 enum Tier { FULL, REDUCED, OFF }
 
 const REDUCED_RATIO := 0.3
+## A REDUCED car probes its wheels every this many physics ticks.
+const REDUCED_PROBE_TICKS := 4
 ## The rear wheels of the car.
 const REAR_MARKERS: Array[StringName] = [&"Wheel_RL", &"Wheel_RR"]
 ## The front wheels of the car.
@@ -58,10 +60,17 @@ var _fire_granted: bool = true
 ## The speed of a car that does not write its own telemetry (the traffic cars): it is measured
 ## from the movement of the car between two physics ticks.
 var _velocity: Vector3 = Vector3.ZERO
+## The time since the car last moved (s), and how long a car may not move before it stands still.
+var _since_move: float = 0.0
+const MOVE_WAIT := 0.1
 var _last_position: Vector3 = Vector3.ZERO
 var _has_position: bool = false
 ## The contact patches of the rear wheels, probed in the physics step.
 var _contacts: Array[Dictionary] = []
+## The contacts were probed since the emitters were last put on them.
+var _contacts_fresh: bool = false
+## The tick of the wheel probe of a REDUCED car (0..REDUCED_PROBE_TICKS-1, at random: the cars are spread over the ticks).
+var _probe_phase: int = randi() % REDUCED_PROBE_TICKS
 ## The contact patches of the front wheels, probed in the physics step.
 var _front_contacts: Array[Dictionary] = []
 
@@ -173,14 +182,24 @@ func _apply_tier() -> void:
 ## ---------------------------------------------------------------------------------------------
 
 ## The road is probed in the physics step: a raycast outside of it is not safe.
+##
+## A FULL car (the player, the nearest cars) probes its four wheels every tick: its skid marks need a point every tick. A REDUCED
+## car probes them every REDUCED_PROBE_TICKS ticks: four rays at 120 Hz for every car within 150 m cost the traffic 0.5 ms a tick,
+## for smoke that follows the car anyway (the emitters are children of the car, they are put on the wheels after a probe).
 func _physics_process(delta: float) -> void:
 	if vehicle == null or not is_instance_valid(vehicle):
 		return
-	_track_velocity(delta)
 	if tier == Tier.OFF:
+		# nothing reads the velocity of a car that is out of range: the tracking starts again when it comes back
+		_has_position = false
 		return
-	_contacts = GROUND.wheel_contacts(vehicle, REAR_MARKERS)
-	_front_contacts = GROUND.wheel_contacts(vehicle, FRONT_MARKERS)
+	_track_velocity(delta)
+	# the REDUCED cars are spread over the ticks (the pool builds them all at once)
+	var probe_tick := (Engine.get_physics_frames() + _probe_phase) % REDUCED_PROBE_TICKS == 0
+	if tier == Tier.FULL or _contacts.is_empty() or probe_tick:
+		_contacts = GROUND.wheel_contacts(vehicle, REAR_MARKERS)
+		_front_contacts = GROUND.wheel_contacts(vehicle, FRONT_MARKERS)
+		_contacts_fresh = true
 	_update_skids()
 
 
@@ -226,7 +245,9 @@ func _process(delta: float) -> void:
 	var tel := vehicle.telemetry
 	var grounded := tel.grounded_wheels >= 2 and not tel.airborne
 	var sliding := _is_sliding(tel)
-	_tyres.position(_contacts, _front_contact())
+	if _contacts_fresh:
+		_contacts_fresh = false
+		_tyres.position(_contacts, _front_contact())
 	_tyres.drive(tel, sliding, grounded, _speed_kmh(tel))
 	_boost(delta, tel)
 	_wreck(delta)
@@ -260,13 +281,21 @@ func _speed_kmh(tel: CarTelemetry) -> float:
 	return _velocity.length() * 3.6
 
 
-## The velocity of the car, measured from its movement between two physics ticks.
+## The velocity of the car, measured from its movement between two moves. A far traffic car moves every second tick (the traffic
+## thinks at 60 Hz): measured per tick its speed went 0, double, 0, double, and the spray of the wet road blinked. A car that has
+## not moved for MOVE_WAIT seconds stands still.
 func _track_velocity(delta: float) -> void:
 	var position := vehicle.global_position
-	if _has_position and delta > 0.0:
-		_velocity = (position - _last_position) / delta
-	_last_position = position
-	_has_position = true
+	if not _has_position or delta <= 0.0:
+		_last_position = position
+		_since_move = 0.0
+		_has_position = true
+		return
+	_since_move += delta
+	if position != _last_position or _since_move > MOVE_WAIT:
+		_velocity = (position - _last_position) / _since_move
+		_last_position = position
+		_since_move = 0.0
 
 
 ## Is the car sliding? Reversing is not braking: the forward speed has to be positive.

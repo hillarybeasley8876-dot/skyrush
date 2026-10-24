@@ -84,8 +84,9 @@ var placed_kinds: Array[String] = []
 var placed_entries: Array[Dictionary] = []
 ## The entries of the props that were placed (the collision is built from them).
 var _collision: Array[Dictionary] = []
-## The lamps that break away (PropCollision.BREAKAWAY): {"type", "variant", "transform", "scale_vector", "height", "refs" (the
-## [group key, instance] of every part and far dot), "lights" (the indices of the light pool)}. world/build/prop_breaker.gd.
+## The props that break away (PropCollision.BREAKAWAY, the lamps, and PropCollision.SOFT, the small furniture): {"type", "variant",
+## "transform", "scale_vector", "height", "refs" (the [group key, instance] of every part and far dot), "lights" (the indices of
+## the light pool)}. world/build/prop_breaker.gd.
 var breakables: Array[Dictionary] = []
 ## The MultiMesh of every group key (a broken lamp hides its instances).
 var multimeshes: Dictionary = {}
@@ -145,13 +146,13 @@ func build(parent: Node3D, entries: Array[Dictionary]) -> Array[Dictionary]:
 		_count(type)
 		var refs := _add_entry(entry)
 		var lights := _register_light(entry)
-		if PropCollision.BREAKAWAY.has(type):
+		if PropCollision.BREAKAWAY.has(type) or PropCollision.SOFT.has(type):
 			var def := _props.get_prop(type, int(entry.get("variant", 0)))
 			var scale_vector: Vector3 = entry.get("scale_vector", Vector3.ONE * float(entry.get("scale", 1.0))) \
 					* float(def.get("scale", 1.0))
 			breakables.append({"type": type, "variant": int(entry.get("variant", 0)), "transform": spot,
 				"scale_vector": scale_vector, "refs": refs, "lights": lights,
-				"height": PropCollision.pole_height(type, float(entry.get("height_m", 0.0)))})
+				"height": PropCollision.break_height(type, float(entry.get("height_m", 0.0)))})
 		_collision.append({"type": type, "transform": spot,
 			"height_m": float(entry.get("height_m", 0.0)),
 			"scale_vector": entry.get("scale_vector", Vector3.ONE)})

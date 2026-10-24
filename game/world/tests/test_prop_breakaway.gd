@@ -2,7 +2,9 @@ extends Node
 ## The street lamps break away (world/build/prop_breaker.gd). A pole of 15 cm used to stop a car of 1.9 t dead, and by the damage
 ## rules a head-on hit at 108 km/h wrecked it (half of the random drives of tools/fuzz_drive.gd ended on a prop). A car that drives
 ## into a lamp knocks it down now: the lamp goes from the street (its MultiMesh instances and its light), its pole falls as debris,
-## the car keeps 85 % of its speed and loses 3 HP. A car that only creeps into a lamp does not break it.
+## the car keeps 85 % of its speed and loses 3 HP. A car that only creeps into a lamp does not break it. The soft furniture (a
+## bollard, a bin) breaks away for less: the car keeps 96-97 % of its speed and loses half an HP (it had no collision at all: the car
+## drove through it).
 ## Run: python tools/gd.py test res://world/tests/test_prop_breakaway.gd -- --timeout=290 --stub=audio,menu,hud,rivals,traffic,police
 
 const MAIN := "res://main.tscn"
@@ -10,6 +12,8 @@ const PropBreaker := preload("res://world/build/prop_breaker.gd")
 ## The speed of the car that drives into the lamp (m/s, 100 km/h) and how far before the lamp it starts (m).
 const SPEED := 27.8
 const RUN_UP := 8.0
+## The speed of the car that drives into a bollard or a bin (m/s, 60 km/h).
+const SOFT_SPEED := 16.7
 ## The world and the props: what the path to a lamp has to be clear of.
 const CLEAR_MASK := 1 | 4
 
@@ -98,9 +102,13 @@ func _run() -> void:
 			off += 1
 	_check(lights.is_empty() or off == lights.size(), "its light is off", "(%d of %d)" % [off, lights.size()])
 	_check(breaker.debris_count() > debris_before, "its pole falls")
-	# the pole lies, fades and goes
+	# the pole lies, fades and goes (the car is parked meanwhile: rolling on, it knocks more props over, now that the soft
+	# furniture breaks away too)
+	car.linear_velocity = Vector3.ZERO
+	car.freeze = true
 	await get_tree().create_timer(PropBreaker.DEBRIS_LIFE + PropBreaker.DEBRIS_FADE + 0.5, true, false, true).timeout
 	_check(breaker.debris_count() == debris_before, "the pole fades away", "(%d left)" % breaker.debris_count())
+	car.freeze = false
 	# a car that creeps into a lamp does not break it
 	var slow_pick := _clear_lamp(breaker, car)
 	if not slow_pick.is_empty():
@@ -112,6 +120,34 @@ func _run() -> void:
 			car.linear_velocity = slow_dir * 1.0
 			await get_tree().physics_frame
 		_check(not breaker.is_broken(slow), "a car that creeps into a lamp does not break it")
+	# the soft furniture: a bollard or a bin, at 60 km/h
+	var soft_pick := _clear_lamp(breaker, car, ["bollard", "bin"])
+	_check(not soft_pick.is_empty(), "a bollard or a bin with a clear run-up is found")
+	if not soft_pick.is_empty():
+		var soft: int = soft_pick["index"]
+		var soft_dir: Vector3 = soft_pick["direction"]
+		var soft_base := (breaker.lamp(soft)["transform"] as Transform3D).origin
+		car.reset_to(Transform3D(Basis.looking_at(soft_dir, Vector3.UP), soft_base - soft_dir * RUN_UP + Vector3.UP * 0.4))
+		await get_tree().physics_frame
+		car.health = car.max_health
+		car.linear_velocity = soft_dir * SOFT_SPEED
+		var soft_before := 0.0
+		var soft_after := 0.0
+		var soft_debris := breaker.debris_count()
+		for i in 120:
+			var speed := car.linear_velocity.length()
+			await get_tree().physics_frame
+			if breaker.is_broken(soft):
+				soft_before = speed
+				await get_tree().physics_frame
+				soft_after = car.linear_velocity.length()
+				break
+		var soft_type := String(breaker.lamp(soft)["type"])
+		_check(breaker.is_broken(soft), "the car knocks the %s away" % soft_type)
+		_check(soft_after >= soft_before * 0.94 and soft_before > SOFT_SPEED * 0.8, "the car keeps 94 % of its speed or more",
+				"(%.1f -> %.1f m/s)" % [soft_before, soft_after])
+		_check(car.max_health - car.health <= 1.5, "the %s costs half an HP" % soft_type, "(%.1f HP)" % (car.max_health - car.health))
+		_check(breaker.debris_count() > soft_debris, "the %s flies" % soft_type)
 	# the cost of the breaker: every car near the camera, every physics tick (the traffic and the police are on in a game)
 	var total := 0.0
 	var peak := 0.0
@@ -130,9 +166,9 @@ func _finish() -> void:
 	get_tree().quit(0 if _failures == 0 else 1)
 
 
-## A lamp on the ground whose run-up (RUN_UP before it to 4 m after it) is clear of the world and the props, and the direction
-## of the run-up: {"index", "direction"}, or empty.
-func _clear_lamp(breaker: PropBreaker, car: VehicleBase) -> Dictionary:
+## A lamp (or a prop of `kinds`) on the ground whose run-up (RUN_UP before it to 4 m after it) is clear of the world and the props,
+## and the direction of the run-up: {"index", "direction"}, or empty.
+func _clear_lamp(breaker: PropBreaker, car: VehicleBase, kinds: Array = []) -> Dictionary:
 	var space := get_viewport().get_world_3d().direct_space_state
 	var box := BoxShape3D.new()
 	box.size = Vector3(2.2, 1.0, 4.6)
@@ -145,7 +181,10 @@ func _clear_lamp(breaker: PropBreaker, car: VehicleBase) -> Dictionary:
 			continue
 		var lamp: Dictionary = breaker.lamp(index)
 		var base := (lamp["transform"] as Transform3D).origin
-		if absf(base.y) > 0.5 or String(lamp["type"]) == "lamp_deck_double":
+		var type := String(lamp["type"])
+		if absf(base.y) > 0.5 or type == "lamp_deck_double":
+			continue
+		if (kinds.is_empty() and not type.begins_with("lamp")) or (not kinds.is_empty() and not kinds.has(type)):
 			continue
 		for k in 8:
 			var direction := Vector3(sin(float(k) * TAU / 8.0), 0.0, cos(float(k) * TAU / 8.0))

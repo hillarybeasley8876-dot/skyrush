@@ -54,16 +54,30 @@ func is_airborne() -> bool:
 	return telemetry.airborne
 
 
+## The markers that get_marker found, by name.
+var _markers: Dictionary = {}
+
+
 func get_visual_root() -> Node3D:
 	return get_node_or_null(^"Visual") as Node3D
 
 
 ## Finds a marker/empty by name anywhere under Visual (e.g. &"Nozzle_R1"), or null.
+##
+## A marker that was found is kept: the effects ask for the four wheels of every car near the player in every physics tick, and a
+## search of the visual for each of them cost 20-30 traffic cars 0.8 ms a tick. A kept marker counts only while it is still under
+## the visual (a pooled traffic car changes its model).
 func get_marker(marker_name: StringName) -> Node3D:
 	var visual := get_visual_root()
 	if visual == null:
 		return null
-	return visual.find_child(String(marker_name), true, false) as Node3D
+	var kept: Variant = _markers.get(marker_name)
+	if kept != null and is_instance_valid(kept) and visual.is_ancestor_of(kept as Node):
+		return kept as Node3D
+	var found := visual.find_child(String(marker_name), true, false) as Node3D
+	if found != null:
+		_markers[marker_name] = found
+	return found
 
 
 func apply_damage(amount: float, point: Vector3, source: Node3D) -> void:

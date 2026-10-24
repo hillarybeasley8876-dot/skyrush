@@ -91,7 +91,11 @@ var module_ms: Dictionary = {}
 
 ## The dispatcher starts with the world of the game and listens to the bus.
 func _ready() -> void:
-	_rng.randomize()
+	# --seed=N: the same police every run (tools/frame_probe.gd compares two runs)
+	if Game.has_option("seed"):
+		_rng.seed = int(Game.option("seed")) + 1
+	else:
+		_rng.randomize()
 	add_to_group(GROUP)
 	process_physics_priority = PRIORITY
 	hooks.director = self

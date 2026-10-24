@@ -6,7 +6,15 @@ extends Node
 ##
 ##   python tools/gd.py shot --scene=res://tools/frame_probe.tscn --out=fp --stub=menu --times=75 [--vsync=0] [--seconds=45]
 ##
-## Options: seconds (45) the drive; vsync (1) 0 = vsync off (the headroom of the machine); start=x,z (the Bund) where it starts.
+## The car is driven in the physics tick and the lanes it takes are drawn from a seeded source: with --seed=N (the traffic and the
+## police take it too) two runs are the same drive.
+##
+## Options: seconds (45) the drive; warm (0) seconds of driving before the record starts; vsync (1) 0 = vsync off (the headroom of
+## the machine); start=x,z (the Bund) where it starts; ab=<switch>: a paired comparison in one drive, the switch is off (A) and on
+## (B) in turns of 4 s and the frames of the two are reported apart. Switches: traffic (the traffic thinks every tick / every second
+## tick), occlusion (the occlusion culling on / off), hud (the HUD shown / hidden), shadows (the shadow of the sun on / off), probes
+## (the wheel probes of the cars cast on their own as well / only when the car casts them), steps (up to 8 / 4 physics ticks a
+## frame).
 ##
 ## Every frame is split: PHYSICS is the time from the start of the first physics tick of the frame to the process step (the ticks
 ## run back to back), REST is the rest of the frame (the process callbacks, the render, the wait for the GPU or the vsync). The
@@ -32,8 +40,35 @@ var _last_physics := 0
 var _tick_starts: PackedInt64Array = PackedInt64Array()
 var _last_process_usec := 0
 var _car_usec := 0.0
+## The synthesizers (the players that report `cpu_ms`), looked up once: walking the tree of the city every frame cost the probe
+## itself 20-30 ms a frame.
+var _synths: Array[Node] = []
+## The A/B turn of the frame (0 = A, 1 = B).
+var _ab_turn := 0
+## The physics profile: the units of the game (Main's children), their slot in the physics order and the time they took.
+const SLOT_STEP := 1000
+var _units: Array[Node] = []
+var _unit_usec: PackedFloat64Array = PackedFloat64Array()
+var _marks: PackedInt64Array = PackedInt64Array()
+var _tick_end := 0
+var _engine_usec := 0.0
+var _engine_ticks := 0
+var _scripts_usec := 0.0
+var _scripts_ticks := 0
+var _police_sum := 0
+var _police_modules: Dictionary = {}
+var _police_tick := 0.0
+var _priority_timer := 0.0
+var _process_usec: PackedFloat64Array = PackedFloat64Array()
+var _process_marks: PackedInt64Array = PackedInt64Array()
+var _process_frames := 0
+var _process_total := 0.0
 var _car_ticks := 0
 var _driving := false
+## The car follows its lanes (the warm-up and the record).
+var _steering := false
+var _car: ArcadeCar = null
+var _route := RandomNumberGenerator.new()
 var _lane: LanePath = null
 var _offset := 0.0
 
@@ -50,6 +85,19 @@ class TickClock:
 		probe.call(&"_tick_started", Time.get_ticks_usec())
 
 
+## A marker in the physics order: it writes down the time when the callbacks before it are done.
+class Marker:
+	extends Node
+	var probe: Node = null
+	var slot: int = 0
+
+	func _physics_process(_delta: float) -> void:
+		probe.call(&"_mark", slot, Time.get_ticks_usec())
+
+	func _process(_delta: float) -> void:
+		probe.call(&"_process_mark", slot, Time.get_ticks_usec())
+
+
 func _ready() -> void:
 	# the probe runs first in the process step: the time from the first tick of the frame to here is the physics of the frame
 	process_priority = -1000000
@@ -60,7 +108,68 @@ func _ready() -> void:
 
 
 func _tick_started(usec: int) -> void:
+	# the engine part of the last tick: from the end of its scene callbacks to the start of this one (the Jolt step, the force
+	# integration of the bodies); only between two ticks of the same frame
+	if _driving and _tick_end > 0 and not _tick_starts.is_empty():
+		_engine_usec += float(usec - _tick_end)
+		_engine_ticks += 1
 	_tick_starts.append(usec)
+	_marks.fill(usec)
+
+
+## A marker of the process step: the units before `slot` are done with their _process.
+func _process_mark(slot: int, usec: int) -> void:
+	if slot == 0:
+		_process_marks.fill(usec)
+	elif slot <= _units.size() and _driving:
+		_process_usec[slot - 1] += float(usec - _process_marks[slot - 1])
+	_process_marks[slot] = usec
+	if slot == _units.size() + 1 and _driving:
+		_process_frames += 1
+		_process_total += float(usec - _process_marks[0])
+
+
+## A marker: the units before `slot` are done.
+func _mark(slot: int, usec: int) -> void:
+	if slot > 0 and slot <= _units.size() and _driving:
+		_unit_usec[slot - 1] += float(usec - _marks[slot - 1])
+	_marks[slot] = usec
+	if slot == _units.size() + 1:
+		_tick_end = usec
+		if _driving and not _tick_starts.is_empty():
+			_scripts_usec += float(usec - _tick_starts[_tick_starts.size() - 1])
+			_scripts_ticks += 1
+
+
+## Every unit's subtree gets its own physics priority, with a marker after it. The order of the callbacks within a tick changes,
+## nothing else (the bodies move in the step after all of them).
+func _set_priorities(main: Node) -> void:
+	if _units.is_empty():
+		for child in main.get_children():
+			_units.append(child)
+		_unit_usec.resize(_units.size())
+		_unit_usec.fill(0.0)
+		_process_usec.resize(_units.size())
+		_process_usec.fill(0.0)
+		_process_marks.resize(_units.size() + 2)
+		_marks.resize(_units.size() + 2)
+		for slot in _units.size() + 2:
+			var marker := Marker.new()
+			marker.probe = self
+			marker.slot = slot
+			marker.process_physics_priority = slot * SLOT_STEP + SLOT_STEP / 2 if slot > 0 else -SLOT_STEP * 10
+			marker.process_priority = marker.process_physics_priority
+			add_child(marker)
+	for i in _units.size():
+		if is_instance_valid(_units[i]):
+			_prioritise(_units[i], (i + 1) * SLOT_STEP - SLOT_STEP / 4)
+
+
+func _prioritise(node: Node, priority: int) -> void:
+	node.process_physics_priority = priority
+	node.process_priority = priority
+	for child in node.get_children():
+		_prioritise(child, priority)
 
 
 func _run() -> void:
@@ -73,6 +182,8 @@ func _run() -> void:
 	await Game.world_ready()
 	await get_tree().create_timer(3.0).timeout
 	var car := Game.player as ArcadeCar
+	_car = car
+	_route.seed = int(Game.option("seed", "1"))
 	var start := String(Game.option("start", "-60,-300")).split(",")
 	var at := Vector3(float(start[0]), 0.0, float(start[1]))
 	car.freeze = false
@@ -80,37 +191,76 @@ func _run() -> void:
 	await get_tree().physics_frame
 	_pick_lane(car)
 	_last_physics = Engine.get_physics_frames()
+	for synth in get_tree().root.find_children("*", "AudioStreamPlayer3D", true, false):
+		if synth.get("cpu_ms") != null:
+			_synths.append(synth)
+	_set_priorities(main)
 	RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
 	_tick_starts.clear()
 	_last_process_usec = Time.get_ticks_usec()
 	_driving = true
 	var seconds := float(Game.option("seconds", "45"))
+	# the warm-up: the car drives, nothing is recorded (the traffic fills its ring, the shaders of the route compile)
+	var warm := float(Game.option("warm", "0"))
+	_steering = true
+	if warm > 0.0:
+		_driving = false
+		var warm_ticks := int(warm * float(Engine.physics_ticks_per_second))
+		var warm_from := Engine.get_physics_frames()
+		while Engine.get_physics_frames() - warm_from < warm_ticks:
+			await get_tree().process_frame
+		_driving = true
+		_tick_starts.clear()
+		_last_process_usec = Time.get_ticks_usec()
+		_last_physics = Engine.get_physics_frames()
 	var started := Time.get_ticks_msec()
+	var ab := String(Game.option("ab", ""))
+	var director := get_tree().get_first_node_in_group(&"traffic_director")
 	while float(Time.get_ticks_msec() - started) / 1000.0 < seconds:
 		await get_tree().process_frame
-		_drive(car)
+		if ab != "":
+			var turn := int(float(Time.get_ticks_msec() - started) / 4000.0) % 2
+			if turn != _ab_turn:
+				_ab_switch(ab, turn == 1, director)
+			_ab_turn = turn
+	if ab != "":
+		_ab_switch(ab, false, director)
 	_driving = false
+	_steering = false
 	Input.action_release(&"accelerate")
 	Input.action_release(&"steer_left")
 	Input.action_release(&"steer_right")
 	_report()
+	_report_profile()
+	report_ab()
 	get_tree().quit(0)
 
 
 func _physics_process(_delta: float) -> void:
+	if _steering and _car != null and is_instance_valid(_car):
+		_drive(_car)
 	if not _driving:
 		return
 	var director := get_tree().get_first_node_in_group(&"traffic_director")
 	if director == null:
 		return
 	_ticks += 1
+	_car_count += (director.get("cars") as Array).size()
+	if not bool(director.get("ran_this_tick")):
+		return
 	_traffic_sum["tick"] += float(director.get("tick_last_ms"))
 	_traffic_sum["integrate"] += float(director.get("physics_last_ms"))
 	for key in ["index", "modes", "cars", "events", "ring"]:
 		_traffic_sum[key] += float(director.get("cost_%s_ms" % key))
 	_traffic_peak = maxf(_traffic_peak, float(director.get("tick_last_ms")))
 	var cars: Array = director.get("cars")
-	_car_count += cars.size()
+	_police_sum += get_tree().get_nodes_in_group(&"police").size()
+	var police := get_tree().get_first_node_in_group(&"police_director")
+	if police != null:
+		var modules: Dictionary = police.get("module_ms")
+		for key in modules:
+			_police_modules[key] = float(_police_modules.get(key, 0.0)) + float(modules[key])
+		_police_tick += float(police.get("tick_ms"))
 	for vehicle in get_tree().get_nodes_in_group(&"vehicles"):
 		if vehicle is ArcadeCar:
 			_car_usec += float((vehicle as ArcadeCar).cpu_usec) + float((vehicle as ArcadeCar).frame_cpu_usec)
@@ -122,6 +272,11 @@ func _physics_process(_delta: float) -> void:
 
 func _process(delta: float) -> void:
 	var now := Time.get_ticks_usec()
+	_priority_timer -= delta
+	if _priority_timer <= 0.0 and not _units.is_empty():
+		# the nodes that joined since (police units, debris) get the slot of their unit
+		_priority_timer = 3.0
+		_set_priorities(_units[0].get_parent())
 	if not _driving:
 		_tick_starts.clear()
 		return
@@ -130,8 +285,8 @@ func _process(delta: float) -> void:
 	_last_process_usec = now
 	_tick_starts.clear()
 	var vp := get_viewport().get_viewport_rid()
-	for synth in get_tree().root.find_children("*", "AudioStreamPlayer3D", true, false):
-		if synth.get("cpu_ms") != null:
+	for synth in _synths:
+		if is_instance_valid(synth):
 			_synth_sum += float(synth.get("cpu_ms"))
 	var physics := Engine.get_physics_frames()
 	_frames.append({
@@ -144,6 +299,7 @@ func _process(delta: float) -> void:
 		"physics_split": float(physics_usec) / 1000.0,
 		"render_cpu": RenderingServer.viewport_get_measured_render_time_cpu(vp),
 		"render_gpu": RenderingServer.viewport_get_measured_render_time_gpu(vp),
+		"ab": _ab_turn,
 		"pos": Game.player.global_position if Game.player != null else Vector3.ZERO,
 	})
 	_last_physics = physics
@@ -199,7 +355,7 @@ func _next_lane() -> LanePath:
 	if _lane == null or _lane.next_lanes.is_empty():
 		return null
 	var lanes: Array = Game.world.get_lane_paths()
-	var pick := _lane.next_lanes[randi() % _lane.next_lanes.size()]
+	var pick := _lane.next_lanes[_route.randi() % _lane.next_lanes.size()]
 	if pick < 0 or pick >= lanes.size():
 		return null
 	return lanes[pick] as LanePath
@@ -274,3 +430,85 @@ func _report() -> void:
 	for h in hitches.slice(0, 12):
 		print("FRAMES hitch %.1f ms: %d steps, process %.1f ms, physics %.1f ms, draws %d at %s" % [float(h["ms"]), int(h["steps"]),
 			float(h["process_ms"]), float(h["physics_ms"]), int(h["draws"]), str((h["pos"] as Vector3).snapped(Vector3.ONE))])
+
+
+## The physics profile: the scene callbacks of every unit per tick, the engine part of a tick, the police on the road.
+func _report_profile() -> void:
+	if _scripts_ticks == 0:
+		return
+	var parts: Array[String] = []
+	var order: Array[int] = []
+	for i in _units.size():
+		order.append(i)
+	order.sort_custom(func(a: int, b: int) -> bool: return _unit_usec[a] > _unit_usec[b])
+	for i in order:
+		parts.append("%s %.3f" % [_units[i].name if is_instance_valid(_units[i]) else "?", _unit_usec[i] / float(_scripts_ticks) / 1000.0])
+	print("PROFILE scene callbacks %.3f ms per tick: %s" % [_scripts_usec / float(_scripts_ticks) / 1000.0, ", ".join(parts)])
+	print("PROFILE engine part of a tick (step + force integration) %.3f ms over %d ticks" % [
+		_engine_usec / maxf(float(_engine_ticks), 1.0) / 1000.0, _engine_ticks])
+	print("PROFILE %.1f police units on average" % (float(_police_sum) / maxf(float(_ticks), 1.0)))
+	var police_parts: Array[String] = []
+	for key in _police_modules:
+		police_parts.append("%s %.3f" % [key, float(_police_modules[key]) / maxf(float(_ticks), 1.0)])
+	print("PROFILE police dispatcher %.3f ms per tick: %s" % [_police_tick / maxf(float(_ticks), 1.0), ", ".join(police_parts)])
+	if _process_frames > 0:
+		var proc_order: Array[int] = []
+		for i in _units.size():
+			proc_order.append(i)
+		proc_order.sort_custom(func(a: int, b: int) -> bool: return _process_usec[a] > _process_usec[b])
+		var proc_parts: Array[String] = []
+		for i in proc_order:
+			proc_parts.append("%s %.3f" % [_units[i].name if is_instance_valid(_units[i]) else "?",
+				_process_usec[i] / float(_process_frames) / 1000.0])
+		print("PROFILE process callbacks %.3f ms per frame: %s" % [_process_total / float(_process_frames) / 1000.0,
+			", ".join(proc_parts)])
+
+
+## Puts the switch of an A/B drive in its B state (`on`) or back.
+func _ab_switch(ab: String, on: bool, director: Node) -> void:
+	match ab:
+		"traffic":
+			if director != null:
+				director.set("tick_period", 1 if not on else 2)
+		"occlusion":
+			get_viewport().use_occlusion_culling = not on
+		"hud":
+			for node in get_tree().root.find_children("Hud", "", true, false):
+				if node is CanvasLayer:
+					(node as CanvasLayer).visible = not on
+				node.process_mode = Node.PROCESS_MODE_DISABLED if on else Node.PROCESS_MODE_INHERIT
+		"shadows":
+			for node in get_tree().root.find_children("*", "DirectionalLight3D", true, false):
+				(node as DirectionalLight3D).shadow_enabled = not on
+		"steps":
+			# A: up to 8 physics ticks a frame (the project), B: up to 4
+			Engine.max_physics_steps_per_frame = 4 if on else 8
+		"probes":
+			# A: the wheel probes cast on their own as well (as before vehicle/modules/wheel.gd turned that off), B: they do not
+			for vehicle in get_tree().get_nodes_in_group(&"vehicles"):
+				for child in (vehicle as Node).get_children():
+					if child is ShapeCast3D:
+						(child as ShapeCast3D).enabled = not on
+
+
+## The frames of the two turns of an A/B drive, apart: the mean frame, the physics per tick, the ticks per frame, the rest.
+func report_ab() -> void:
+	for turn in 2:
+		var frames := _frames.slice(5).filter(func(f: Dictionary) -> bool: return int(f["ab"]) == turn)
+		if frames.is_empty():
+			continue
+		var frame_sum := 0.0
+		var physics_sum := 0.0
+		var ticks := 0
+		var times: Array[float] = []
+		for f in frames:
+			frame_sum += float(f["frame_split"])
+			physics_sum += float(f["physics_split"])
+			ticks += int(f["steps"])
+			times.append(float(f["frame_split"]))
+		times.sort()
+		var n := float(frames.size())
+		print("AB %s: %d frames, frame mean %.2f ms median %.2f p95 %.2f; physics %.2f ms per tick x %.2f; rest %.2f ms" % [
+			"A (switch off)" if turn == 0 else "B (switch on)", frames.size(), frame_sum / n,
+			times[times.size() / 2], times[int(float(times.size()) * 0.95)], physics_sum / maxf(float(ticks), 1.0),
+			float(ticks) / n, (frame_sum - physics_sum) / n])

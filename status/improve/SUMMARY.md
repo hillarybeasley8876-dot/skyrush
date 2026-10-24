@@ -79,8 +79,36 @@ thrown up without a hop, the last 6 s of the car (position, speed, wheels, what 
   stops dead at the edge of the ground (`tools/tunnel_probe.gd`).
 * `st_d7b_ew_11`: the right turn into it from `st_d7b_ns_7` goes to the far end of the lane of the other direction (92 m, over the
   river); `st_link_25/33` start 10-15 m out over the river (roads data; `tools/spawn_height_probe.gd` lists them).
-* About 23,500 small street props (bollards, bins, hydrants, signs, scooters, bike racks) have no collision: the car passes through
-  them; 18,329 tree trunks stop the car dead.
+* 18,329 tree trunks (0.25 m) stop a car dead: they stand (a street tree is a tree), they cost 40 % of the damage of a wall.
+
+## The frame rate (the player: "the frame rate is not stable")
+
+Measured with `tools/frame_probe.gd`: a lane follower drives the player car through the city (`--seed=N`: the traffic and the police
+draw the same numbers, the route is the same), every frame is split into its physics ticks and the rest, the callbacks of every unit
+are timed by giving each unit its own slot in the physics order, and `--ab=<switch>` compares two settings in turns of 4 s in one
+drive (the run-to-run spread is large: the number of police cars decides a run).
+
+| what | cause | fix | measured |
+|---|---|---|---|
+| the frames fell into a spiral (2-8 physics ticks a frame, 34 fps) | 120 Hz physics: a long frame runs more ticks, and a tick cost 4.8 ms | the costs of a tick below | a drive without a chase: 22.5 -> 17-19 ms a frame, 2.7 -> 2.2 ticks |
+| the traffic took 1.5 ms of every tick | the lane index, the decisions of 60-90 cars and the ring, 120 times a second | the traffic thinks every second tick with a double step (60 Hz); the dynamic cars still move every tick | same drive, A/B: 29.1 -> 22.5 ms mean, 26.1 -> 18.2 ms median |
+| the effects of every car within 150 m probed 4 wheels a tick and searched the nodes of the car for the wheels | `VehicleBase.get_marker` searched the visual on every call | the markers are kept; a car of the REDUCED tier probes every fourth tick (its smoke is a child of the car) | the callbacks of the traffic cars 0.84 -> 0.44 ms a tick |
+| the spawn ring sorted every spot of the ring for every attempt | `TrafficRing.pick_spot` | sorted once per place and heading of the player; a failed spawn waits 3 ticks | 0.2-0.3 -> 0.06 ms a tick |
+| the wheel probes cast twice a tick | an enabled ShapeCast3D casts on its own, and the car forces a cast | `enabled = false` | no measurable difference (a Jolt cast is cheap) |
+
+Left: a police car costs about 0.6 ms a tick (a chase with four of them runs at 30 fps); the HUD 1.3 ms a frame (the dials redraw
+antialiased arcs), the shadow of the sun 0.8 ms, the occlusion culling 0.6 ms of CPU (the GPU is not the limit on an RTX 3090: the
+render is 2.5-3.5 ms). With vsync on, Windows presented the window at 15 fps while the session was not on the screen: that is the
+desktop, not the game.
+
+## The street furniture breaks away (the player: "the collisions are not accurate")
+
+23,500 bollards, bins, hydrants, scooters, bike racks, road signs, shop signs and neon blades had no collision at all: the car drove
+through them. They break away like the lamps (`world/build/prop_breaker.gd` KINDS): the prop flies, the player car keeps 93-97 % of
+its speed and loses 0.5-1 HP, a light knock plays (the glass only for the neon and the shop signs). An AI car knocks them away and
+keeps its speed: a few per cent at the start of a race moved a rival into the next one and the field piled up against a tree
+(`rivals/test_real_start`). The breaker reads packed arrays and 4 m cells: 13-15 us a tick with the 28,504 props.
+Checks: `world/test_prop_breakaway.gd` (a bin at 60 km/h; 2 mutations).
 
 ## Tools added (game/tools, tools/)
 

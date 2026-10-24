@@ -113,14 +113,19 @@ func _on_vehicle_collided(vehicle: VehicleBase, _other: Node3D, impulse: float, 
 
 
 ## A street lamp knocked down: a hit, and the glass of its head.
-func _on_prop_broken(vehicle: VehicleBase, _kind: StringName, point: Vector3, _speed: float) -> void:
+func _on_prop_broken(vehicle: VehicleBase, kind: StringName, point: Vector3, _speed: float) -> void:
 	if vehicle == null or not is_instance_valid(vehicle):
 		return
+	# a lamp is a pole with a glass head; the small furniture (a bollard, a bin, a scooter) is a light knock
+	var lamp := String(kind).begins_with("lamp")
+	var glass := lamp or kind == &"neon_blade_frame" or kind == &"shop_sign"
+	var impact := &"impact_medium" if lamp else &"impact_light"
 	if _is_player(vehicle):
-		_sfx(&"impact_medium", Tuning.IMPACT_MIX_DB)
+		_sfx(impact, Tuning.IMPACT_MIX_DB)
 	else:
-		_sfx_3d(&"impact_medium", point, Tuning.IMPACT_MIX_DB)
-	_sfx_3d(&"glass_break", point, Tuning.GLASS_MIX_DB)
+		_sfx_3d(impact, point, Tuning.IMPACT_MIX_DB)
+	if glass:
+		_sfx_3d(&"glass_break", point, Tuning.GLASS_MIX_DB)
 
 
 ## True when this vehicle may play an impact again (one impact per cooldown).

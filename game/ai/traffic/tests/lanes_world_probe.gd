@@ -93,12 +93,14 @@ func sample(director: Node, dt: float) -> void:
 	_frames += 1
 	if _frames < WARMUP_FRAMES:
 		return
-	tick_costs.append(float(director.get("tick_last_ms")) + float(director.get("physics_last_ms")))
-	for part in ["index", "cars", "modes", "events", "ring", "physics"]:
-		if not part_costs.has(part):
-			part_costs[part] = [] as Array[float]
-		var key := "physics_last_ms" if part == "physics" else "cost_%s_ms" % part
-		(part_costs[part] as Array[float]).append(float(director.get(key)))
+	# the traffic thinks every second physics tick: its cost is the cost of a tick it thought in
+	if bool(director.get("ran_this_tick")):
+		tick_costs.append(float(director.get("tick_last_ms")) + float(director.get("physics_last_ms")))
+		for part in ["index", "cars", "modes", "events", "ring", "physics"]:
+			if not part_costs.has(part):
+				part_costs[part] = [] as Array[float]
+			var key := "physics_last_ms" if part == "physics" else "cost_%s_ms" % part
+			(part_costs[part] as Array[float]).append(float(director.get(key)))
 	var cars: Array = director.get("cars")
 	for car: TrafficCar in cars:
 		if car.follower == null:

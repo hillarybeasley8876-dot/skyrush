@@ -77,6 +77,9 @@ func setup(parent: Node3D, spec: CarSpec, wheel_index: int) -> void:
 	probe.exclude_parent = true
 	probe.max_results = 1
 	probe.position = mount
+	# The car casts the probe itself (update_probe, every physics tick): an enabled ShapeCast3D casts again on its own in the same
+	# tick, from the same place, for nothing (four casts of every car near the player, 120 times a second).
+	probe.enabled = false
 	parent.add_child(probe)
 	susp_length = _rest_len
 
