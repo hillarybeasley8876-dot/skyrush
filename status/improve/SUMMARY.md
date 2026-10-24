@@ -34,11 +34,13 @@ touches at a place, `--mask=4` for the props alone), `prop_lane_clearance.gd`, `
 
 ## Test state (147 tests, `python tools/run_tests.py --jobs 3 --timeout 420`)
 
-The failures that were in the baseline of the first round and are still there: `ai/rivals/test_performance` (0.54 ms against 0.35),
-`ai/rivals/test_race_flow` (5 passes of 6, 4 contacts over 800 N*s), `ai/traffic/test_lanes_world`, `roads/test_lanes` (6 lanes that
-end at a junction), `roads/test_drive_collision` (surface under the lanes, parapet in the way: the surface oracle is not a hole
-detector, the ground backs it), `world/test_world_api` (the `test_loop` route), `ai/police/test_perf` (only under load),
-`ai/rivals/test_real_route` (passes alone in 100 s, the suite gives a test 120 s).
+140 pass, 7 fail. All 7 failed in the integration baseline of the first round as well (`ai/rivals/test_performance`: 0.54 ms against
+0.35; `ai/rivals/test_race_flow`: 5 passes of 6 and 4 contacts over 800 N*s, the sandbox race now runs to its own thresholds;
+`ai/rivals/test_real_route`: passes alone in 100 s, the suite gives a test 120 s and runs it without the stubs; `ai/traffic/test_lanes_world`;
+`roads/test_lanes`: 6 lanes that end at a junction; `roads/test_drive_collision`: the surface oracle is not a hole detector, the ground backs
+it (7604 -> 6425 bad samples, parapet or pier in the way 791 -> 276); `world/test_world_api`: the `test_loop` route, 5 failing checks -> 2).
+Five tests of that baseline pass now (`police/test_perf`, `rivals/test_rival_driving`, `city/blocks/test_blocks`, `core/test_core_smoke`,
+`damage/test_budget`), and nothing that passed before fails.
 
 ## Known limits
 
