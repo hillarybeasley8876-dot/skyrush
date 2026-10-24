@@ -65,6 +65,11 @@ func _name_of(node: Node) -> String:
 func _physics_process(delta: float) -> void:
 	if _car == null or not is_instance_valid(_car):
 		return
+	if _car.freeze:
+		# a frozen car (the title screen, the grid of a race) hangs where it is held: that is not an incident
+		_hang = 0.0
+		_tip = 0.0
+		return
 	_clock += delta
 	var grounded := 0
 	for w in _car.wheels:
