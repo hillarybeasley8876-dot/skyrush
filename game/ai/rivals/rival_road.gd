@@ -9,6 +9,8 @@ extends RefCounted
 ## as soon as it is close to it again.
 
 const OFF_LINE := 15.0       ## m: the rival is off its line when it is this far from it
+const ROAD_MARGIN := 1.25     ## m: the room the car keeps to the edge of the road
+const LANE_NEAR := 25.0      ## m: only the lanes this close to the line count for the road
 const LOOKAHEAD_BASE := 18.0  ## m: the look-ahead at a standstill
 const LOOKAHEAD_PER_SPEED := 1.25  ## m per m/s
 const LOOKAHEAD_MIN := 10.0
@@ -39,7 +41,7 @@ func update(brain: RivalBrain, delta: float, car: ArcadeCar) -> bool:
 	var cross := absf(brain.cross_track(car))
 	if cross > OFF_LINE:
 		if not on_road:
-			_enter_road(car)
+			_enter_road(car, brain.line, brain.offset)
 		if on_road:
 			_advance(delta, car)
 			return true
@@ -52,8 +54,17 @@ func update(brain: RivalBrain, delta: float, car: ArcadeCar) -> bool:
 
 
 ## Puts the rival on the lane of the world that is nearest to it.
-func _enter_road(car: ArcadeCar) -> void:
-	var lane := _nearest_lane(car.global_position)
+##
+## The road is two way: the lane of the oncoming traffic is often the lane that is nearest
+## to the car, and a rival that drives the oncoming lane drives the wrong way. Its
+## progress on the racing line goes backwards, it never finds the line again and it is
+## the marshal that has to put it back on the track. The lane of the rival is the lane
+## that drives the way of the race.
+func _enter_road(car: ArcadeCar, line: RivalLine, offset: float) -> void:
+	var direction := Vector3.ZERO
+	if line != null:
+		direction = line.tangent_at(offset)
+	var lane := _nearest_lane(car.global_position, direction)
 	if lane < 0:
 		return
 	follower = LaneFollower.new()
@@ -63,9 +74,14 @@ func _enter_road(car: ArcadeCar) -> void:
 
 
 ## The lane of the world whose centre is nearest to the point.
-func _nearest_lane(pos: Vector3) -> int:
+##
+## With a direction, the lanes that drive the other way are the second best: the rival
+## drives the way of the race.
+func _nearest_lane(pos: Vector3, direction: Vector3 = Vector3.ZERO) -> int:
 	var best := -1
 	var best_distance := INF
+	var against := -1
+	var against_distance := INF
 	for i in graph.lane_count():
 		var length := graph.lane_length(i)
 		if length <= 0.0:
@@ -73,9 +89,17 @@ func _nearest_lane(pos: Vector3) -> int:
 		var offset := graph.closest_offset(i, pos)
 		var point := graph.position_at(i, offset)
 		var distance := point.distance_squared_to(pos)
+		if direction.length_squared() > 0.0 and graph.tangent_at(i, offset).dot(direction) < 0.0:
+			# The lane drives the other way: it is the second best.
+			if distance < against_distance:
+				against_distance = distance
+				against = i
+			continue
 		if distance < best_distance:
 			best_distance = distance
 			best = i
+	if best < 0:
+		return against
 	return best
 
 
@@ -95,32 +119,86 @@ func speed_cap() -> float:
 	return graph.lanes[lane].speed_limit_kmh / 3.6 * ROAD_SPEED
 
 
-## The half width of the road around the point (m), from the lane graph.
+## The carriageway around the point (m from the point: x = the left edge, y = the right
+## edge, z = the middle of the road).
 ##
-## A pass needs 4.45 m between the centres of two cars: the road has to be wide enough for
-## it, or the rival has to slow down and follow instead of trying to squeeze past.
-func road_half_width(pos: Vector3) -> float:
+## The racing line of a city route runs along the lanes, but the line of a route that
+## drives against the traffic hugs the kerb: on the Bund it runs a metre behind the kerb,
+## in the footway. A car that drives that line drives on the kerb and into the buildings of
+## the Bund, so the column of the car is kept inside the carriageway.
+##
+## The edges are the edges of the lanes of the road, so the car keeps the room of its own
+## width on the carriageway.
+func road_frame(point: Vector3, line: RivalLine, offset: float) -> Vector3:
 	if graph == null or graph.lanes.is_empty():
-		return DEFAULT_ROAD_HALF
-	var lane := _nearest_lane(pos)
-	if lane < 0 or lane >= graph.lanes.size():
-		return DEFAULT_ROAD_HALF
+		return Vector3(-INF, INF, 0.0)
+	var lane := _nearest_lane(point)
+	if lane < 0:
+		return Vector3(-INF, INF, 0.0)
 	var road := graph.lanes[lane].road_id
-	var width := 0.0
-	var nearest := INF
-	var furthest := -INF
+	var right := line.right_at(offset)
+	var line_dir := line.tangent_at(offset)
+	var lo := INF
+	var hi := -INF
+	var centres: Array[float] = []
+	var lats: Array[float] = []
+	var has_offset := false
 	for i in graph.lane_count():
 		if graph.lanes[i].road_id != road:
 			continue
-		width = maxf(width, graph.lanes[i].lane_width)
-		var offset := graph.closest_offset(i, pos)
-		var lateral := graph.lateral_offset(i, offset, pos)
-		nearest = minf(nearest, lateral)
-		furthest = maxf(furthest, lateral)
-	if nearest == INF:
-		return DEFAULT_ROAD_HALF
-	# The road is as wide as the spread of its lanes and one lane more.
-	return (furthest - nearest) * 0.5 + width * 0.5
+		var o := graph.closest_offset(i, point)
+		var p := graph.position_at(i, o)
+		if p.distance_to(point) > LANE_NEAR:
+			# The lane is not beside the point: the road bends away from it here.
+			continue
+		var lat := (p - point).dot(right)
+		var w := graph.lanes[i].lane_width * 0.5
+		lo = minf(lo, lat - w)
+		hi = maxf(hi, lat + w)
+		lats.append(lat)
+		has_offset = has_offset or graph.lanes[i].has_meta("offset")
+		centres.append(_centre_of_road(i, p, point, right, line_dir))
+	if lo == INF:
+		return Vector3(-INF, INF, 0.0)
+	# The middle of the road is the middle of the estimates of the lanes: the estimate of
+	# a lane does not depend on the lane, so the middle of them is the middle of the road.
+	# (The nearest lane changes from one tick to the next, the middle of the road does not.)
+	#
+	# A lane of a road that knows its own offset (the roads of the city) knows where the
+	# middle of its road is. A lane of a road that does not (the loop of the sandbox) is
+	# the middle of the road itself: the middle of the lanes is the middle of the road,
+	# and with two lanes the middle is the half way between them, not the outer one.
+	if has_offset:
+		return Vector3(lo, hi, _median(centres))
+	return Vector3(lo, hi, _median(lats))
+
+
+## The middle of a list of values (the half way between the two middle ones when the
+## count is even).
+func _median(values: Array[float]) -> float:
+	if values.is_empty():
+		return 0.0
+	var count := values.size()
+	if count % 2 == 1:
+		return values[count / 2]
+	return (values[count / 2 - 1] + values[count / 2]) * 0.5
+
+
+## The middle of the road, seen from the lane (m, in the frame of the racing line).
+##
+## The lanes of a road know how far they lie from the centre line of their road, so every
+## lane of the road knows where the middle of the road is. A rival that drives the middle
+## of the road is on the road, whatever the racing line of the route does.
+func _centre_of_road(lane: int, point: Vector3, from: Vector3, right: Vector3,
+		line_dir: Vector3) -> float:
+	var path := graph.lanes[lane]
+	var s := graph.closest_offset(lane, point)
+	var lane_dir := graph.tangent_at(lane, s)
+	# The offset of a lane is measured to the right of the direction of the forward lanes:
+	# a lane that drives the other way lies on the other side of the centre line.
+	var sign := 1.0 if lane_dir.dot(line_dir) >= 0.0 else -1.0
+	var side := float(path.get_meta("offset", 0.0)) * float(path.get_meta("dir", 1)) * sign
+	return (point - from).dot(right) - side
 
 
 ## The steering while the rival drives on the road: it follows the lane, not the racing line.

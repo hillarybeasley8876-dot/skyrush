@@ -31,15 +31,18 @@ const MISTAKE_LATE_TIME := 0.4       ## s: the brake is late for this long
 const MISTAKE_WIDE_TIME := 0.6       ## s: the line is wide for this long
 const OFF_LINE := 15.0               ## m: the rival is off its line when it is this far from it
 const GATE_MISS_MARGIN := 30.0       ## m: the progress past a gate that counts as a missed gate
-const DRIFT_KAPPA := 0.006           ## 1/m: the corner that is worth drifting
+const DRIFT_KAPPA := 0.009          ## 1/m: the corner that is worth drifting
 const DRIFT_LOOKAHEAD := 30.0        ## m: the drift starts this far before the corner
 const DRIFT_SPEED := 25.0            ## m/s: the speed a drift needs
 const DRIFT_SPEED_MARGIN := 3.0      ## m/s: the car may be this much over the corner speed
 const DRIFT_START_LIMIT := 0.8      ## m: the drift only starts when the car is on its line
 const DRIFT_STOP_LIMIT := 1.2       ## m: the drift ends when the car slides off its line
+const DRIFT_SIDE_BAND := 4.0        ## m: a car this close beside the rival counts as beside
+const DRIFT_AHEAD_BAND := 5.0       ## m: a car this close ahead of the rival counts as beside
 const PROJECT_MARGIN := 6.0         ## m: the margin of the projection window
 const PROJECT_FACTOR := 2.0         ## the window covers the distance of two ticks
 const GATE_APPROACH := 40.0         ## m: the rival aims at the gate from this distance
+const LANE_SLOT := 4.5             ## m: the personal lines of the field are two lanes apart
 const GRID_HOLD := 300.0            ## m: the rivals keep their grid column for this distance
 const LANE_BLEND := 120.0           ## m: the stretch over which a rival moves onto its own line
 const MISTAKE_MIN_SPEED := 15.0     ## m/s: a mistake only happens above this speed
@@ -52,6 +55,8 @@ const REVERSE_GUARD_SPEED := 0.6    ## m/s: below this speed the brake of the ca
 var line: RivalLine = null
 ## The lateral offset of the car from the racing line (m): every rival drives its own line.
 var lane_offset: float = 0.0
+## Where the car stands now (m): the road around it is measured from here.
+var car_position: Vector3 = Vector3.ZERO
 ## The column of the grid slot the rival started in (m from the line).
 var grid_lane: float = 0.0
 ## The line the rival drives once the pack has spread out (m from the line).
@@ -121,9 +126,18 @@ var _gate_measured: bool = false
 
 var _projected: bool = false
 var _warned_gate: int = -1
-var _road_half: float = 6.0
-var _road_half_timer: float = 0.0
+## The carriageway around the line (m from the line: x = the left edge, y = the right edge,
+## z = the middle of the road).
+var _road_lo: float = -INF
+var _road_hi: float = INF
+var _road_mid: float = 0.0
+## The column of the car in the road of its grid slot (m from the middle of the road).
+var _grid_column: float = 0.0
+var _grid_column_ready: bool = false
+var _road_timer: float = 0.0
 var _rng := RandomNumberGenerator.new()
+## The context of the last tick (the traffic around the rival).
+var _ctx: RivalContext = null
 
 
 ## Sets the brain up from a difficulty preset.
@@ -155,6 +169,8 @@ func tick(delta: float, car: ArcadeCar, ctx: RivalContext) -> void:
 		car.set_controls(0.0, 0.0, 0.0, false)
 		return
 	_update_position(car, delta)
+	_ctx = ctx
+	car_position = car.global_position
 	var forward := car.get_forward().dot(car.linear_velocity)
 	speed = maxf(forward, 0.0)
 	distance += speed * delta
@@ -163,7 +179,8 @@ func tick(delta: float, car: ArcadeCar, ctx: RivalContext) -> void:
 		car.set_drift(false)
 		drifting = false
 		return
-	_update_lane()
+	_update_road(delta, car)
+	_update_lane(car)
 	_update_mistake(delta)
 	# At the start of a race the rivals keep the column of their grid slot: nobody
 	# moves over until the pack has spread out.
@@ -176,9 +193,10 @@ func tick(delta: float, car: ArcadeCar, ctx: RivalContext) -> void:
 	# rival that may not pass the car in front does not close up on it.
 	speed_helper.pass_enabled = avoid.pass_enabled
 	speed_helper.update(delta, car, ctx, offset, speed, travelled, avoid.block_speed,
-		avoid.block_distance, road.speed_cap(), avoid.pass_speed, avoid.pass_distance)
+		avoid.block_distance, road.speed_cap(), avoid.pass_speed, avoid.pass_distance,
+		lane_offset)
 	var shift := avoid.update(delta, car, ctx, offset, speed, line, lane_offset,
-		speed_helper.potential, _road_half_width(delta, car))
+		speed_helper.potential, _road_range())
 	var steer_cmd := road.steering(car) if on_road else _steering(car, shift)
 	var throttle := speed_helper.throttle
 	var brake := speed_helper.brake
@@ -231,11 +249,11 @@ func _update_position(car: ArcadeCar, delta: float) -> void:
 ## The PD steering command (dossier 6.2) with the cross-track correction on top.
 func _steering(car: ArcadeCar, shift: float) -> float:
 	var look := _lookahead()
-	# The right vector of the aim point: on a curve the lateral offset rotates with the line.
-	var aim_right := line.right_at(offset + look)
-	var aim := line.point_at(offset + look) + aim_right * (lane_offset + shift)
 	# The lane the car drives right now: the personal line and the shift of the pass.
 	var lane := lane_offset + shift
+	# The right vector of the aim point: on a curve the lateral offset rotates with the line.
+	var aim_right := line.right_at(offset + look)
+	var aim := line.point_at(offset + look) + aim_right * lane
 	# Near the gate the rival aims at the gate itself: the racing line of a city route does
 	# not always run through the checkpoint, and a rival that misses the trigger loses it.
 	var to_gate := _distance_to_gate()
@@ -316,20 +334,66 @@ func set_lanes(grid: float, spread: float) -> void:
 ##
 ## The rivals keep their column for the first metres of the race (the pack does not cross
 ## itself on the grid) and spread out over the stretch that follows it.
-func _update_lane() -> void:
-	var blend := clampf((travelled - GRID_HOLD) / LANE_BLEND, 0.0, 1.0)
-	lane_offset = lerpf(grid_lane, spread_lane, blend)
-
-
-## The half width of the road the rival drives on (m).
 ##
-## The lane graph of the city is big: the width is measured twice a second, not every tick.
-func _road_half_width(delta: float, car: ArcadeCar) -> float:
-	_road_half_timer -= delta
-	if _road_half_timer <= 0.0:
-		_road_half_timer = ROAD_HALF_REFRESH
-		_road_half = road.road_half_width(car.global_position)
-	return _road_half
+## The column is counted in the road and not in the racing line: the line of a route that
+## drives against the traffic runs in the footway of the Bund, and a column 4.5 m beside it
+## is inside the buildings. A rival that drives the middle of the road is on the road,
+## whatever the line of the route does.
+func _update_lane(car: ArcadeCar) -> void:
+	var blend := clampf((travelled - GRID_HOLD) / LANE_BLEND, 0.0, 1.0)
+	# The column of the rival is counted in the road: the line of a route that drives
+	# against the traffic runs in the footway of the Bund, and a column 4.5 m beside it
+	# is inside the buildings. The personal line of a rival is a column of the road as
+	# well: the line of a rival is measured from the line of the route, so it is turned
+	# into a column of the road here.
+	var column := lerpf(_grid_column, spread_lane - _road_mid, blend)
+	lane_offset = _on_road(_road_mid + column)
+
+
+
+## The lateral position of the car, kept on the carriageway (m from the line).
+func _on_road(value: float) -> float:
+	if _road_lo <= -INF:
+		return value
+	var lo := _road_lo + RivalRoad.ROAD_MARGIN
+	var hi := _road_hi - RivalRoad.ROAD_MARGIN
+	if lo > hi:
+		# The road is narrower than the room the car keeps to its edges: it drives in
+		# the middle of it.
+		return _road_mid
+	return clampf(value, lo, hi)
+
+
+## The range of the carriageway around the line that a pass may use, and the lane a pass
+## drives into (m from the line).
+func _road_range() -> Vector3:
+	if _road_lo <= -INF:
+		return Vector3(-INF, INF, 0.0)
+	return Vector3(_road_lo + RivalRoad.ROAD_MARGIN, _road_hi - RivalRoad.ROAD_MARGIN,
+		_road_mid)
+
+
+## Measures the carriageway around the car.
+##
+## The line of a city route runs along the lanes, but the line of a route that drives
+## against the traffic hugs the kerb: on the Bund it runs a metre behind the kerb, in the
+## footway. A car that drives that line drives on the kerb and into the buildings of the
+## Bund, so the field is moved onto the carriageway.
+func _update_road(delta: float, car: ArcadeCar) -> void:
+	_road_timer -= delta
+	if _road_timer > 0.0:
+		return
+	_road_timer = ROAD_HALF_REFRESH
+	# The carriageway is measured at the line and not at the car: a measurement at the car
+	# follows the car out of its lane, and the rival drives further out with every tick.
+	var frame := road.road_frame(line.point_at(offset), line, offset)
+	_road_lo = frame.x
+	_road_hi = frame.y
+	_road_mid = frame.z
+	if not _grid_column_ready and _road_lo > -INF:
+		# The column of the grid slot, counted in the road.
+		_grid_column = grid_lane - _road_mid
+		_grid_column_ready = true
 
 
 ## Starts a mistake and schedules the next one.
@@ -416,5 +480,31 @@ func _update_drift(car: ArcadeCar) -> void:
 		# The car slides out of its line: the drift ends, or the car ends up in the lane
 		# of its neighbour.
 		want = false
+	if want and _car_beside(car):
+		# A car drives beside the rival: the drift slides the car six metres sideways and
+		# it would slide into the column of its neighbour. The field of a race drives in
+		# two columns, and the cars of a column that drifts into the other one hit it.
+		want = false
 	car.set_drift(want)
 	drifting = want
+
+
+## True when a car drives beside the rival (the drift may not start then).
+func _car_beside(car: ArcadeCar) -> bool:
+	if _ctx == null:
+		return false
+	for node in _ctx.near_of(car):
+		if not is_instance_valid(node) or node == car:
+			continue
+		if not RivalContext.on_my_level(car, node):
+			continue
+		var rel := node.global_position - car.global_position
+		if absf(rel.dot(line.right_at(offset))) > DRIFT_SIDE_BAND:
+			continue
+		if absf(rel.dot(line.tangent_at(offset))) > DRIFT_AHEAD_BAND:
+			continue
+		return true
+	return false
+
+
+

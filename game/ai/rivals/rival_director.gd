@@ -17,7 +17,6 @@ const FAR_DISTANCE := 150.0     ## m: a rival further away than this is ticked a
 const NEAR_REFRESH := 0.1       ## s: the near list of a rival is rebuilt at 10 Hz
 const NEAR_RANGE := 95.0        ## m: the cars this close to a rival are in its near list
 const LANE_LIMIT := 4.5         ## m: the personal line never leaves this far from the line
-const LANE_SLOT := 4.5           ## m: the personal lines of the field are two lanes apart
 const DEFAULT_SEED := 0          ## the seed of a race when none is given
 
 ## The rivals of the current race.
@@ -81,7 +80,7 @@ func start_race(route: RaceRoute, level: StringName, player_slot: int = -1,
 	var preset := RivalFleet.preset(level)
 	var field := RivalFleet.field_of(String(route.id), level)
 	var slots := grid_slots()
-	var offsets := RivalGrid.offsets_of(route, line)
+	var offsets := RivalGrid.offsets_of(route, line, slots)
 	var skip := player_slot if player_slot >= 0 else slots.size() - 1
 	var slot := 0
 	for i in field.size():
@@ -105,9 +104,10 @@ func start_race(route: RaceRoute, level: StringName, player_slot: int = -1,
 ## Gives the rival the line it keeps for the race: the column of its grid slot (so the pack
 ## does not cross itself) plus the lane it drives once the pack has spread out.
 ##
-## The field drives in two lanes that are 4.4 m apart: a car is 1.95 m wide and it needs
-## 2.5 m of clearance, so a pass from one lane into the other is clean. The cars of one lane
-## are 8 m apart on the grid and stand 20 m apart at the pace of the race.
+## The field drives in two lanes that are 9 m apart, counted in the road and not in the
+## racing line: the line of a route that drives against the traffic runs in the footway of
+## the boulevard, and a column 4.5 m from it is inside the buildings. A car is 1.95 m wide
+## and it needs 2.5 m of clearance, so a pass from one lane into the other is clean.
 func _set_personal_line(car: RivalCar, slot: int) -> void:
 	if car.brain == null or line == null or line.length < 1.0:
 		return
@@ -115,10 +115,9 @@ func _set_personal_line(car: RivalCar, slot: int) -> void:
 	# keep the same distance to the line, so the pack does not cross itself.
 	var offset := car.brain.offset
 	var lateral := (car.global_position - line.point_at(offset)).dot(line.right_at(offset))
-	var grid_lane := clampf(lateral, -LANE_LIMIT, LANE_LIMIT)
 	# The personal line: the lane of the grid column of the car.
-	var lane := LANE_SLOT if slot % 2 == 0 else -LANE_SLOT
-	car.brain.set_lanes(grid_lane, lane)
+	var lane := RivalBrain.LANE_SLOT if slot % 2 == 0 else -RivalBrain.LANE_SLOT
+	car.brain.set_lanes(lateral, lane)
 
 
 ## The rivals of the current race.
@@ -136,14 +135,24 @@ func is_circuit() -> bool:
 	return line != null and line.closed
 
 
-## The grid of the route: two columns behind the start line.
+## The grid of the route: the slots of the start grid, in the middle of the road.
 func grid_slots() -> Array[Transform3D]:
 	if not Game.world_built():
 		push_error("[rivals] the grid was asked for before the city was built")
 		return []
 	if route == null or line == null:
 		return []
-	return RivalGrid.slots_of(route, line, Game.world)
+	return RivalGrid.slots_of(route, line, Game.world, _road_probe())
+
+
+## The road mode of the director: it measures the carriageway of the world (the lanes of
+## the world are the lanes the traffic drives on).
+func _road_probe() -> RivalRoad:
+	if graph == null:
+		return null
+	var probe := RivalRoad.new()
+	probe.graph = graph
+	return probe
 
 
 ## Removes the rivals of the last race.

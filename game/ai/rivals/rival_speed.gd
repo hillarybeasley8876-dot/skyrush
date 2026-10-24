@@ -11,13 +11,14 @@ const THROTTLE_GAIN := 4.0       ## 1/s: the throttle opens with the difference
 const THROTTLE_MIN := 0.35       ## the throttle never drops below this while accelerating
 const BRAKE_GAIN := 8.0          ## 1/s: the brake opens with the difference
 const BRAKE_MIN := 0.15          ## the brake never drops below this while braking
-const CORNER_MARGIN := 0.80      ## the corner speed is taken with this margin
+const CORNER_MARGIN := 0.82      ## the corner speed is taken with this margin
 const NITRO_STRAIGHT := 250.0    ## m: the nitro needs this much straight ahead
 const NITRO_COOLDOWN := 6.0      ## s: the gap between two nitros
 const NITRO_LEAD_LIMIT := 150.0  ## m: a rival this far ahead of the player does not boost
 const MIN_FOLLOW_SPEED := 2.0    ## m/s: the slowest a rival goes to follow a car
 const EMERGENCY_GAP := 10.0       ## m: the gap under which the rival brakes hard
 const EMERGENCY_RATE := 3.0       ## m/s per metre: the hard brake of the rival
+const EMERGENCY_CLOSING := 2.0    ## m/s: the closing speed that makes the emergency brake
 const FOLLOW_S0 := 2.0           ## m: the bumper to bumper distance a rival keeps
 const FOLLOW_T := 0.45           ## s: the time headway of the rival to the car in front
 const FOLLOW_A := 11.0           ## m/s^2: the acceleration the rival plans with
@@ -26,7 +27,8 @@ const FOLLOW_V := 4.0            ## the exponent of the free road term of the mo
 const CAR_LENGTH := 4.3          ## m: the length of a car (the Roadster of the rivals)
 const PASS_MARGIN_SPEED := 6.0   ## m/s: the rival may be this much faster than the car it passes
 const PASS_GAP := 4.0              ## m: the gap a rival keeps to the car it passes
-const TIGHT_CLOSING := 3.0         ## m/s: the speed a rival closes up to the car in front with
+const TIGHT_CLOSING := 6.0         ## m/s: the speed a rival closes up to the car in front with
+const FOLLOW_SAFE_GAP := 40.0      ## m: the gap at which a rival may still close on the car in front
 const RUBBER_OFF := 0.9          ## the rubber band is off in the last share of the race
 const SLIPSTREAM_BONUS := 0.04   ## the share of the top speed a car in the slipstream gets
 const SLIPSTREAM_DISTANCE := 25.0  ## m: the car in front that gives the slipstream
@@ -35,6 +37,10 @@ const TYRE_MU := 1.45            ## the grip of the Roadster's tyres (the Roadst
 const GRAVITY := 9.81            ## m/s^2
 const GRIP_REFERENCE := 45.0     ## m/s^2: the grip skill of the dossier the presets are built on
 const BRAKE_FULL := 2.0          ## the brake is fully open at this difference
+const THROTTLE_ACCEL := 10.0     ## m/s^2: the acceleration of the car with the throttle open
+const BRAKE_ACCEL := 16.0        ## m/s^2: the deceleration of the car with the brake open
+const PLAN_STEP := 10.0          ## m: the distance the plan of the speed limit is measured over
+const PLAN_FOLLOW_GAP := 30.0     ## m: the gap in which the plan counts the car in front
 
 var line: RivalLine = null
 ## The lateral acceleration budget in m/s^2 (the Roadster's tyre limit, scaled by the skill).
@@ -118,11 +124,16 @@ func rubber_factor(gap: float, race_fraction: float) -> float:
 ## in front of it.
 func update(delta: float, car: ArcadeCar, ctx: RivalContext, offset: float, speed: float,
 		travelled: float, blocked_speed: float, blocked_distance: float,
-		speed_cap: float = INF, pass_speed: float = INF, pass_distance: float = INF) -> void:
+		speed_cap: float = INF, pass_speed: float = INF, pass_distance: float = INF,
+		lane: float = 0.0) -> void:
 	rubber = rubber_factor(travelled - ctx.player_travelled, ctx.race_fraction)
 	var top := car.spec.top_speed * top_factor * rubber * cruise_factor
 	top *= _slipstream(car, ctx, offset)
 	var limit := line.speed_limit(offset, grip, brake_accel) * CORNER_MARGIN
+	# The corner speed belongs to the path of the car: a car that drives in the inner
+	# column of a corner drives a tighter path than the line of the route, and it has to
+	# be slower or it slides out of the corner into the column of its neighbour.
+	limit *= _column_factor(offset, lane)
 	potential = minf(minf(top, limit), speed_cap)
 	target = potential
 	if pass_distance < INF:
@@ -145,24 +156,68 @@ func update(delta: float, car: ArcadeCar, ctx: RivalContext, offset: float, spee
 		# not allowed: on the grid the back rows braked to a standstill behind it.
 		tight = pass_enabled and potential > blocked_speed
 		if tight:
-			target = minf(target, blocked_speed + TIGHT_CLOSING)
+			target = minf(target, blocked_speed + _closing_allowance(gap))
 		# A rival brakes for the car in front only while it is closing on it. A car that
 		# falls behind does not need to slow down: braking for a car that pulls away
 		# costs the rival the gap it never gets back, and on the grid it was the reason
 		# the back rows crawled away behind the row in front.
 		var closing := speed - blocked_speed
-		if gap < EMERGENCY_GAP and closing > 0.0:
+		if gap < EMERGENCY_GAP and closing > EMERGENCY_CLOSING:
 			# The car in front is too close: the rival brakes hard, whatever the model says.
 			var pace := blocked_speed - EMERGENCY_RATE * (EMERGENCY_GAP - gap)
 			target = minf(target, maxf(pace, MIN_FOLLOW_SPEED))
 	# The throttle and the brake follow the target: the target of the overtake and the
 	# emergency brake have to be known before the inputs are made, or they are dead.
-	_drive_inputs(speed)
+	# The plan of the corner counts the car in front: a follower that keeps its own plan
+	# drives into the back of the car that braked for the corner. The plan only counts
+	# the car in front when the rival is close behind it: a rival that brakes for the
+	# corner from a long way back never catches the car it has to pass.
+	var plan := 0.0
+	if blocked_distance < INF:
+		var follow_gap := maxf(blocked_distance - CAR_LENGTH, 0.0)
+		if follow_gap < PLAN_FOLLOW_GAP:
+			plan = _plan_deceleration(offset, limit, speed)
+	_drive_inputs(speed, plan)
 	if blocked_distance < INF:
 		var accel := _follow_acceleration(speed, blocked_speed, gap, blocked_speed, tight)
 		if accel < 0.0:
 			brake = maxf(brake, clampf(-accel / BRAKE_GAIN, BRAKE_MIN, 1.0))
 			throttle = 0.0
+
+
+## The share of the corner speed a car in the inner column of a corner may use.
+##
+## The corner speed of the line is the corner speed of the middle of the line. A car
+## that drives a column beside the line drives a path of its own: in the inner column
+## of a corner the path is tighter than the line and the car has to be slower, or it
+## slides out of the corner into the column of its neighbour. The share is 1 outside
+## the corner: there the path of the car is the path of the line.
+func _column_factor(offset: float, lane: float) -> float:
+	if line == null or absf(lane) < 0.5:
+		return 1.0
+	var kappa := line.curvature_at(offset)
+	if kappa <= 0.0002:
+		return 1.0
+	var a := line.tangent_at(offset - 3.0)
+	var b := line.tangent_at(offset + 3.0)
+	# The inside of the corner is on the right of the line when the line turns to the
+	# right: the cross of the tangents is negative then.
+	var inside := -signf(a.cross(b).y) * signf(lane)
+	if inside <= 0.0:
+		return 1.0
+	return sqrt(clampf(1.0 - absf(lane) * kappa, 0.35, 1.0))
+
+
+## The speed a rival may close on the car in front (m/s).
+##
+## A rival that is 20 m behind the car in front may close on it at the speed of a pass.
+## A rival that is 10 m behind it may not close on it at all: the field arrived at the
+## corner of the Bund in a bunch, every car closed on the car in front, and the cars drove
+## into each other. The allowance shrinks with the gap, so a rival that is close behind
+## the car in front keeps its distance while the car in front brakes for the corner.
+func _closing_allowance(gap: float) -> float:
+	var room := clampf((gap - EMERGENCY_GAP) / (FOLLOW_SAFE_GAP - EMERGENCY_GAP), 0.0, 1.0)
+	return TIGHT_CLOSING * room
 
 
 ## The share of the top speed the slipstream of the car in front adds.
@@ -200,14 +255,60 @@ func _in_wake(node: Node3D, pos: Vector3, tangent: Vector3, right: Vector3) -> b
 
 
 ## The throttle and the brake for the current speed.
-func _drive_inputs(speed: float) -> void:
+##
+## The brake is not only a reaction to the difference between the target and the speed:
+## the plan of the route asks for a deceleration at every point of the line, and a
+## controller that only looks at the difference arrives at a corner a few metres per
+## second too fast. The car slides wide there, leaves its line and stops making progress
+## on the racing line (the corner of the sandbox loop). The brake of the plan opens the
+## brake before the target of the corner is reached.
+##
+## The throttle stays open while the car is below its target: a brake that is closed for
+## the whole braking zone of the route makes the field crawl (the race of the sandbox loop
+## needs more than 300 s).
+func _drive_inputs(speed: float, plan: float) -> void:
 	throttle = 0.0
 	brake = 0.0
 	var diff := target - speed
+	# The error of the speed: the dead zone keeps the brake closed for a small error.
+	var error := 0.0
 	if diff > TARGET_MARGIN:
-		throttle = clampf(diff / THROTTLE_GAIN, THROTTLE_MIN, 1.0)
+		error = diff
 	elif diff <= -BRAKE_FULL * TARGET_MARGIN:
-		brake = clampf(-diff / BRAKE_GAIN, BRAKE_MIN, 1.0)
+		error = diff
+	# The acceleration the car makes: the error of the speed and the deceleration the
+	# plan of the route asks for.
+	var want := 0.0
+	if error > 0.0:
+		want = THROTTLE_ACCEL * error / THROTTLE_GAIN
+	elif error < 0.0:
+		want = BRAKE_ACCEL * error / BRAKE_GAIN
+	# The plan of the route is a brake and not a throttle: it may not close the throttle of
+	# a car that is below its target (the field would crawl out of the braking zone and
+	# the race would fall apart), but it opens the brake of a car that is at its target
+	# and would arrive at the corner a few metres per second too fast.
+	if plan > 0.0 and error <= 0.0:
+		want -= plan
+	if want > 0.0:
+		throttle = clampf(want / THROTTLE_ACCEL, THROTTLE_MIN, 1.0)
+	elif want < 0.0:
+		brake = clampf(-want / BRAKE_ACCEL, 0.0, 1.0)
+
+
+## The deceleration the plan of the route asks for at the car (m/s^2).
+##
+## The speed limit of the route is a plan: the car has to brake for the corners that lie
+## ahead of it. The plan is the slope of the limit over the distance the car drives: a
+## car that is over the limit of the next step has to brake now.
+func _plan_deceleration(offset: float, limit: float, speed: float) -> float:
+	if line == null:
+		return 0.0
+	var ahead := line.speed_limit(offset + PLAN_STEP, grip, brake_accel) * CORNER_MARGIN
+	# The plan falls while the car drives: the car has to brake at that rate. The rate is
+	# the slope of the plan and not the difference to the limit of the next step: the
+	# difference of the speeds would brake the car for its own error as well, and the
+	# controller would hunt around the plan.
+	return maxf(speed * (limit - ahead) / PLAN_STEP, 0.0)
 
 
 ## The acceleration the rival needs to keep its distance to the car in front (m/s^2).
