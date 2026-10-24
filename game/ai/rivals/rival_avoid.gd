@@ -75,9 +75,9 @@ var _stopped_time: float = 0.0
 ## centres of the two cars (a car is 1.95 m wide and it needs 2.5 m of clearance), and the
 ## old shared clamp of 2 m left 5 cm between two cars that ran side by side.
 func update(delta: float, car: ArcadeCar, ctx: RivalContext, offset: float, speed: float,
-		line: RivalLine, lane_offset: float, potential: float, road_half: float) -> float:
+		line: RivalLine, lane_offset: float, potential: float, road: Vector3) -> float:
 	var pass_offset := _pass_shift(delta, car, ctx, offset, speed, line, lane_offset,
-		potential, road_half)
+		potential, road)
 	if absf(pass_offset) > PASS_ACTIVE:
 		# The pass decides where the car goes: the avoidance would fight it.
 		return pass_offset
@@ -279,7 +279,7 @@ func _avoid_offset(car: ArcadeCar, ctx: RivalContext, offset: float, line: Rival
 
 ## The sideways shift of a pass (0 when the rival keeps its line).
 func _pass_shift(delta: float, car: ArcadeCar, ctx: RivalContext, offset: float, speed: float,
-		line: RivalLine, lane_offset: float, potential: float, road_half: float) -> float:
+		line: RivalLine, lane_offset: float, potential: float, road: Vector3) -> float:
 	if not pass_enabled:
 		pass_node = null
 		pass_shift = 0.0
@@ -311,8 +311,8 @@ func _pass_shift(delta: float, car: ArcadeCar, ctx: RivalContext, offset: float,
 		if blocker != pass_node:
 			pass_node = blocker
 			_pass_time = 0.0
-			_pass_side = _pass_side_of(car, ctx, blocker, offset, line, lane_offset, road_half)
-		_pass_target = _pass_target_of(car, ctx, blocker, offset, line, lane_offset, road_half)
+			_pass_side = _pass_side_of(car, ctx, blocker, offset, line, lane_offset, road)
+		_pass_target = _pass_target_of(car, ctx, blocker, offset, line, lane_offset, road)
 		if _pass_target == 0.0 and absf(pass_shift) >= AVOID_CLEARANCE:
 			# The lane the rival moves into is not free any more. It keeps the lane it
 			# is in until the car it passes is behind it: merging back into a lane with
@@ -330,7 +330,7 @@ func _pass_shift(delta: float, car: ArcadeCar, ctx: RivalContext, offset: float,
 			_pass_target = 0.0
 		else:
 			var target := _pass_target_of(car, ctx, pass_node, offset, line, lane_offset,
-				road_half)
+				road)
 			if target != 0.0:
 				_pass_target = target
 	else:
@@ -447,21 +447,20 @@ func _lane_of(node: Node3D, ctx: RivalContext, line: RivalLine, offset: float) -
 
 ## The lane a pass drives into (m from the racing line).
 ##
-## The field drives in two lanes that are PASS_LANE apart: a pass goes to the middle
-## between them, where the car of the rival has the clearance of both lanes (3 m to the
-## lane it comes from and 3 m to the lane it goes to). A pass that drove into the lane
-## of the car in front would be a side swipe, and a pass that stayed in its own lane
-## would be a rear-end.
-func _pass_lane(my_lane: float) -> float:
-	return my_lane - signf(my_lane) * PASS_LANE * 0.5
+## The field drives in two lanes that are 9 m apart, on the two sides of the middle of the
+## road: a pass goes to the middle of the road, where the car of the rival has the clearance
+## of both lanes. A pass that drove into the lane of the car in front would be a side
+## swipe, and a pass that stayed in its own lane would be a rear-end.
+func _pass_lane(road: Vector3) -> float:
+	return road.z
 
 
 ## The side of the pass (-1 = to the left, 1 = to the right, 0 = no clean pass is possible).
 func _pass_side_of(car: ArcadeCar, ctx: RivalContext, blocker: Node3D, offset: float,
-		line: RivalLine, lane_offset: float, road_half: float) -> float:
+		line: RivalLine, lane_offset: float, road: Vector3) -> float:
 	var mine := _lane_of(car, ctx, line, offset)
-	var target := _pass_lane(mine)
-	if not _pass_fits(car, ctx, blocker, offset, line, road_half, target):
+	var target := _pass_lane(road)
+	if not _pass_fits(car, ctx, blocker, offset, line, road, target):
 		return 0.0
 	return signf(target - mine)
 
@@ -471,12 +470,12 @@ func _pass_side_of(car: ArcadeCar, ctx: RivalContext, blocker: Node3D, offset: f
 ## The spot is checked every tick: a car that comes into the lane the rival changes into
 ## ends the pass, or the rival drives into it.
 func _pass_target_of(car: ArcadeCar, ctx: RivalContext, blocker: Node3D, offset: float,
-		line: RivalLine, lane_offset: float, road_half: float) -> float:
+		line: RivalLine, lane_offset: float, road: Vector3) -> float:
 	if _pass_side == 0.0:
 		return 0.0
 	var mine := _lane_of(car, ctx, line, offset)
-	var target := _pass_lane(mine)
-	if not _pass_fits(car, ctx, blocker, offset, line, road_half, target):
+	var target := _pass_lane(road)
+	if not _pass_fits(car, ctx, blocker, offset, line, road, target):
 		return 0.0
 	return clampf(target - lane_offset, -PASS_SHIFT, PASS_SHIFT)
 
@@ -486,8 +485,8 @@ func _pass_target_of(car: ArcadeCar, ctx: RivalContext, blocker: Node3D, offset:
 ## The spot has to be on the road and it has to keep the clearance of a car body to every
 ## car that drives near it: a pass that ends in a side swipe is no pass at all.
 func _pass_fits(car: ArcadeCar, ctx: RivalContext, blocker: Node3D, offset: float,
-		line: RivalLine, road_half: float, target: float) -> bool:
-	if absf(target) > road_half:
+		line: RivalLine, road: Vector3, target: float) -> bool:
+	if target < road.x or target > road.y:
 		return false
 	for node in _others(car, ctx):
 		if node == blocker or not is_instance_valid(node):
