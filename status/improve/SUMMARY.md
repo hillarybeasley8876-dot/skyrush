@@ -61,6 +61,27 @@ The player car keeps an incident record in debug builds (`vehicle/incident_recor
 thrown up without a hop, the last 6 s of the car (position, speed, wheels, what the body touches, the ghost) go to the log as
 `[incident]` lines.
 
+## The car on its side, the reset, the barrel roll (the player: "the physics is wrong", "the reset still has an axis problem")
+
+| what | cause | fix | check |
+|---|---|---|---|
+| the Roadster lay on its side by a median until the R key | the upright torque needs two wheels on the ground; a car with its wheels against the face of a kerb or a planter had none | the righting, for the car of the player only: body contact, fewer than two wheels down and a tilt over 30 degrees turn it back onto its wheels (0.4 s on its side, 0.8 s on its roof) | `vehicle/test_righting.gd` (side against a wall, 20 tipped drops onto a kerb and a planter, on its roof), mutation-checked |
+| (AI cars) | a police unit on its roof is disabled (dossier 6.3), the righting took that takedown away | AI cars do not right themselves (`ArcadeCar.self_righting`) | `test_righting.gd` (an AI car stays on its roof), `police/test_heat.gd` |
+| a barrel roll turned the car over on the road | the roll went on after the car met the ground | the roll ends when a wheel or the body touches | `test_righting.gd`, mutation-checked |
+| full lock at 60-200 km/h, drifts, kerbs at 10-35 degrees, planter scrapes | no failure: the peak tilt stays under 40 degrees in all 17 scenarios | - | `vehicle/test_rollover.gd` |
+| the reset faced against the traffic or stood across a junction (554 of 1,181 resets from the middle of the street lanes, facing against or across the lane; 10 on a junction turn) | the nearest lane point, turned to face the way the car faced | `SpawnPlacer.respawn_lane`: the nearest street lane, a lane at an angle to the car counting up to 15 m further away; the car is put on it in the direction of its traffic, never against it | `world/test_respawn_direction.gd` (3 mutations) |
+| a reset at a lane that starts over the river put the car on the bed of the river | 6 lane points have no road under them (a street that runs into the river, a junction turn that bulges over it) | a respawn spot needs its road within 1 m under the lane; the respawn walks on along the lane | same test |
+
+## Found and not fixed yet
+
+* The Yan'an tunnel: the ground covers both portal ramps (the ground builder cuts only the water). From Pudong a car drives over the
+  portal on the flat ground, through the walls of the bores (they have no collision above the ground); a car coming up the Puxi ramp
+  stops dead at the edge of the ground (`tools/tunnel_probe.gd`).
+* `st_d7b_ew_11`: the right turn into it from `st_d7b_ns_7` goes to the far end of the lane of the other direction (92 m, over the
+  river); `st_link_25/33` start 10-15 m out over the river (roads data; `tools/spawn_height_probe.gd` lists them).
+* About 23,500 small street props (bollards, bins, hydrants, signs, scooters, bike racks) have no collision: the car passes through
+  them; 18,329 tree trunks stop the car dead.
+
 ## Tools added (game/tools, tools/)
 
 `fuzz_drive.gd` (random whole-game drives with a flight recorder), `soak_traffic.gd`, `height_map.gd`, `touch_probe.gd` (what a car
@@ -68,9 +89,14 @@ touches at a place, `--mask=4` for the props alone), `prop_lane_clearance.gd`, `
 places, followed for 4 s), `spawn_height_probe.gd` (the road height of every lane point), `tools/run_follow.py` (follow trials),
 `blender/city/roads/edgewalls.py`, `blender/city/roads/buildingcut.py`.
 
-## Test state (147 tests, `python tools/run_tests.py --jobs 3 --timeout 420`)
+## Test state (153 tests, `python tools/run_tests.py --jobs 3 --timeout 420`)
 
-140 pass, 7 fail. All 7 failed in the integration baseline of the first round as well (`ai/rivals/test_performance`: 0.54 ms against
+The last full run (152 tests, before `test_respawn_direction`): 143 pass, 9 fail. Three of the nine are not baseline: `police/test_heat`
+(the righting turned a police car off its roof before it counted as disabled: the righting is the player's now), `world/test_drive_lanes`
+(its clearance ray started 4 m over the lane and met a deck: it starts at 1 m now) and `police/test_perf` (a 10 ms tick with three test
+jobs running; alone 1.0 ms of its 3.0 ms). The other six are the baseline; `ai/rivals/test_real_route` passed in that run.
+
+The baseline (147 tests): 140 pass, 7 fail. All 7 failed in the integration baseline of the first round as well (`ai/rivals/test_performance`: 0.54 ms against
 0.35; `ai/rivals/test_race_flow`: 5 passes of 6 and 4 contacts over 800 N*s, the sandbox race now runs to its own thresholds;
 `ai/rivals/test_real_route`: passes alone in 100 s, the suite gives a test 120 s and runs it without the stubs; `ai/traffic/test_lanes_world`;
 `roads/test_lanes`: 6 lanes that end at a junction; `roads/test_drive_collision`: the surface oracle is not a hole detector, the ground backs

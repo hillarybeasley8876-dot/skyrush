@@ -36,6 +36,14 @@ const ROLLOVER_DEG := 55.0
 
 const ROLLOVER_MULT := 3.0
 
+## A car that leans on its body (its side on a kerb or a planter, its roof on the road) with fewer than two wheels down is turned
+## back onto its wheels: the upright torque above needs two wheels on the ground, so a car on its side next to a kerb (the probes
+## of its wheels met the face of the kerb, not the road) lay there until the player found the reset key. The torque turns the up
+## of the car towards the vertical from a tilt of RIGHTING_MIN_DEG on (rad/s^2 per rad of tilt, and a damping of the turn).
+const RIGHTING_MIN_DEG := 30.0
+const RIGHTING_K := 14.0
+const RIGHTING_D := 3.0
+
 ## Yaw damping in grip.
 const YAW_DAMP_GRIP := 0.8
 

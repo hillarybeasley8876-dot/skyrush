@@ -155,10 +155,10 @@ func respawn_transform(pos: Vector3, direction: Vector3) -> Transform3D:
 	if not is_ready():
 		_not_ready()
 		return Transform3D(Basis.IDENTITY, Vector3(pos.x, 1.0, pos.z))
-	var found := _placer.closest_lane(pos)
+	var found := _placer.respawn_lane(pos, direction)
 	if found.is_empty():
 		return Transform3D(Basis.IDENTITY, Vector3(pos.x, 1.0, pos.z))
-	return _placer.respawn_on_lane(self, found["lane"], found["offset"], direction)
+	return _placer.respawn_on_lane(self, found["lane"], found["offset"])
 
 
 func get_lane_paths() -> Array[LanePath]:

@@ -19,6 +19,8 @@ const ImpactMod := preload("res://vehicle/modules/impact.gd")
 const AirMod := preload("res://vehicle/modules/car_air.gd")
 
 var spec: CarSpec = null
+## The car turns itself back onto its wheels (the car of the player, see ArcadeCar.self_righting).
+var righting: bool = false
 var wheels: Array[WheelMod] = []
 var drive: DriveMod = null
 var drift: DriftMod = null
@@ -301,9 +303,11 @@ func _apply_drift(state: PhysicsDirectBodyState3D, basis: Basis, up: Vector3, sp
 			state.apply_force(-velocity.normalized() * spec.mass * drift.loss_accel, com)
 
 
-## Keeps the body level and damps the yaw in grip (dossier 4.7).
+## Keeps the body level and damps the yaw in grip (dossier 4.7). A car with fewer than two wheels down that leans on its body is
+## turned back onto its wheels (_apply_righting).
 func _apply_upright(state: PhysicsDirectBodyState3D, up: Vector3) -> void:
 	if grounded < 2:
+		_apply_righting(state, up)
 		return
 	var n: Vector3 = Vector3.UP
 	for w in wheels:
@@ -321,6 +325,27 @@ func _apply_upright(state: PhysicsDirectBodyState3D, up: Vector3) -> void:
 	state.apply_torque(torque)
 	if drift.state == &"grip":
 		state.apply_torque(up * (-spec.inertia.y * BodyTuning.YAW_DAMP_GRIP * av.y))
+
+
+## The righting (BodyTuning.RIGHTING_*): a car that touches something with its body, with fewer than two wheels on the ground and
+## a tilt of 30 degrees or more, is turned back towards the vertical. In the air the auto level of car_air does it, and a barrel
+## roll is a stunt that turns the car on purpose. Only the car of the player has it (`righting`).
+func _apply_righting(state: PhysicsDirectBodyState3D, up: Vector3) -> void:
+	if not righting or state.get_contact_count() == 0 or (thruster != null and thruster.rolling):
+		return
+	var tilt: float = acos(clampf(up.dot(Vector3.UP), -1.0, 1.0))
+	if tilt < deg_to_rad(BodyTuning.RIGHTING_MIN_DEG):
+		return
+	var axis: Vector3 = up.cross(Vector3.UP)
+	if axis.length() < 0.001:
+		# on its roof exactly: it turns about its own length
+		axis = -state.transform.basis.z
+	axis = axis.normalized()
+	var inertia: float = (spec.inertia.x + spec.inertia.z) * 0.5
+	var av: Vector3 = state.angular_velocity
+	var torque: Vector3 = axis * (BodyTuning.RIGHTING_K * inertia * tilt)
+	torque -= (av - up * av.dot(up)) * (BodyTuning.RIGHTING_D * inertia)
+	state.apply_torque(torque)
 
 
 ## The FX timers of the thrusters (the hop spike and the landing cushion).

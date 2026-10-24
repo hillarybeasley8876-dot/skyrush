@@ -67,6 +67,9 @@ const IncidentRecorder := preload("res://vehicle/incident_recorder.gd")
 @export var spec: CarSpec = null
 ## True for the car that reads the player input.
 @export var player_controlled: bool = false
+## True for a car that turns itself back onto its wheels when it lies on its side or on its roof (BodyTuning.RIGHTING_*). The car
+## of the player always does. An AI car does not: a police unit on its roof is disabled (dossier 6.3), a turned over rival is out.
+@export var self_righting: bool = false
 
 var wheels: Array[WheelMod] = []
 var drive: DriveMod = DriveMod.new()
@@ -304,6 +307,7 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	# Jolt only answers the queries while the space is locked. The landing cushion needs it.
 	readout.ground_y = flight.ground_y()
 	dynamics.ground_y = readout.ground_y
+	dynamics.righting = self_righting or player_controlled or Game.player == self
 	dynamics.apply(state, dt)
 	if dynamics.hopped:
 		Events.hop.emit(self, thruster.last_hop)

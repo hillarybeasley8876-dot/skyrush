@@ -145,6 +145,13 @@ func reset() -> void:
 	_air_mini_used = false
 
 
+## The car came down before its barrel roll was over: the roll ends (car_air puts the car back on the attitude it rolled from).
+func abort_roll() -> void:
+	rolling = false
+	roll_time = 0.0
+	roll_angle = 0.0
+
+
 ## Tries to start a barrel roll in the given direction (-1 left, +1 right).
 func request_roll(dir: int) -> bool:
 	if not airborne or rolling or _rolls_this_air >= AirTuning.ROLL_MAX_PER_AIR:

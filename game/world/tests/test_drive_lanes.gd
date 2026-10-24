@@ -179,8 +179,10 @@ func _check_surfaces(world: WorldBase, lanes: Array[LanePath]) -> void:
 		var offset := randf() * lane.curve.get_baked_length()
 		var point := lane.curve.sample_baked(offset, true)
 		var xform := world.nearest_road_transform(point)
+		# The ray starts 1 m over the lane: from 4 m it met what is over the lane (a deck, the roof of a toll booth, the Waibaidu
+		# bridge) on 357 of 68,000 lane points, and a random sample on one of them failed the check.
 		var query := PhysicsRayQueryParameters3D.create(
-			Vector3(xform.origin.x, point.y + 4.0, xform.origin.z),
+			Vector3(xform.origin.x, point.y + 1.0, xform.origin.z),
 			Vector3(xform.origin.x, point.y - 4.0, xform.origin.z), 1)
 		var hit := space.intersect_ray(query)
 		if hit.is_empty():

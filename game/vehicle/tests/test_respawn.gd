@@ -56,8 +56,9 @@ func _run() -> void:
 		if up_dot > 0.5:
 			respawned = float(i) / 120.0
 			break
-	t.check("the car respawned upright", respawned > 0.0, "= %.2f s" % respawned)
-	t.check("the respawn took about 1.5 s", respawned > 1.2 and respawned < 2.2,
+	t.check("the car is upright again", respawned > 0.0, "= %.2f s" % respawned)
+	# the car turns itself back onto its wheels (BodyTuning.RIGHTING_*); the upside-down respawn after 1.5 s is the fallback
+	t.check("it is upright within the 1.5 s of the upside-down rule", respawned > 0.0 and respawned < 2.2,
 			"= %.2f s" % respawned)
 	await _check_stuck(t)
 	t.finish()

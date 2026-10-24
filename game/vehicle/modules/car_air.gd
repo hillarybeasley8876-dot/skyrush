@@ -99,7 +99,10 @@ func apply(state: PhysicsDirectBodyState3D, basis: Basis, up: Vector3,
 			var g_air: float = AirTuning.AIR_GRAVITY * AirTuning.AIR_GRAVITY_SCALE
 			state.apply_force(Vector3.UP * AirTuning.HOVER_LIFT * g_air * spec.mass,
 					basis * spec.center_of_mass)
-	# The barrel roll.
+	# The barrel roll. A roll that meets the ground (a wheel or the body) is over: the roll went on turning the car on the road and
+	# put it on its side.
+	if thruster.rolling and _roll_active and (grounded > 0 or touching):
+		thruster.abort_roll()
 	if thruster.rolling:
 		if not _roll_active:
 			_roll_active = true
@@ -113,6 +116,9 @@ func apply(state: PhysicsDirectBodyState3D, basis: Basis, up: Vector3,
 	elif _roll_active:
 		_roll_active = false
 		state.transform = Transform3D(_roll_basis, state.transform.origin)
+		# the spin of the roll goes with it
+		var roll_axis: Vector3 = -_roll_basis.z
+		state.angular_velocity -= roll_axis * roll_axis.dot(state.angular_velocity)
 	# The ground state. The hop is a take-off: the car flies from the tick of the impulse, so
 	# the air gravity (2 g) is there from the start and the apex is the dossier's 3.1 m.
 	airborne = (grounded == 0 and not touching) or _hop_flight

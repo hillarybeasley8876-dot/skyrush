@@ -153,8 +153,8 @@ func _respawn(car: VehicleBase, speed: float, heading: Vector3) -> void:
 	var behind := car.global_position - direction * RESPAWN_BACK
 	var xform := Transform3D(Basis.IDENTITY, behind + Vector3.UP)
 	if Game.world != null:
-		# The lane can face against the direction of the crash: the car must drive away from the wreck, so the world turns
-		# the transform round, and it moves the car along the lane to a place where the road ahead is clear.
+		# The world takes a lane that runs the way the car drove (in the direction of its traffic) and moves the car along it
+		# to a place where the road ahead is clear.
 		xform = Game.world.respawn_transform(behind, direction)
 	car.reset_to(xform)
 	var drive := -xform.basis.z

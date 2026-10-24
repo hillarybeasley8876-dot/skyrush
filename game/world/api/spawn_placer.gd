@@ -37,8 +37,18 @@ const CLEAR_MASK := 1 | 4
 const CLEAR_LANE_DISTANCE := 2.5
 ## How many steps a spawn walks along its lane when the road ahead is not clear.
 const SPAWN_STEPS := 64
-## How many steps a respawn walks along its lane, in the direction of its drive, to find a clear road ahead.
+## How many steps a respawn walks along its lane, in the direction of its traffic, to find a clear road ahead.
 const RESPAWN_STEPS := 30
+## How far from the car the lanes of a respawn are looked for (m, the height counts HEIGHT_WEIGHT times).
+const RESPAWN_REACH := 40.0
+## How much the angle between a lane and the car counts against the lane: a lane that runs the other way counts as RESPAWN_TURN
+## metres further away (in proportion to the angle). The opposite carriageway of a street (4-10 m away) wins over turning the car
+## round on its own lane, and no street 30 m away wins over the street the car is on (a car that faced across its street was put
+## on another street 31 m away when only the lanes within 60 degrees of the car counted).
+const RESPAWN_TURN := 15.0
+## A respawn spot has its road at most this far under the lane (m). A few lanes run over the river for some metres (a street that
+## ends at the bank, a junction turn that bulges over the water): a car put there was dropped onto the bed of the river.
+const ROAD_BELOW := 1.0
 
 var lanes: Array[LanePath] = []
 var index: LaneIndex
@@ -84,28 +94,90 @@ func is_clear(node: Node3D, xform: Transform3D, lane_index: int) -> bool:
 	return _lanes_clear(xform, lane_index)
 
 
-## A respawn on a lane: the point `offset` metres along it, facing `direction` (on a lane that runs against it the car drives
-## the other way: it must drive away from its wreck), moved along the lane in the direction of the drive until the 30 m ahead
-## are clear of the world and the props. The wreck flow sends the car off at 60 km/h or more, and the nearest lane point was
-## taken as it was: 10 of 58 respawns hit a tree, a lamp or a wall in their first 4 s, one of them 0.13 s after the respawn
-## (tools/respawn_probe.gd). The other lanes are not looked at: a respawn may be in a junction.
-func respawn_on_lane(node: Node3D, lane: LanePath, offset: float, direction: Vector3) -> Transform3D:
+## The lane of a respawn near `pos` for a car that drives along `direction`: the nearest lane at the height of the car, where a
+## lane that runs at an angle to the car counts as up to RESPAWN_TURN metres further away, and a street lane before the turn of a
+## junction (a connector runs at an angle through the junction: a car put on it stood across both streets). The car is put on the
+## lane in the direction of its traffic, never against it (the reset turned the car against the lane, into the oncoming traffic,
+## whenever the car faced the other way). {"lane", "offset"} or empty.
+func respawn_lane(pos: Vector3, direction: Vector3) -> Dictionary:
+	var flat := Vector3(direction.x, 0.0, direction.z)
+	var has_direction := flat.length() > 0.2
+	if has_direction:
+		flat = flat.normalized()
+	var candidates: Array[int] = []
+	if index != null:
+		candidates = index.candidates(pos, RESPAWN_REACH)
+	var best := -1
+	var best_score := INF
+	var best_offset := 0.0
+	for pass_number in 2:
+		for candidate in candidates:
+			var lane := lanes[candidate]
+			if lane.curve == null or lane.curve.get_baked_length() < 1.0:
+				continue
+			if pass_number == 0 and bool(lane.get_meta(&"connector", false)):
+				continue
+			var offset := lane.curve.get_closest_offset(pos)
+			var point := lane.curve.sample_baked(offset, true)
+			var score := Vector2(point.x - pos.x, point.z - pos.z).length() + absf(point.y - pos.y) * HEIGHT_WEIGHT
+			if score > RESPAWN_REACH:
+				continue
+			if has_direction:
+				score += RESPAWN_TURN * _lane_direction(lane, offset).angle_to(flat) / PI
+			if score < best_score:
+				best_score = score
+				best = candidate
+				best_offset = offset
+		if best >= 0:
+			break
+	if best < 0:
+		return closest_lane(pos)
+	return {"lane": lanes[best], "offset": best_offset, "distance": best_score}
+
+
+## The horizontal direction of a lane at an offset.
+func _lane_direction(lane: LanePath, offset: float) -> Vector3:
+	var length := lane.curve.get_baked_length()
+	var a := lane.curve.sample_baked(clampf(offset - 2.0, 0.0, length), true)
+	var b := lane.curve.sample_baked(clampf(offset + 2.0, 0.0, length), true)
+	var d := Vector3(b.x - a.x, 0.0, b.z - a.z)
+	return d.normalized() if d.length() > 0.001 else Vector3.FORWARD
+
+
+## A respawn on a lane: the point `offset` metres along it, in the direction of its traffic, moved along the lane until the car
+## stands on its road, has its own spot and the 30 m ahead clear of the world and the props. The wreck flow sends the car off at
+## 60 km/h or more, and the nearest lane point was taken as it was: 10 of 58 respawns hit a tree, a lamp or a wall in their first
+## 4 s, one of them 0.13 s after the respawn (tools/respawn_probe.gd). The other lanes are not looked at: a respawn may be in a
+## junction. When no spot along the lane is clear, the first one that has its road under it is taken.
+func respawn_on_lane(node: Node3D, lane: LanePath, offset: float) -> Transform3D:
 	var length := lane.curve.get_baked_length()
 	var first := lane_transform(node, lane, offset)
-	var against := (-first.basis.z).dot(Vector3(direction.x, 0.0, direction.z)) < 0.0
-	if against:
-		first.basis = first.basis.rotated(Vector3.UP, PI)
+	var on_road := -1.0
 	var distance := offset
 	for step in RESPAWN_STEPS:
-		var xform := lane_transform(node, lane, distance)
-		if against:
-			xform.basis = xform.basis.rotated(Vector3.UP, PI)
-		if _spot_clear(node, xform) and _physics_clear(node, xform):
-			return xform
-		distance += -CLEAR_STEP if against else CLEAR_STEP
-		if distance < 0.0 or distance > length:
+		if _road_under(node, lane, distance):
+			var xform := lane_transform(node, lane, distance)
+			if _spot_clear(node, xform) and _physics_clear(node, xform):
+				return xform
+			if on_road < 0.0:
+				on_road = distance
+		distance += CLEAR_STEP
+		if distance > length:
 			break
-	return first
+	return lane_transform(node, lane, on_road) if on_road >= 0.0 else first
+
+
+## True when the lane has its road under it at `distance` (the world layer, at most ROAD_BELOW under the lane).
+func _road_under(node: Node3D, lane: LanePath, distance: float) -> bool:
+	if not node.is_inside_tree():
+		return true
+	var space := node.get_world_3d().direct_space_state
+	if space == null:
+		return true
+	var point := lane.curve.sample_baked(clampf(distance, 0.0, lane.curve.get_baked_length()), true)
+	var query := PhysicsRayQueryParameters3D.create(point + Vector3.UP * SURFACE_ABOVE, point - Vector3.UP * ROAD_BELOW,
+			SURFACE_MASK)
+	return not space.intersect_ray(query).is_empty()
 
 
 ## A shape query of the corridor in front of the spawn (the world and the trigger layers).
