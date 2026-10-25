@@ -9,7 +9,8 @@ extends Node
 ## The car is driven in the physics tick and the lanes it takes are drawn from a seeded source: with --seed=N (the traffic and the
 ## police take it too) two runs are the same drive.
 ##
-## Options: seconds (45) the drive; warm (0) seconds of driving before the record starts; vsync (1) 0 = vsync off (the headroom of
+## Options: seconds (45) the drive; warm (0) seconds of driving before the record starts; park (0) 1 = the car stands (the A/B
+## turns are 2 s then: the same place for both); vsync (1) 0 = vsync off (the headroom of
 ## the machine); start=x,z (the Bund) where it starts; ab=<switch>: a paired comparison in one drive, the switch is off (A) and on
 ## (B) in turns of 4 s and the frames of the two are reported apart. Switches: traffic (the traffic thinks every tick / every second
 ## tick), occlusion (the occlusion culling on / off), hud (the HUD shown / hidden), shadows (the shadow of the sun on / off), probes
@@ -69,6 +70,8 @@ var _driving := false
 var _steering := false
 var _car: ArcadeCar = null
 var _route := RandomNumberGenerator.new()
+## --park=1: the car stands where it starts, the traffic drives round it.
+var _parked := false
 var _lane: LanePath = null
 var _offset := 0.0
 
@@ -184,6 +187,7 @@ func _run() -> void:
 	var car := Game.player as ArcadeCar
 	_car = car
 	_route.seed = int(Game.option("seed", "1"))
+	_parked = Game.option("park", "0") == "1"
 	var start := String(Game.option("start", "-60,-300")).split(",")
 	var at := Vector3(float(start[0]), 0.0, float(start[1]))
 	car.freeze = false
@@ -196,6 +200,9 @@ func _run() -> void:
 			_synths.append(synth)
 	_set_priorities(main)
 	RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
+	var rigs := load("res://fx/fx_car_rig.gd")
+	rigs.set("tier_changes", 0)
+	rigs.set("tier_usec", 0.0)
 	_tick_starts.clear()
 	_last_process_usec = Time.get_ticks_usec()
 	_driving = true
@@ -219,7 +226,7 @@ func _run() -> void:
 	while float(Time.get_ticks_msec() - started) / 1000.0 < seconds:
 		await get_tree().process_frame
 		if ab != "":
-			var turn := int(float(Time.get_ticks_msec() - started) / 4000.0) % 2
+			var turn := int(float(Time.get_ticks_msec() - started) / (2000.0 if _parked else 4000.0)) % 2
 			if turn != _ab_turn:
 				_ab_switch(ab, turn == 1, director)
 			_ab_turn = turn
@@ -299,6 +306,9 @@ func _process(delta: float) -> void:
 		"physics_split": float(physics_usec) / 1000.0,
 		"render_cpu": RenderingServer.viewport_get_measured_render_time_cpu(vp),
 		"render_gpu": RenderingServer.viewport_get_measured_render_time_gpu(vp),
+		"setup": RenderingServer.get_frame_setup_time_cpu(),
+		"objects": RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME),
+		"primitives": RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME),
 		"ab": _ab_turn,
 		"pos": Game.player.global_position if Game.player != null else Vector3.ZERO,
 	})
@@ -307,6 +317,10 @@ func _process(delta: float) -> void:
 
 ## The lane follower: aims at a point AIM_AHEAD along its lane, takes the next lane at the end, starts again after a wreck.
 func _drive(car: ArcadeCar) -> void:
+	if _parked:
+		# --park=1: the car stands (an A/B of the render compares the same place: a drive moves through the city between turns)
+		Input.action_release(&"accelerate")
+		return
 	if car.is_wrecked or _lane == null:
 		_pick_lane(car)
 		return
@@ -419,6 +433,15 @@ func _report() -> void:
 		render_gpu / split_count])
 	if _car_ticks > 0:
 		print("FRAMES the cars (player, police, rivals) %.3f ms of physics per tick" % (_car_usec / float(_car_ticks) / 1000.0))
+	var setup := 0.0
+	var objects := 0.0
+	var primitives := 0.0
+	for f in split_frames:
+		setup += float(f["setup"])
+		objects += float(f["objects"])
+		primitives += float(f["primitives"])
+	print("FRAMES render setup %.2f ms, %.0f objects, %.0f primitives a frame; thread model %s" % [setup / split_count,
+		objects / split_count, primitives / split_count, str(ProjectSettings.get_setting("rendering/driver/threads/thread_model"))])
 	if _ticks > 0:
 		var parts := ""
 		for key in _traffic_sum:
@@ -447,6 +470,10 @@ func _report_profile() -> void:
 	print("PROFILE engine part of a tick (step + force integration) %.3f ms over %d ticks" % [
 		_engine_usec / maxf(float(_engine_ticks), 1.0) / 1000.0, _engine_ticks])
 	print("PROFILE %.1f police units on average" % (float(_police_sum) / maxf(float(_ticks), 1.0)))
+	var rig_script := load("res://fx/fx_car_rig.gd")
+	var seconds := float(_ticks) / float(Engine.physics_ticks_per_second)
+	print("PROFILE FX tiers: %.1f changes a second, %.3f ms a second in the changes" % [
+		float(rig_script.get("tier_changes")) / maxf(seconds, 0.001), float(rig_script.get("tier_usec")) / 1000.0 / maxf(seconds, 0.001)])
 	var police_parts: Array[String] = []
 	for key in _police_modules:
 		police_parts.append("%s %.3f" % [key, float(_police_modules[key]) / maxf(float(_ticks), 1.0)])
@@ -489,6 +516,34 @@ func _ab_switch(ab: String, on: bool, director: Node) -> void:
 				for child in (vehicle as Node).get_children():
 					if child is ShapeCast3D:
 						(child as ShapeCast3D).enabled = not on
+		_ when ab.begins_with("hudpart:"):
+			# one part of the HUD, by the file of its script (hudpart:minimap_panel.gd): shown / hidden
+			var file := ab.trim_prefix("hudpart:")
+			for hud in get_tree().root.find_children("Hud", "", true, false):
+				for node in hud.find_children("*", "Control", true, false):
+					var script := node.get_script() as Script
+					if script != null and script.resource_path.get_file() == file:
+						(node as Control).visible = not on
+		_ when ab.begins_with("hide:"):
+			# the nodes of a group (hide:traffic = the traffic cars): shown / hidden
+			for node in get_tree().get_nodes_in_group(StringName(ab.trim_prefix("hide:"))):
+				if node is Node3D:
+					(node as Node3D).visible = not on
+		"trafficshadow":
+			# the shadows of the traffic cars: cast / not cast
+			for car in get_tree().get_nodes_in_group(&"traffic"):
+				for mesh in (car as Node).find_children("*", "MeshInstance3D", true, false):
+					(mesh as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if on \
+							else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+		"dialstatic", "dialdynamic":
+			# one layer of the speed dial of the HUD (the static face, the dynamic arc): shown / hidden
+			for hud in get_tree().root.find_children("Hud", "", true, false):
+				for node in hud.find_children("*", "Control", true, false):
+					var script := node.get_script() as Script
+					if script != null and script.resource_path.get_file() == "speed_dial.gd":
+						var layer := node.get("_static" if ab == "dialstatic" else "_dynamic") as Control
+						if layer != null:
+							layer.visible = not on
 
 
 ## The frames of the two turns of an A/B drive, apart: the mean frame, the physics per tick, the ticks per frame, the rest.

@@ -37,6 +37,16 @@ func _run() -> void:
 func _walk(node: Node, counts: Dictionary, callbacks: Array[String]) -> void:
 	var script := node.get_script() as Script
 	var key := node.get_class() + (" (" + script.resource_path.get_file() + ")" if script != null else "")
+	if node is MeshInstance3D:
+		var mi := node as MeshInstance3D
+		var tris := 0
+		if mi.mesh != null:
+			for surface in mi.mesh.get_surface_count():
+				var arrays := mi.mesh.surface_get_arrays(surface)
+				var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX] if arrays[Mesh.ARRAY_INDEX] != null else PackedInt32Array()
+				tris += indices.size() / 3 if not indices.is_empty() else (arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array).size() / 3
+		callbacks.append("mesh %s: %d surfaces, %d triangles, shadow %d, visible %s" % [node.name,
+			mi.mesh.get_surface_count() if mi.mesh != null else 0, tris, mi.cast_shadow, mi.visible])
 	counts[key] = int(counts.get(key, 0)) + 1
 	if node.is_physics_processing() or node.is_physics_processing_internal():
 		callbacks.append("%s physics%s" % [key, " (internal)" if node.is_physics_processing_internal() else ""])

@@ -154,12 +154,20 @@ func get_tier() -> int:
 	return tier
 
 
+## The tier changes of all the rigs and their time (us), for tools/frame_probe.gd.
+static var tier_changes := 0
+static var tier_usec := 0.0
+
+
 ## Distance tier. OFF runs nothing at all.
 func set_tier(value: int) -> void:
 	if value == tier:
 		return
+	var started := Time.get_ticks_usec()
 	tier = value
 	_apply_tier()
+	tier_changes += 1
+	tier_usec += float(Time.get_ticks_usec() - started)
 
 
 func _apply_tier() -> void:

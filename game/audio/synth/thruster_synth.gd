@@ -34,6 +34,8 @@ const ChuffVoiceScript := preload("res://audio/synth/chuff_voice.gd")
 
 ## The triangle of the tremolo: 0 -> 1 -> 0 (the scale turns the phase into the triangle).
 const TRIANGLE_SCALE := 4.0
+## An envelope under this level is closed (the voice is silent: render() takes the fast path).
+const SILENT_ENVELOPE := 0.00001
 ## The seconds the envelope is given to open before an offline render.
 const WARMUP_S := 0.25
 ## The length of the generator buffer (s).
@@ -213,6 +215,18 @@ func render(frames: int) -> PackedVector2Array:
 	var body_trim := db_to_linear(Tuning.REAR_BODY_DB)
 	# the hiss pitch follows the thrust by +-5 %
 	var swing := 1.0 + Tuning.THRUSTER_PITCH_SWING * (target_r + target_p) * 0.5
+	# The silent voice (no thrust, the envelopes closed, no charge tone, no chuff) renders zeros: the loop computed a hiss of zero
+	# level for every sample of every frame, 0.2-0.3 ms a frame, while the car drives without thrusters most of the time. The hiss
+	# phase moves on as it would have.
+	if not hot and _env_r < SILENT_ENVELOPE and _env_p < SILENT_ENVELOPE and hop <= Tuning.HOP_ACTIVE_EPSILON \
+			and not _chuff_voice.active():
+		_env_r = 0.0
+		_env_p = 0.0
+		if _hiss_size > 0:
+			_hiss_pos = fposmod(_hiss_pos + swing * float(frames), float(_hiss_size))
+		var silent := PackedVector2Array()
+		silent.resize(frames)
+		return silent
 	# local copies of the persistent state (locals are much faster than member access)
 	var hiss_pos := _hiss_pos
 	var body_s1 := _body_s1

@@ -177,7 +177,9 @@ def log_args():
 
 
 def godot_args(*tail):
-    return [GODOT] + log_args() + ["--path", PROJ] + list(tail)
+    # SKYRUSH_GODOT_ARGS: extra engine options for a run (e.g. "--render-thread separate")
+    extra = os.environ.get("SKYRUSH_GODOT_ARGS", "").split()
+    return [GODOT] + extra + log_args() + ["--path", PROJ] + list(tail)
 
 
 def main(argv):
