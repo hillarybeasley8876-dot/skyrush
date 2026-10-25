@@ -15,12 +15,12 @@ const GROUP := &"police_director" ## the group the HUD finds the meters in
 ## The dispatcher runs after the cars, so the debuffs it writes are not overwritten by the
 ## boost module of the player.
 const PRIORITY := 10
-## The dispatcher thinks every this many physics ticks, with a step that long (60 Hz at 120 Hz physics), as the traffic does
+## The dispatcher thinks THINK_HZ times a second: every tick_period physics ticks, with a step that long, as the traffic does
 ## (traffic_director.gd): the pursuit, the sight, the spawning and the roles and the driving of the units cost 0.3-0.5 ms a tick
 ## with five units, 120 times a second. The units still drive every tick (they hold their wheel and their throttle in between).
 ## The contact cache, the drones, the roadblocks, the strips and the debuffs of the player stay in every tick: the boost module
 ## of the player writes over a debuff in every tick, and a drone that moves every second tick judders.
-const TICK_PERIOD := 2
+const THINK_HZ := 60.0
 
 ## The heat of the pursuit (0 = free roam).
 var heat: int:
@@ -93,9 +93,10 @@ var _rng := RandomNumberGenerator.new()
 var _roles_token: String = ""
 ## The milliseconds the last tick needed in every part of the dispatcher (the tests read it).
 var module_ms: Dictionary = {}
-## The ticks between two thinks of the dispatcher (TICK_PERIOD; the frame probe compares it with 1), and whether it thought in
+## The ticks between two thinks of the dispatcher (THINK_HZ at the rate of the engine; the frame probe compares it with 1), and
+## whether it thought in
 ## the last tick.
-var tick_period: int = TICK_PERIOD
+var tick_period: int = maxi(1, roundi(float(Engine.physics_ticks_per_second) / THINK_HZ))
 var thought_this_tick: bool = false
 var _tick_counter: int = 0
 
@@ -192,7 +193,7 @@ func _physics_process(delta: float) -> void:
 	tick_peak_ms = maxf(tick_peak_ms, elapsed)
 
 
-## The think of the dispatcher (every TICK_PERIOD ticks, `step` long): the heat, the sight, the offences, the state of the
+## The think of the dispatcher (every tick_period ticks, `step` long): the heat, the sight, the offences, the state of the
 ## pursuit, the spawning and the units.
 func _think(step: float) -> void:
 	var mark := Time.get_ticks_usec()

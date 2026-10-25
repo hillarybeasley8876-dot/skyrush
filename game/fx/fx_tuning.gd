@@ -109,8 +109,8 @@ const SKID_FADE := 20.0
 const SKID_LIFT := 0.015
 ## Maximum number of ribbon quads in the pool.
 const SKID_MAX_QUADS := 400
-## How many frames the wheels may be off the road before the ribbon is cut.
-const SKID_AIRBORNE_GRACE := 6
+## How long the wheels may be off the road before the ribbon is cut (s: 6 ticks at 120 Hz).
+const SKID_AIRBORNE_GRACE := 0.055
 ## A gap this long between two contact points means a new strip (the wheel was lifted).
 const SKID_MAX_GAP := 3.0
 ## The gap grows with the speed: the car may move this many seconds of travel between two

@@ -30,6 +30,9 @@ var power: PowerMod = null
 var impact: ImpactMod = null
 ## The air part: the thrusters, the landing cushion and the air control.
 var air: AirMod = AirMod.new()
+## The contact patches (from the origin of the body) and the lateral caps (N) of the wheels in this tick (the tyre solver).
+var _tyre_offsets := PackedVector3Array([Vector3.ZERO, Vector3.ZERO, Vector3.ZERO, Vector3.ZERO])
+var _tyre_caps := PackedFloat64Array([0.0, 0.0, 0.0, 0.0])
 
 # The input of this tick.
 var throttle: float = 0.0
@@ -232,37 +235,115 @@ func _apply_anti_roll(state: PhysicsDirectBodyState3D, basis: Basis, up: Vector3
 
 ## The lateral tyre forces, applied at the contact patch (the same point where the slip is
 ## measured).
+## The lateral forces of the tyres. The two axles are solved together: the impulse of one axle changes the lateral speed at the
+## other through the turn and the roll of the body (its inverse mass and inverse inertia), so the slip at the contacts goes away
+## within one tick whatever the length of the tick, and every wheel gives at most its grip (mu x load x the grip curve of its
+## slip). The law before took the slip of every wheel away for a quarter of the mass, as if the body did not turn: the rear
+## over-corrected, at 60 Hz its slip changed its sign every tick and the cornering fell 9-18 %.
 func _apply_tyres(state: PhysicsDirectBodyState3D, basis: Basis, up: Vector3, right: Vector3,
 		dt: float) -> void:
+	var com: Vector3 = state.center_of_mass
+	# The contact patches were found by the probes of the last tick (the probes are cast outside the step): the car has driven on
+	# since, and they lie behind the wheels by its speed times a tick (0.19 m at 80 km/h at 120 Hz). The grip of the tuning holds
+	# the lag of a tick of TyreTuning.REFERENCE_STEP: at another rate the patches are moved by the difference of the two ticks, so
+	# the car corners as it was tuned (with the lag of its own tick the full wheel turned the car 9-18 % less at 60 Hz, 5-10 % more
+	# at 240 Hz: the forces of the front axle lose their lever when the patches lie further back, the rear axle gains it).
+	var lag: Vector3 = state.linear_velocity * (dt - TyreTuning.REFERENCE_STEP)
+	# The lateral axis of each axle: the steered one of the front, the axis of the body at the rear.
+	var dir_f: Vector3 = right.rotated(up, -drive.steer_angle)
+	var dir_r: Vector3 = right
+	# Per axle: the mean contact point, the sum of the caps of its wheels (N), the wheels that grip.
+	var arm_f := Vector3.ZERO
+	var arm_r := Vector3.ZERO
+	var cap_f := 0.0
+	var cap_r := 0.0
+	var n_f := 0
+	var n_r := 0
 	for i in wheels.size():
 		var w: WheelMod = wheels[i]
+		_tyre_caps[i] = 0.0
 		if not w.contact:
 			w.slip = 0.0
 			continue
-		var steer_angle: float = drive.steer_angle if i < 2 else 0.0
-		var wheel_right: Vector3 = right.rotated(up, -steer_angle)
+		var front: bool = i < 2
+		var wheel_right: Vector3 = dir_f if front else dir_r
 		# The steered forward axis of this wheel: the slip angle is measured along it, so the
 		# grip does not depend on the compass heading of the car.
 		var wheel_fwd: Vector3 = up.cross(wheel_right).normalized()
 		# The tyre force is applied at the contact patch, the same point where the slip is
 		# measured. Applying it at a different height would pump energy into the roll mode
 		# (the force and the slip would not cancel each other's work).
-		var offset: Vector3 = w.contact_point - state.transform.origin
+		var offset: Vector3 = w.contact_point + lag - state.transform.origin
+		_tyre_offsets[i] = offset
 		var v_pt: Vector3 = state.get_velocity_at_local_position(offset)
-		var mu: float = spec.mu_front if i < 2 else spec.mu_rear
-		if i >= 2:
-			mu *= drift.rear_mu
+		var mu: float = spec.mu_front if front else spec.mu_rear * drift.rear_mu
 		mu *= drift.tyre_scale
-		var f_lat: float = w.lateral_force(v_pt, wheel_right, wheel_fwd, mu, dt)
-		if f_lat != 0.0:
-			state.apply_force(wheel_right * f_lat, offset)
-		# The slip angle of this tyre (for the squeal and the smoke).
+		# The slip angle of this tyre, before the force (the grip curve, the squeal and the smoke).
 		var v_long: float = v_pt.dot(wheel_fwd)
 		w.slip = rad_to_deg(atan2(absf(v_pt.dot(wheel_right)),
 				maxf(absf(v_long), TyreTuning.SLIP_MIN_FWD)))
+		var cap: float = w.lateral_cap(w.slip, mu)
+		_tyre_caps[i] = cap
+		if cap > 0.0:
+			if front:
+				arm_f += offset
+				cap_f += cap
+				n_f += 1
+			else:
+				arm_r += offset
+				cap_r += cap
+				n_r += 1
 		# The visual wheel spin.
 		w.travel += v_long * dt
 		w.spin = -w.travel / maxf(w.radius, TyreTuning.SPIN_MIN_RADIUS)
+	if n_f == 0 and n_r == 0:
+		return
+	# The lateral speed at the contacts of an axle (its mean point, from the centre of mass), and what an impulse along the
+	# lateral axis of one axle does to it at the other: K = 1/m t_a.t_b + (r_b x t_b).I^-1 (r_a x t_a).
+	var inv_mass: float = state.inverse_mass
+	var inv_inertia: Basis = state.inverse_inertia_tensor
+	var v: Vector3 = state.linear_velocity
+	var spin: Vector3 = state.angular_velocity
+	if n_f > 0:
+		arm_f = arm_f / float(n_f) - com
+	if n_r > 0:
+		arm_r = arm_r / float(n_r) - com
+	var turn_f: Vector3 = arm_f.cross(dir_f)
+	var turn_r: Vector3 = arm_r.cross(dir_r)
+	var vel_f: float = dir_f.dot(v) + turn_f.dot(spin)
+	var vel_r: float = dir_r.dot(v) + turn_r.dot(spin)
+	var k_ff: float = inv_mass + turn_f.dot(inv_inertia * turn_f)
+	var k_rr: float = inv_mass + turn_r.dot(inv_inertia * turn_r)
+	var k_fr: float = inv_mass * dir_f.dot(dir_r) + turn_f.dot(inv_inertia * turn_r)
+	# The impulses of this tick (N s): the most an axle gives is its cap for the length of the tick.
+	var most_f: float = cap_f * dt
+	var most_r: float = cap_r * dt
+	var lam_f := 0.0
+	var lam_r := 0.0
+	if n_f > 0 and n_r > 0:
+		var det: float = k_ff * k_rr - k_fr * k_fr
+		if det > TyreTuning.SOLVE_MIN_DET:
+			lam_f = (k_fr * vel_r - k_rr * vel_f) / det
+			lam_r = (k_fr * vel_f - k_ff * vel_r) / det
+		if absf(lam_f) > most_f or absf(lam_r) > most_r:
+			# An axle at its grip gives its grip: the other one is solved again with it.
+			lam_f = clampf(lam_f, -most_f, most_f)
+			for k in TyreTuning.SOLVE_PASSES:
+				lam_r = clampf(-(vel_r + k_fr * lam_f) / k_rr, -most_r, most_r)
+				lam_f = clampf(-(vel_f + k_fr * lam_r) / k_ff, -most_f, most_f)
+	elif n_f > 0:
+		lam_f = clampf(-vel_f / k_ff, -most_f, most_f)
+	else:
+		lam_r = clampf(-vel_r / k_rr, -most_r, most_r)
+	# Every wheel takes the share of its cap of the impulse of its axle, at its own contact patch.
+	for i in wheels.size():
+		var cap_i: float = _tyre_caps[i]
+		if cap_i <= 0.0:
+			continue
+		if i < 2:
+			state.apply_force(dir_f * (lam_f * cap_i / cap_f / dt), _tyre_offsets[i])
+		else:
+			state.apply_force(dir_r * (lam_r * cap_i / cap_r / dt), _tyre_offsets[i])
 
 
 ## The drift: yaw torque, lateral assist and the speed loss. The recover shares the path: the

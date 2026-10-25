@@ -25,8 +25,8 @@ const Dev := preload("res://fx/fx_dev.gd")
 enum Tier { FULL, REDUCED, OFF }
 
 const REDUCED_RATIO := 0.3
-## A REDUCED car probes its wheels every this many physics ticks.
-const REDUCED_PROBE_TICKS := 4
+## A REDUCED car probes its wheels this often (every fourth tick at 120 Hz).
+const REDUCED_PROBE_HZ := 30.0
 ## The rear wheels of the car.
 const REAR_MARKERS: Array[StringName] = [&"Wheel_RL", &"Wheel_RR"]
 ## The front wheels of the car.
@@ -49,7 +49,7 @@ var _arch: Node3D = null
 var _wreck_fx: Node3D = null
 
 var _arch_glow: float = 0.0
-var _airborne_frames: int = 0
+var _airborne_time: float = 0.0
 ## The dev switches of the unit (--fx-no-*).
 var _dev: Dev = null
 ## The emitter budget, handed out by the manager (gameplay DOSSIER §7.7).
@@ -69,8 +69,10 @@ var _has_position: bool = false
 var _contacts: Array[Dictionary] = []
 ## The contacts were probed since the emitters were last put on them.
 var _contacts_fresh: bool = false
-## The tick of the wheel probe of a REDUCED car (0..REDUCED_PROBE_TICKS-1, at random: the cars are spread over the ticks).
-var _probe_phase: int = randi() % REDUCED_PROBE_TICKS
+## The physics ticks between two probes of a REDUCED car, and the tick of its probe (at random: the cars are spread over the
+## ticks).
+var _probe_ticks: int = maxi(1, roundi(float(Engine.physics_ticks_per_second) / REDUCED_PROBE_HZ))
+var _probe_phase: int = randi() % _probe_ticks
 ## The contact patches of the front wheels, probed in the physics step.
 var _front_contacts: Array[Dictionary] = []
 
@@ -192,7 +194,7 @@ func _apply_tier() -> void:
 ## The road is probed in the physics step: a raycast outside of it is not safe.
 ##
 ## A FULL car (the player, the nearest cars) probes its four wheels every tick: its skid marks need a point every tick. A REDUCED
-## car probes them every REDUCED_PROBE_TICKS ticks: four rays at 120 Hz for every car within 150 m cost the traffic 0.5 ms a tick,
+## car probes them REDUCED_PROBE_HZ times a second: four rays at 120 Hz for every car within 150 m cost the traffic 0.5 ms a tick,
 ## for smoke that follows the car anyway (the emitters are children of the car, they are put on the wheels after a probe).
 func _physics_process(delta: float) -> void:
 	if vehicle == null or not is_instance_valid(vehicle):
@@ -203,12 +205,12 @@ func _physics_process(delta: float) -> void:
 		return
 	_track_velocity(delta)
 	# the REDUCED cars are spread over the ticks (the pool builds them all at once)
-	var probe_tick := (Engine.get_physics_frames() + _probe_phase) % REDUCED_PROBE_TICKS == 0
+	var probe_tick := (Engine.get_physics_frames() + _probe_phase) % _probe_ticks == 0
 	if tier == Tier.FULL or _contacts.is_empty() or probe_tick:
 		_contacts = GROUND.wheel_contacts(vehicle, REAR_MARKERS)
 		_front_contacts = GROUND.wheel_contacts(vehicle, FRONT_MARKERS)
 		_contacts_fresh = true
-	_update_skids()
+	_update_skids(delta)
 
 
 ## The skid marks: only the player and the FULL cars leave a mark.
@@ -217,7 +219,7 @@ func _physics_process(delta: float) -> void:
 ## at 280 km/h. The strip is only cut when the wheels really leave the road (with a grace
 ## period, so a single bouncing frame does not cut the ribbon); the end of a drift just stops
 ## the ribbon.
-func _update_skids() -> void:
+func _update_skids(delta: float) -> void:
 	if _skid == null or not is_instance_valid(_skid):
 		return
 	if _dev != null and _dev.no_skid:
@@ -225,12 +227,12 @@ func _update_skids() -> void:
 	var tel := vehicle.telemetry
 	var grounded := tel.grounded_wheels >= 2 and not tel.airborne
 	if tier != Tier.FULL or _contacts.size() < 2 or not grounded:
-		_airborne_frames += 1
-		if _airborne_frames > TUNE.SKID_AIRBORNE_GRACE:
+		_airborne_time += delta
+		if _airborne_time > TUNE.SKID_AIRBORNE_GRACE:
 			for i in 2:
 				_skid.break_strip(i)
 		return
-	_airborne_frames = 0
+	_airborne_time = 0.0
 	if not _is_sliding(tel):
 		return
 	# The gap grows with the speed: a fast car moves more than 3 m between two physics ticks.

@@ -16,10 +16,10 @@ extends Node3D
 ## runs in the engine with the speed and the lane of the last decision.
 
 const HARD_CAP := 90              ## cars: the traffic never has more than this
-## The traffic thinks every this many physics ticks, with a step that long (60 Hz at 120 Hz physics). The index of the lanes, the
+## The traffic thinks THINK_HZ times a second: every tick_period physics ticks, with a step that long (2 at 120 Hz). The index of the lanes, the
 ## decisions of the cars, the modes, the near misses and the ring cost 1-1.5 ms, at 120 Hz a quarter of the physics of the game,
 ## and every millisecond of a tick is paid two to eight times a frame (a long frame runs more ticks).
-const TICK_PERIOD := 2
+const THINK_HZ := 60.0
 ## m: beyond this a car is a candidate for removal.
 var despawn_distance: float = 420.0
 const HIDDEN_TIME := 2.0          ## s: how long a car has to be out of sight before it goes
@@ -60,8 +60,8 @@ var cost_ring_ms: float = 0.0
 var density_override: int = -1
 ## True when the traffic thought in this physics tick (the cost fields are the ones of this tick then).
 var ran_this_tick: bool = false
-## The period in use (TICK_PERIOD; tools/frame_probe.gd sets 1 to compare).
-var tick_period: int = TICK_PERIOD
+## The physics ticks between two thinks (THINK_HZ at the rate of the engine; tools/frame_probe.gd sets 1 to compare).
+var tick_period: int = maxi(1, roundi(float(Engine.physics_ticks_per_second) / THINK_HZ))
 var _tick_counter: int = 0
 ## The lane grid of the world: the fast "which lane is near this point" index.
 var grid: LaneGrid = LaneGrid.new()
@@ -135,7 +135,7 @@ func _refresh_world() -> void:
 	_prefill()
 
 
-## One tick of the traffic (every TICK_PERIOD physics ticks, with a step that long).
+## One tick of the traffic (every tick_period physics ticks, with a step that long).
 func _physics_process(delta: float) -> void:
 	# The player is set every physics tick, also in the ticks the traffic does not think in: the game creates the player car
 	# before the traffic, so the director must not wait for the player to change.

@@ -19,7 +19,7 @@ static var integrate_total_ms: float = 0.0
 
 # --- distances and speeds ------------------------------------------------------------------------
 const FAR_NEAR_DISTANCE := 200.0   ## m: beyond this a far car is updated every fourth tick
-## ticks of the traffic (TrafficDirector.TICK_PERIOD: 60 Hz) between two updates of a far car near the player
+## ticks of the traffic (TrafficDirector.THINK_HZ: 60 Hz) between two updates of a far car near the player
 const FAR_NEAR_PERIOD := 1
 const FAR_UPDATE_PERIOD := 4       ## ticks of the traffic between two updates of a far car far away (15 Hz)
 const FAR_LEADER_RANGE := 150.0    ## m: how far a far car looks for a car in front of it

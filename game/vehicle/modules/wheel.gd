@@ -42,7 +42,6 @@ var travel: float = 0.0
 ## The slip angle of this tyre in degrees (for the squeal and the smoke).
 var slip: float = 0.0
 
-var _mass: float = 0.0
 var _spring_k: float = 0.0
 var _damp_bump: float = 0.0
 var _damp_rebound: float = 0.0
@@ -59,7 +58,6 @@ func setup(parent: Node3D, spec: CarSpec, wheel_index: int) -> void:
 	mount = spec.wheel_mounts[wheel_index]
 	steerable = spec.is_steered(wheel_index)
 	driven = spec.is_driven(wheel_index)
-	_mass = spec.mass
 	_spring_k = spec.spring_k
 	_damp_bump = spec.damp_bump
 	_damp_rebound = spec.damp_rebound
@@ -131,21 +129,11 @@ func suspension_force(v_mount: Vector3, up: Vector3, damp_mult: float) -> float:
 	return clampf(f, 0.0, _susp_max)
 
 
-## Lateral tyre force in newtons: the force that would cancel the sideways slide in one tick,
-## capped by the friction circle mu * load and the grip curve (dossier 4.5).
-## forward is the steered forward axis of this wheel: the slip angle is measured along it, so
-## the grip does not depend on the compass heading of the car.
-func lateral_force(vel_at_point: Vector3, right: Vector3, forward: Vector3, mu: float,
-		dt: float) -> float:
+## The most lateral force of the tyre (N): mu x load x the grip curve of its slip (`slip_deg`, measured before the force).
+func lateral_cap(slip_deg: float, mu: float) -> float:
 	if not contact or load <= 0.0:
 		return 0.0
-	var v_lat: float = vel_at_point.dot(right)
-	var v_long: float = vel_at_point.dot(forward)
-	var need: float = -v_lat * (_mass / 4.0) / maxf(dt, 0.0001)
-	var slip_deg: float = rad_to_deg(atan2(absf(v_lat),
-			maxf(absf(v_long), TyreTuning.SLIP_MIN_FWD)))
-	var cap: float = mu * load * grip_factor(slip_deg)
-	return clampf(need, -cap, cap)
+	return mu * load * grip_factor(slip_deg)
 
 
 ## The grip curve: the slip in degrees -> the grip factor (dossier 4.5). The curve is read

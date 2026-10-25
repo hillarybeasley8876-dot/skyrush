@@ -14,7 +14,7 @@ const PROJECT_WINDOW := 60.0    ## m: the window of the local projection
 const PROJECT_LIMIT := 25.0     ## m: the player is off the line when it is this far from it
 ## The brains of the rivals think in every physics tick, unlike the traffic and the police (60 Hz): the brain of a rival costs
 ## about 0.1 ms, but at 60 Hz the field of the sandbox race (test_race_flow) overtook once instead of five times.
-const FAR_TICK := 2             ## the far rivals think every other physics tick
+const FAR_HZ := 60.0            ## the far rivals think this often (every other tick at 120 Hz)
 const FAR_DISTANCE := 150.0     ## m: a rival further away than this thinks at half the rate
 const NEAR_REFRESH := 0.1       ## s: the near list of a rival is rebuilt at 10 Hz
 const NEAR_RANGE := 95.0        ## m: the cars this close to a rival are in its near list
@@ -47,6 +47,8 @@ var _player_travelled: float = 0.0
 var _traffic_timer: float = 0.0
 var _near_timer: float = 0.0
 var _frame: int = 0
+## The physics ticks between two thinks of a far rival (FAR_HZ at the rate of the engine).
+var _far_tick: int = maxi(1, roundi(float(Engine.physics_ticks_per_second) / FAR_HZ))
 ## The time the director's own tick took (ms).
 var tick_ms: float = 0.0
 ## The time the brains of the rivals took since the start (usec): the performance test takes it per physics tick.
@@ -253,7 +255,7 @@ func _physics_process(delta: float) -> void:
 		# The far rivals think at half the rate (dossier 7.7: the far AI cars hold their last
 		# controls in between); a think gets the time since the last one of the car (a far rival
 		# was given one tick for two: its brain ran at half the speed of the clock).
-		if _frame % FAR_TICK != 0 and _far_from_camera(car):
+		if _frame % _far_tick != 0 and _far_from_camera(car):
 			continue
 		car.set_context(ctx)
 		car.tick_brain(car.brain_wait)
