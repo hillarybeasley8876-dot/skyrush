@@ -7,6 +7,8 @@ extends Node
 ##   windowed: Godot (no --headless) -s res://tools/test_host.gd -- --test=res://tools/smooth_probe.gd --stub=audio,menu,traffic,police,rivals
 ##   [--seconds=6] [--fps=0 (uncapped) | N] [--at=x,z,heading_deg] [--interp=0|1 (the physics interpolation off or on;
 ##   default: the project setting)]
+## Without the traffic stub the probe also follows the far traffic cars 60-200 m away (frozen, moved along their lanes every
+## tick): the nearest one, and the next one when it turns dynamic or leaves.
 
 const MAIN := "res://main.tscn"
 const KMH := 100.0
@@ -18,6 +20,9 @@ var _last_car := Vector3.INF
 var _last_cam := Vector3.INF
 var _recording := false
 var _direction := Vector3.FORWARD
+var _other: Node3D = null
+var _other_rows: Array[Vector2] = []    ## per frame: delta, the step of the far traffic car
+var _last_other := Vector3.INF
 
 
 func _ready() -> void:
@@ -48,6 +53,7 @@ func _run() -> void:
 		_car.linear_velocity = _direction * (KMH / 3.6)
 		await get_tree().physics_frame
 	_camera = get_viewport().get_camera_3d()
+	_pick_other()
 	_recording = true
 	var seconds := float(Game.option("seconds", "6"))
 	var end_ms := Time.get_ticks_msec() + int(seconds * 1000.0)
@@ -73,6 +79,28 @@ func _process(delta: float) -> void:
 		_rows.append(Vector4(delta, (car - _last_car).dot(_direction), (cam - _last_cam).dot(_direction), (car - cam).length()))
 	_last_car = car
 	_last_cam = cam
+	if _other == null or not is_instance_valid(_other) or not _other.visible or int(_other.get("mode")) != 0:
+		_other = null
+		_last_other = Vector3.INF
+		_pick_other()
+	if _other != null:
+		var here := _other.get_global_transform_interpolated().origin
+		if _last_other != Vector3.INF:
+			_other_rows.append(Vector2(delta, here.distance_to(_last_other)))
+		_last_other = here
+
+
+## The far traffic car the probe follows: the nearest one 60-200 m from the player that drives.
+func _pick_other() -> void:
+	var best := INF
+	for node in get_tree().get_nodes_in_group(&"traffic"):
+		var other := node as RigidBody3D
+		if other == null or not other.visible or int(other.get("mode")) != 0 or float(other.get("speed")) < 5.0:
+			continue
+		var d := other.global_position.distance_to(_car.global_position)
+		if d > 60.0 and d < 200.0 and d < best:
+			best = d
+			_other = other
 
 
 func _report() -> void:
@@ -98,6 +126,14 @@ func _report() -> void:
 		gap_steps.append(absf(gaps[i] - gaps[i - 1]))
 	print("SMOOTH the gap from the camera to the car: %s, frame to frame change %s" % [_stats(gaps, 1.0, "m"),
 		_stats(gap_steps, 100.0, "cm")])
+	if _other_rows.size() >= 20:
+		var other_speed: Array[float] = []
+		for row in _other_rows:
+			other_speed.append(row.y / maxf(row.x, 0.0001))
+		print("SMOOTH the far traffic cars on screen (%d frames): speed %s, judder %s" % [_other_rows.size(),
+			_stats(other_speed, 3.6, "km/h"), _judder(other_speed)])
+	else:
+		print("SMOOTH too few frames with a far traffic car 60-200 m away (%d)" % _other_rows.size())
 
 
 ## median and spread of a list (scaled), as text.

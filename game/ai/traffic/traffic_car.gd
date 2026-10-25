@@ -141,6 +141,9 @@ func place(lane: int, distance: float) -> void:
 	_contact_times.clear()
 	_reset_physics()
 	place_on_lane()
+	# From the parking place under the world: the car is not drawn sliding up to the road. (A far
+	# car is moved along its lane by place_on_lane every update, and that move is interpolated.)
+	reset_physics_interpolation()
 	# The car may not collide until its body has arrived on the lane. The engine moves a frozen
 	# body one step after the transform is set, and it gives the body the velocity of the move
 	# (the distance of the move divided by the step): a car that collides at its old place with
