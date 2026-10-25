@@ -19,9 +19,11 @@ const LINES: Dictionary = {
 	&"found": {"text": "重新发现目标", "voice": &"radio_found"},
 	&"all_units": {"text": "全体单位注意", "voice": &"radio_all_units"},
 	&"airspace": {"text": "全体单位，注意管制", "voice": &"radio_airspace"},
-	&"emp": {"text": "EMP锁定！", "voice": &"radio_emp"},
-	&"emp_pulse": {"text": "EMP脉冲！", "voice": &"radio_emp_pulse"},
-	&"spikes": {"text": "前方投放钉刺带", "voice": &"radio_spikes"},
+	# The voice manifest has no recording of these three (the TTS of the audio unit is not reachable
+	# from here): they are shown, not spoken. An unknown voice id printed a warning every time.
+	&"emp": {"text": "EMP锁定！", "voice": &""},
+	&"emp_pulse": {"text": "EMP脉冲！", "voice": &""},
+	&"spikes": {"text": "前方投放钉刺带", "voice": &""},
 	&"hold": {"text": "保持追踪，不要开火", "voice": &"radio_hold"},
 }
 
@@ -53,6 +55,8 @@ static func say(id: StringName, min_gap: float = MIN_GAP) -> void:
 
 ## The radio voice of the audio unit (the group "audio"), with the radio squelch in front.
 static func _voice(id: StringName) -> void:
+	if id == &"":
+		return
 	var tree := Engine.get_main_loop() as SceneTree
 	if tree == null:
 		return

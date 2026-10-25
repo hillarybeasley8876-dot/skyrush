@@ -18,7 +18,10 @@ void vertex() {
 
 
 void fragment() {
-	vec2 uv = UV * v_cell_scale + v_cell_offset;
+	// The board is one quad seen from both sides: from behind its name read mirrored. The back face
+	// turns the cell round, so the name reads on both faces.
+	vec2 face_uv = FRONT_FACING ? UV : vec2(1.0 - UV.x, UV.y);
+	vec2 uv = face_uv * v_cell_scale + v_cell_offset;
 	vec4 tex = texture(albedo_texture, uv);
 	ALBEDO = tex.rgb;
 	EMISSION = tex.rgb * emission_energy;
