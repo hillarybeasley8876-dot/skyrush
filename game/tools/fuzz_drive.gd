@@ -14,6 +14,9 @@ extends Node
 ##                 the traffic is not, so a drive that hit a car does not repeat: stub traffic,police,rivals to cross
 ##                 the same place alone)
 ##   verbose       print the flight recorder of this drive, whether it was odd or not
+##   jumps         1 = every tick, a traffic or police car in sight of the game (visible, before and after) that moves
+##                 more than JUMP_M in one tick, and more than twice its own speed, is printed once with its state before
+##                 and after (a car put somewhere by hand where the player can see it)
 ##   lift          the height above the road a drive starts at (0.2); the spawns of the game are 0.6 m over the road, but a car
 ##                 that is thrown at 170 km/h from that height lands, rebounds and flies over a parapet that stops it when it
 ##                 lands calmly (the first viaduct runs counted 26 falls in 40 drives; most of the 13 that were left were this)
@@ -53,6 +56,10 @@ const WINDOW_AFTER := 160
 const WINDOW_STEP := 2
 
 var _rng := RandomNumberGenerator.new()
+## m: a move in one tick that is more than this (and more than twice the speed of the car) is a jump (jumps=1).
+const JUMP_M := 3.0
+var _jump_last: Dictionary = {}      ## instance id -> [position, mode, frozen, visible]
+var _jumps_seen: Dictionary = {}
 var _hits: Array[String] = []
 var _clock: float = 0.0
 
@@ -148,6 +155,34 @@ func _scan_others(seen: Dictionary, last: Dictionary, stale: Dictionary) -> void
 				stale[key] = true
 
 
+## jumps=1: the traffic and police cars that moved more than JUMP_M (and more than twice their speed) in the last tick.
+func _scan_jumps(player: Node3D) -> void:
+	var dt := 1.0 / FPS
+	# Only the cars of this tick are kept: a police car that went back into its pool (out of the groups) and came out
+	# somewhere else is a new car, not a jump.
+	var seen: Dictionary = {}
+	for group in [&"traffic", &"police"]:
+		for node in get_tree().get_nodes_in_group(group):
+			var other := node as VehicleBase
+			if other == null:
+				continue
+			var id := other.get_instance_id()
+			var here := other.global_position
+			var state := [here, other.get("mode"), other.freeze, other.visible]
+			if _jump_last.has(id):
+				var before: Array = _jump_last[id]
+				var moved := here.distance_to(before[0])
+				var allowed := maxf(JUMP_M, 2.0 * other.linear_velocity.length() * dt)
+				if moved > allowed and other.visible and bool(before[3]) and not _jumps_seen.has(id):
+					_jumps_seen[id] = true
+					print("FUZZ JUMP %s %s at %.2f s: %.1f m in a tick from (%.0f %.0f %.0f) to (%.0f %.0f %.0f), %.0f m from the player; mode %s -> %s, frozen %s -> %s, velocity %.0f km/h" % [
+						group, other.name, _clock, moved, before[0].x, before[0].y, before[0].z, here.x, here.y, here.z,
+						here.distance_to(player.global_position), str(before[1]), str(state[1]), str(before[2]), str(state[2]),
+						other.linear_velocity.length() * 3.6])
+			seen[id] = state
+	_jump_last = seen
+
+
 ## True when a point is within EDGE_REACH of the border of the ground of the city, or outside it.
 func _near_edge(p: Vector3) -> bool:
 	return not WINDOW.grow(-EDGE_REACH).has_point(Vector2(p.x, p.z))
@@ -186,6 +221,7 @@ func _run() -> void:
 	var verbose := int(Game.option("verbose", "-1"))
 	var angle_max := float(Game.option("angle", "45"))
 	var steer := Game.option("steer", "0") == "1"
+	var jumps := Game.option("jumps", "0") == "1"
 	var speed_range := String(Game.option("speed", "100,175")).split(",")
 	var elevated := Game.option("elevated", "0") == "1"
 	var at := String(Game.option("at", "")).split(",") if String(Game.option("at", "")) != "" else PackedStringArray()
@@ -210,6 +246,10 @@ func _run() -> void:
 	var stale: Dictionary = {}
 	var wrecked_before := false
 	for n in trials:
+		# The speed of the other cars is the move between two samples of THIS drive: the last sample of the drive
+		# before lies the settle time (SETTLE s) back, and a car that drove 20 m in it "moved 700 km/h".
+		last_positions.clear()
+		_jump_last.clear()
 		var pick_index := _rng.randi_range(0, points.size() - 1)
 		var pick: Dictionary = points[pick_index]
 		# a drive that starts inside another car (a traffic car of the deck, a police car) is thrown by the solver: the next point
@@ -274,6 +314,8 @@ func _run() -> void:
 		for frame in total:
 			await get_tree().physics_frame
 			_clock = float(frame + 1) * dt
+			if jumps:
+				_scan_jumps(car)
 			if steer and frame % (Engine.physics_ticks_per_second / 10) == 0:
 				Input.action_release(&"steer_left")
 				Input.action_release(&"steer_right")
