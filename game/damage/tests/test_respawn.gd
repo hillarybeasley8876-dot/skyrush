@@ -77,6 +77,7 @@ func _ready() -> void:
 	await _test_second_wreck_in_ghost()
 	await _test_ghost_ends_inside_a_car()
 	await _test_doors()
+	await _test_level_after_a_lost_wheel()
 	print(("FAIL" if _failures > 0 else "PASS") + " respawn (%d failures)" % _failures)
 	get_tree().quit(1 if _failures > 0 else 0)
 
@@ -298,6 +299,45 @@ func _test_doors() -> void:
 	var back := door.transform.basis.get_euler().y
 	_expect("the door is back at rest (%.1f degrees)" % rad_to_deg(back), absf(back) < 0.01)
 	_expect("the door is at its place", door.transform.is_equal_approx(rest))
+
+
+## A violent wreck knocks a wheel off and the visual of the car drops on the bare hub; the respawn puts the car back on its
+## four wheels with its visual level (the player drove the rest of the game tilted 20-40 degrees after such a wreck: the
+## respawn put the parts back, not the visual).
+func _test_level_after_a_lost_wheel() -> void:
+	var player := (load("res://vehicle/player_car.tscn") as PackedScene).instantiate() as VehicleBase
+	player.set("player_controlled", false)
+	player.add_to_group(&"vehicles")
+	add_child(player)
+	player.global_transform = Transform3D(Basis.IDENTITY, Vector3(40.0, 1.0, 0.0))
+	Game.player = player
+	await Kit.wait_frames(get_tree(), 2)
+	var visual := player.get_visual_root()
+	var rest := visual.transform
+	var wall := StaticBody3D.new()
+	wall.collision_layer = 1
+	wall.collision_mask = 0
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(40.0, 8.0, 1.0)
+	shape.shape = box
+	wall.add_child(shape)
+	add_child(wall)
+	wall.global_transform = Transform3D(Basis.IDENTITY, Vector3(40.0, 2.0, -12.0))
+	# head-on into the wall at 40 m/s with a car that was hurt before: a wreck with the impact of a head-on (a wheel comes off
+	# at 0.7)
+	player.health = 30.0
+	player.linear_velocity = Vector3(0.0, 0.0, -40.0)
+	await Kit.wait_frames(get_tree(), 2)
+	Events.vehicle_collided.emit(player, wall, 1900.0 * 40.0, Vector3(0.0, 0.6, -2.2), Vector3(0.0, 0.0, 1.0))
+	await Kit.wait_frames(get_tree(), 3)
+	var lean := rad_to_deg(acos(clampf(visual.transform.basis.y.dot(Vector3.UP), -1.0, 1.0)))
+	_expect("the wreck knocked a wheel off and the visual leans on the hub (%.1f degrees)" % lean, player.is_wrecked and lean > 5.0)
+	Events.player_respawned.emit()
+	await Kit.wait_frames(get_tree(), 2)
+	var after := rad_to_deg(acos(clampf(visual.transform.basis.y.dot(Vector3.UP), -1.0, 1.0)))
+	_expect("the respawned car stands level (%.2f degrees)" % after, after < 0.1)
+	_expect("the visual is back at its place", visual.transform.is_equal_approx(rest))
 
 
 ## A car that drives towards the player at 10 m/s.

@@ -142,7 +142,9 @@ func mark_sprung(node_name: StringName) -> void:
 	sprung[node_name] = true
 
 
-## The respawn: the car is whole again.
+## The respawn: the car is whole again, its visual included: a violent wreck tilts the visual on the bare hub of the wheel
+## that came off (PartManager._tilt_on_hub), and the player drove on tilted after the respawn (only a car out of its pool got
+## its visual back).
 func reset() -> void:
 	zone_damage = {ZONE_FRONT: 0.0, ZONE_REAR: 0.0, ZONE_SIDE: 0.0, ZONE_TOP: 0.0}
 	detached.clear()
@@ -163,17 +165,15 @@ func reset() -> void:
 	vertical_credit = false
 	wrecked = false
 	tier = Tier.CLEAN
+	if rest_visual_known and vehicle != null and is_instance_valid(vehicle):
+		var visual := vehicle.get_visual_root()
+		if visual != null:
+			visual.transform = rest_visual
 
 
-## A car that comes out of its pool: it is a whole new car, the visual included (a violent
-## wreck tilts it on the bare hub of the wheel that came off).
+## A car that comes out of its pool: it is a whole new car.
 func recycle() -> void:
 	reset()
-	if not rest_visual_known or vehicle == null or not is_instance_valid(vehicle):
-		return
-	var visual := vehicle.get_visual_root()
-	if visual != null:
-		visual.transform = rest_visual
 
 
 ## The mesh of a part of the car.
