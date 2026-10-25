@@ -305,7 +305,9 @@ func advance(ds: float, turn_chance: float = TURN_CHANCE) -> int:
 ##
 ## "Straight on" carries the weight `1 - turn_chance`; every turning option shares
 ## `turn_chance`. The straight continuation and the turns are worked out once per lane by the
-## graph, so this is a lookup and not a search.
+## graph, so this is a lookup and not a search. A continuation that ends at once (a lane
+## without a successor: the end of a road at a junction or at the edge of the map) is only
+## taken when nothing else is left: the car would stop at its end and wait there.
 func choose_next(turn_chance: float = TURN_CHANCE) -> int:
 	if graph == null:
 		return -1
@@ -316,10 +318,19 @@ func choose_next(turn_chance: float = TURN_CHANCE) -> int:
 		return options[0]
 	var straight := graph.straight_next[lane]
 	var turns := graph.turn_next[lane]
+	if straight < 0:
+		straight = -1 if turns.is_empty() else options[0]
+	var live := PackedInt32Array()
+	for t in turns:
+		if not graph.is_dead_end(t):
+			live.append(t)
+	var straight_dead := straight >= 0 and graph.is_dead_end(straight)
+	if straight_dead and not live.is_empty():
+		return live[rng.randi() % live.size()]
+	if not straight_dead and straight >= 0 and live.size() < turns.size():
+		turns = live      # the turns that dead-end are dropped (straight on is still there)
 	if turns.is_empty():
 		return straight
-	if straight < 0:
-		straight = options[0]
 	if rng.randf() >= turn_chance:
 		return straight
 	return turns[rng.randi() % turns.size()]

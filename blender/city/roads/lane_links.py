@@ -134,7 +134,11 @@ def link_junctions(city, lanes, links):
             for src in approaches.get(id(a), []):
                 for (kind, _angle, pool) in movements(src, options):
                     dst = pick_exit(kind, src, pool)
-                    if dst is None:
+                    if dst is None or dst is src:
+                        # A lane is no exit of its own junction: the fallback pool of an arm (the lanes of
+                        # its road nearest to the centre) holds the approach itself when it passes it, and 79
+                        # lanes were linked "straight on" into their own start (the car turned round at the
+                        # end of the lane and drove back along it).
                         continue
                     _add_movement(lanes, links, seen_ids, junction, src, dst, kind,
                                   centre, fan)

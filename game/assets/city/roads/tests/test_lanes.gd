@@ -117,8 +117,8 @@ func _check_termini(lanes: Array) -> void:
 		else:
 			junction_ends.append(String(lane.get("id", "")))
 	_check(junction_ends.is_empty(),
-		"no lane dead-ends at a junction (%d dead ends, %d map edges: %s)"
-		% [junction_ends.size(), map_edges.size(), ", ".join(map_edges.slice(0, 8))])
+		"no lane dead-ends at a junction (%d dead ends: %s; %d map edges)"
+		% [junction_ends.size(), ", ".join(junction_ends.slice(0, 10)), map_edges.size()])
 
 
 func _check_offsets(lanes: Array, by_id: Dictionary) -> void:

@@ -6,7 +6,10 @@ extends Node
 ##
 ## From the middle of every 7th street lane the car is reset three times: facing along the lane, against it and across it. The
 ## car must stand on a lane that runs the way it faces (within 25 degrees), on its road (not on the bed of the river under a lane
-## that runs over the water), upright, not on a connector, and on the street it was on or the other carriageway of it.
+## that runs over the water), upright, not on a connector, and on the street it was on or the other carriageway of it. The 7th
+## street lanes are counted among the street lanes: counted among all the lanes, a change of the junction connectors (79 connectors
+## that led a lane back into itself went away) moved the sample to other lanes. A reset that walks along its own road to a clear
+## spot (on an elevated road, 28 m) stays on its street.
 ## Run: python tools/gd.py test res://world/tests/test_respawn_direction.gd -- --timeout=290 --stub=audio,menu,hud,rivals,traffic,police
 
 const MAIN := "res://main.tscn"
@@ -60,9 +63,13 @@ func _run() -> void:
 	var moved: Array[String] = []
 	var kept_against := 0
 	var against_tries := 0
-	for i in range(0, lanes.size(), EVERY):
+	var street_lanes := 0
+	for i in lanes.size():
 		var lane := lanes[i] as LanePath
 		if lane.curve == null or lane.curve.get_baked_length() < 30.0 or bool(lane.get_meta(&"connector", false)):
+			continue
+		street_lanes += 1
+		if (street_lanes - 1) % EVERY != 0:
 			continue
 		var offset := lane.curve.get_baked_length() * 0.5
 		var point := lane.curve.sample_baked(offset, true)
@@ -84,8 +91,8 @@ func _run() -> void:
 					connector.append(label)
 				if absf(xform.origin.y - LANE_LIFT - float(under["y"])) > LIFT_TOLERANCE:
 					sunk.append("%s at y %.2f over a lane at %.2f" % [label, xform.origin.y, float(under["y"])])
-			if Vector2(xform.origin.x - point.x, xform.origin.z - point.z).length() > NEAR and w != 1:
-				moved.append("%s to (%.0f, %.0f)" % [label, xform.origin.x, xform.origin.z])
+			if Vector2(xform.origin.x - point.x, xform.origin.z - point.z).length() > NEAR and w != 1 					and String(under.get("road", "")) != String(lane.road_id):
+				moved.append("%s to (%.0f, %.0f) on %s" % [label, xform.origin.x, xform.origin.z, str(under.get("road", "?"))])
 			if w == 0 and rad_to_deg(forward.angle_to(along)) > KEEP_DEG:
 				turned.append(label)
 			if w == 1:
@@ -128,7 +135,7 @@ func _direction(lane: LanePath, offset: float) -> Vector3:
 	return d.normalized() if d.length() > 0.001 else Vector3.FORWARD
 
 
-## The lane under a car at `origin` that runs the way it faces (a street lane before a connector): {"street", "y"}, or empty
+## The lane under a car at `origin` that runs the way it faces (a street lane before a connector): {"street", "y", "road"}, or empty
 ## when no lane under the car runs that way. The height is not looked at here (a reset over the river is not a wrong way).
 func _lanes_under(index: Object, lanes: Array, origin: Vector3, forward: Vector3) -> Dictionary:
 	var flat := Vector3(forward.x, 0.0, forward.z).normalized()
@@ -144,6 +151,6 @@ func _lanes_under(index: Object, lanes: Array, origin: Vector3, forward: Vector3
 		if rad_to_deg(_direction(lane, offset).angle_to(flat)) > ALONG_DEG:
 			continue
 		if not bool(lane.get_meta(&"connector", false)):
-			return {"street": true, "y": p.y}
-		found = {"street": false, "y": p.y}
+			return {"street": true, "y": p.y, "road": lane.road_id}
+		found = {"street": false, "y": p.y, "road": lane.road_id}
 	return found

@@ -181,7 +181,10 @@ the top speed, 24 deg at 80 km/h, and the grip curve of the tyres falls after 8 
 settles in 0.17 s after the release, the drift, the hops, the roll and the brake are unchanged (`feel_report.gd --assist=1`). The AI
 cars keep the linear fall: the police and the rivals turn a wanted side force or a heading error into an input with it.
 Over 120 km/h the car is at the friction of its tyres (1.3-1.46 g): a sharper car needs more grip, a decision of the brief.
-Check: `vehicle/test_steer_assist.gd` (mutation-checked).
+Check: `vehicle/test_steer_assist.gd` (mutation-checked). A swap of the keyboard wheel from one side to the other took the slow
+turn-in rate (4 /s) all the way, the half back to the centre too: 0.5 s from lock to lock. The player's keyboard goes through the
+centre at the return rate now (6 /s): 0.42 s. The AI drivers keep the old rule to the tick (a quick swap for them sent a rival into
+the marshal at the start of `rivals/test_real_start`).
 
 ## The sky lane flight (the player: "the flight feels terrible")
 
@@ -251,7 +254,25 @@ On a Chinese Windows the input method of the player (Sogou here, Microsoft Pinyi
 into its candidate box. `core/input_language.gd` (a child of the Game autoload) switches the game window to the English layout
 of the machine while it has the focus, turns the input method of the window off, and gives the player's layout back when the
 game loses the focus or quits (`--keep-layout` leaves it alone). Checked on this machine: the layouts are zh (Sogou, Microsoft
-Pinyin) and en-US, the guard goes 0 -> 1 and back to 0.
+Pinyin) and en-US, the guard goes 0 -> 1 and back to 0. Ctrl+Space is the toggle of the Chinese input method here (Hot Keys
+00000010), and Alt+Shift and Win+Space switch the language: the layout could be switched back in the middle of a drive. The guard
+checks it every 0.25 s while the window has the focus (the menus and the pause too: the game has no text field) and puts the
+English layout back; windowed, a switch to the Chinese layout was undone within 0.6 s.
+
+## The lanes that led back into themselves (the player: "there are still many bugs")
+
+79 connectors of the lane graph led a lane "straight on" into its own start: the car drove to the end of its lane, turned round
+and drove back along it, again and again (52 such loops in the AI graph of the game; Waibaidu bridge, Chongqing Rd, Beijing Rd
+and 70 street lanes). The fallback of a junction arm whose exits are not found (the lanes of its road nearest to the centre) held
+the approach itself when the road passes the junction uncut. `blender/city/roads/lane_links.py` never links a lane to itself
+now: the 79 connectors are gone and nothing else of `lanes.json` changed. Three lanes had the loop as their only way on, so 9
+lanes end at a junction now (6 before: the end of Pudong South Rd at the Nanpu loop, which only comes in, and two side streets
+whose end stops 15-20 m short of the road they meet). A traffic car does not take a continuation that ends at once when it has
+another way (`LaneFollower.choose_next`; a junction without a dead end is chosen as before, the same random numbers):
+`traffic/test_dead_end_choice.gd` (mutation-checked). Cutting the uncut roads at those junctions and U-turns at the dead ends
+were tried and dropped: the connectors swerved 15 m off the road with 1-3 m radii. `world/test_respawn_direction.gd` counts its
+every-7th lane among the street lanes (counted among all lanes, the connectors that went away moved the sample), and a reset
+that walks along its own road to a clear spot (28 m on the Yan'an elevated road) stays on its street.
 
 ## Tools added (game/tools, tools/)
 
@@ -262,12 +283,16 @@ touches at a place, `--mask=4` for the props alone), `frame_probe.gd` (`--seed`,
 and what the cast of a wheel probe costs there), `vehicle/tests/steer_report.gd` and `feel_report.gd` (`--hz=N`: the physics at N
 ticks a second; the vehicle tests count their ticks with the rate of the engine), `prop_lane_clearance.gd`, `respawn_probe.gd` (the wreck flow of the game at random
 places, followed for 4 s), `spawn_height_probe.gd` (the road height of every lane point), `flight_probe.gd` (every sky lane flown
-hands-off: the peaks of the turn, the bank, the g, the landing), `tools/run_follow.py` (follow trials),
+hands-off: the peaks of the turn, the bank, the g, the landing), `smooth_probe.gd` (how smoothly the car, the camera and the far
+traffic cars move on the screen), `fuzz_drive.gd --jumps=1` (a car moved by hand in sight), `tools/city/restamp_blocks.py`,
+`tools/run_follow.py` (follow trials),
 `blender/city/roads/edgewalls.py`, `blender/city/roads/buildingcut.py`.
 
-## Test state (153 tests, `python tools/run_tests.py --jobs 3 --timeout 420`)
+## Test state (157 tests, `python tools/run_tests.py --jobs 3 --timeout 420`)
 
-The last full run (152 tests, before `test_respawn_direction`): 143 pass, 9 fail. Three of the nine are not baseline: `police/test_heat`
+The last full run (156 tests, 60 Hz with the interpolation): 149 pass, 7 fail: the six of the baseline below and `audio/test_audio`,
+which passes alone (3 of 3, 11 s) and hung at its exit in the suite with three jobs and a Blender build beside it.
+The run before (152 tests, before `test_respawn_direction`): 143 pass, 9 fail. Three of the nine are not baseline: `police/test_heat`
 (the righting turned a police car off its roof before it counted as disabled: the righting is the player's now), `world/test_drive_lanes`
 (its clearance ray started 4 m over the lane and met a deck: it starts at 1 m now) and `police/test_perf` (a 10 ms tick with three test
 jobs running; alone 1.0 ms of its 3.0 ms). The other six are the baseline; `ai/rivals/test_real_route` passed in that run.
@@ -275,8 +300,8 @@ jobs running; alone 1.0 ms of its 3.0 ms). The other six are the baseline; `ai/r
 The baseline (147 tests): 140 pass, 7 fail. All 7 failed in the integration baseline of the first round as well (`ai/rivals/test_performance`: 0.54 ms against
 0.35; `ai/rivals/test_race_flow`: 5 passes of 6 and 4 contacts over 800 N*s, the sandbox race now runs to its own thresholds;
 `ai/rivals/test_real_route`: passes alone in 100 s, the suite gives a test 120 s and runs it without the stubs; `ai/traffic/test_lanes_world`;
-`roads/test_lanes`: 6 lanes that end at a junction; `roads/test_drive_collision`: the surface oracle is not a hole detector, the ground backs
-it (7604 -> 6425 bad samples, parapet or pier in the way 791 -> 276); `world/test_world_api`: the `test_loop` route, 5 failing checks -> 2).
+`roads/test_lanes`: 9 lanes that end at a junction (6, and 3 whose only way on was a loop back into themselves); `roads/test_drive_collision`:
+the surface oracle is not a hole detector, the ground backs it (7604 -> 6425 -> 6043 bad samples, parapet or pier in the way 791 -> 276); `world/test_world_api`: the `test_loop` route, 5 failing checks -> 2).
 Five tests of that baseline pass now (`police/test_perf`, `rivals/test_rival_driving`, `city/blocks/test_blocks`, `core/test_core_smoke`,
 `damage/test_budget`), and nothing that passed before fails.
 
