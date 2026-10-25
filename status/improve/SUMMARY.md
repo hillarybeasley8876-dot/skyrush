@@ -94,9 +94,8 @@ drive (the run-to-run spread is large: the number of police cars decides a run).
 | the effects of every car within 150 m probed 4 wheels a tick and searched the nodes of the car for the wheels | `VehicleBase.get_marker` searched the visual on every call | the markers are kept; a car of the REDUCED tier probes every fourth tick (its smoke is a child of the car) | the callbacks of the traffic cars 0.84 -> 0.44 ms a tick |
 | the spawn ring sorted every spot of the ring for every attempt | `TrafficRing.pick_spot` | sorted once per place and heading of the player; a failed spawn waits 3 ticks | 0.2-0.3 -> 0.06 ms a tick |
 | the wheel probes cast twice a tick | an enabled ShapeCast3D casts on its own, and the car forces a cast | `enabled = false` | no measurable difference (a Jolt cast is cheap) |
-| the police dispatcher (the pursuit, the sight, the spawning, the roles and the driving of the units) ran in every tick | 0.3-0.5 ms a tick with five units | it thinks every second tick with a double step (60 Hz), like the traffic; the units hold their wheel in between; the contacts, the debuffs of the player, the strips and the drones stay in every tick | a heat-4 chase (8.6 units), A/B: 5.15 -> 4.91 ms a tick, the mean frame 26.7 -> 24.7 ms; `police/test_perf`: the dispatcher 0.55 -> 0.35 ms |
-| the visual of every car (the wheels, the wing, the lamps) was set in every tick | the screen shows the last of the 2-4 ticks of a frame | it follows the car once a frame (`ArcadeCar._process`) | 17 us a car a tick -> once a frame |
 | the police dispatcher thought in every tick | the pursuit, the sight, the spawning and the roles and the driving of the units: 0.3-0.5 ms a tick with five units | it thinks every second tick with a double step (60 Hz), like the traffic; the units still drive every tick, and the contact cache, the debuffs of the player, the strips and the drones stay in every tick (the boost module writes over a debuff every tick, a drone moved every second tick judders) | a heat-4 chase (`--heat=4`, 8.6 units), A/B in one drive: 5.15 -> 4.91 ms a tick, 26.7 -> 24.7 ms a frame; `police/test_perf`: the dispatcher 0.55 -> 0.35 ms |
+| a far rival (it thinks every second tick) was given one tick for two | its brain clock ran at half the speed of the clock | it gets the time since its last think (`RivalCar.brain_wait`); the brains stay in every tick: at 60 Hz the field of the sandbox race overtook once instead of five times | `rivals/test_performance` takes the cost of the brains per tick over its window (it summed the last think of every rival); the race unchanged (5 passes, 4 contacts over 800 N*s, the baseline) |
 | the visual of every car (the wheels, the wing, the lamps) was placed in every tick | 2-4 times a frame, only the last was drawn | `ArcadeCar._process`: once a frame | 17 us a car a tick -> once a frame |
 
 The probe measured itself at first: it searched the tree for the cars every frame (20-30 ms), its follower walked all 11,724 lanes
@@ -105,51 +104,36 @@ nodes get their slot as they join the tree, the follower searches a lane twice a
 and the clean numbers are lower than the table: a drive with the traffic and the police 13.6 ms a frame (median; mean 16.9 ms, the
 long frames come in the wrecks), the traffic alone 12.5 ms, the city without cars 4-7 ms. The AI cars are the cost.
 
-What a car of the player, the police or the rivals costs (timed section by section in a chase): 170 us a tick, of which the
-four wheel probes 59 us, the tyres, the suspension and the drive 48 us, the visual 17 us (once a frame now), the telemetry 13 us,
-the impacts 6 us. A wheel probe is a sphere cast, and Godot's Jolt server answers a cast with a binary search: about nine overlap
-tests against every body the cast reaches, 3-8 us for a body that it hits (`tools/spot_probe.gd`); a wheel on a road reaches the
-road tile and the ground 2 cm under it. Neither a cut of the ground into chunks of 200 m nor smaller triangles made the cast
-cheaper. A ray instead of the sphere would change how the wheels meet the kerbs, a lower ground would show at the edges of the
-roads: the probes stay.
+What a car of the player, the police or the rivals costs (timed part by part in a chase, `ArcadeCar`): about 170 us a tick, of
+which the four wheel probes 59 us, the dynamics 48 (the tyres 12, the drive and the drag 9, the suspension 6), the visual 17 (once a
+frame now), the telemetry 13, the impacts 6. A wheel probe is a sphere cast, and Godot's Jolt server answers a cast_motion with a
+binary search: about nine overlap tests against every body the cast reaches, 3-8 us for a body it hits, and a wheel on a road
+reaches the road tile and the ground 2 cm under it (`tools/spot_probe.gd`; a point on a vertex of the ground, where eight
+triangles meet, costs 40-80 us). The ground was not the cause: cut into 200 m chunks, or into 25 m triangles, it cost the same. A
+ray instead of the sphere (1.3-3 us) would meet the kerbs differently, a lower ground would show at the edges of the roads: the
+probes stay.
 
-The heaviest frames of the drives come in the chases: with a heat-4 pursuit the drive runs at about 25 ms a frame. In the seed-7
-drive the follower of the probe drives its car into a stop on Nanjing East Rd (-281, -542) and the police pile up round it: those
-frames run 8 ticks of 5-10 ms (the probe's car does not leave; a player reverses).
-
-The physics at 60 Hz instead of 120 (`--ab=rate`, A/B in one drive): the frame 19.6 -> 12.7 ms on average, the median 17.9 ->
-12.8 ms, the 95th percentile 34 -> 20 ms. The median frame at 120 Hz does not fit into the 16.7 ms of a 60 Hz screen (vsync then
-shows 30 fps), at 60 Hz it does. Not done: the tyre model is tuned to its tick. The side force of a wheel is the force that takes
-its slip away within one tick (for a quarter of the mass), capped by its grip; at 60 Hz the rear tyres give more than that, the
-side speed at the rear wheels changes its sign in every tick at 160 km/h, and the cornering of the full wheel falls 9-18 %
-(`steer_report.gd --hz=60`: 80 km/h 31.4 -> 28.5 deg/s, 1.24 -> 1.13 g; 200 km/h 1.46 -> 1.20 g). The rest of the feel report
-stays (0-100 km/h, the top speed, the brake, the drift, the hops). 60 Hz needs a tyre model that does not depend on the tick (the
-four wheels solved together) and the cornering tuned back to today's numbers: a decision of the player.
-
-What a car of the player, the police or the rivals costs: about 170 us a tick (timed per part, `ArcadeCar`): the four wheel probes
-59 us, the dynamics 48 (the tyres 12, the drive and the drag 9, the suspension 6), the visual 17 (once a frame now), the rest 46.
-A wheel probe is a sphere cast, and Godot's Jolt server answers a cast_motion with a binary search: about nine overlap tests against
-every body the cast reaches, 3-8 us for a body it hits, and a wheel on a road reaches the road tile and the ground 2 cm under it
-(`tools/spot_probe.gd`; a point on a vertex of the ground, where eight triangles meet, costs 40-80 us). The ground was not the cause:
-cut into 200 m chunks, or into 25 m triangles, it cost the same. The cast is the price of the sphere (a ray is 1.3-3 us, but a ray
-meets a kerb differently): it stays.
-
-The long frames of the seed-7 drive are a pile-up: the car of the follower boxed in by eight police units against the planters of
-Nanjing East Rd (the follower holds the throttle, so it lasts 10 s), 8 ticks a frame at 9-11 ms each. The frame probe writes down
-what the ticks of every long frame spent (the units, the engine part, the cars' own physics) and the events of the drive with their
-time; `--heat=N` starts a pursuit with the record, `--ab=police|rate` are new switches.
+The heaviest frames come in the chases: with a heat-4 pursuit the drive runs at about 25 ms a frame. The long frames of the
+seed-7 drive are a pile-up: the car of the follower boxed in by eight police units against the planters of Nanjing East Rd (the
+follower holds the throttle, so it lasts 10 s; a player reverses). A frame of N ticks of c ms and 10 ms of the rest needs
+N = frame / 8.33 ms ticks, so it settles at 10 / (1 - c / 8.33) ms: 25 ms at 5 ms a tick (3 ticks), 62 ms at 7 ms (the cap of 8
+ticks). With the cap at 4 ticks (`--ab=steps`, the heat-4 chase) the mean frame was 23.9 -> 20.8 ms and the p95 94 -> 62 ms; the
+price is a game that runs slower than the clock below 30 fps (not changed: a decision of the brief, like 60 Hz). The frame probe
+writes down what the ticks of every long frame spent (the units, the engine part, the cars' own physics) and the events of the
+drive with their time; `--heat=N` starts a pursuit with the record, `--ab=police|rate` are new switches. The run-to-run spread of
+the drives is also other work on the machine: a test run beside a drive made every unit 2-3 times slower.
 
 **The physics at 60 Hz (a decision of the brief, not made).** In the same drive in turns (`--ab=rate`) the frame went from 19.6 to
-12.7 ms (mean), 17.9 to 12.8 ms (median), 34 to 20 ms (p95): at 120 Hz the median frame does not fit into a frame of a 60 Hz
-screen (16.7 ms), and with vsync a frame that misses waits for the next one (30 fps). Everything of the feel report is the same at
-60 Hz (the 0-100, the top speed, the brake, the launch, the drift and its exits, the hops, the stability) except the cornering: the
-yaw rate at the full wheel 9-18 % lower at 80-200 km/h, the lateral grip 1.24-1.46 -> 1.13-1.20 g, a small swing back after the
-release. The cause is the tyre law: the lateral force of a wheel is the force that cancels its slip in one tick for a quarter of the
-mass, capped by the friction; the fronts are at the cap at both rates (the same 15 kN), the rears are not, and at 60 Hz they
-over-correct (their slip changes its sign every tick at 160 km/h) and give 6.3 instead of 8.5 kN. A move to 60 Hz needs a lateral
-solver that does not depend on the step (the four wheels solved together with the effective mass of the body at each contact), and
-then the cornering tuned back to the numbers of 120 Hz. The vehicle reports count the ticks of the rate now (`vehicle_test.gd`,
-`steer_report.gd`, `feel_report.gd`) and `--hz=N` runs them at another rate.
+12.7 ms (mean), 17.9 to 12.8 ms (median), 34 to 20 ms (p95): at 120 Hz the median frame does not fit into a frame of a 60 Hz screen
+(16.7 ms), and with vsync a frame that misses waits for the next one (30 fps). Everything of the feel report is the same at 60 Hz
+(the 0-100, the top speed, the brake, the launch, the drift and its exits, the hops, the stability) except the cornering: the yaw
+rate at the full wheel 9-18 % lower at 80-200 km/h (`steer_report.gd --hz=60`: 80 km/h 31.4 -> 28.5 deg/s), the lateral grip
+1.24-1.46 -> 1.13-1.20 g, a small swing back after the release. The cause is the tyre law: the lateral force of a wheel is the force
+that cancels its slip in one tick for a quarter of the mass, capped by the friction; the fronts are at the cap at both rates (the
+same 15 kN), the rears are not, and at 60 Hz they over-correct (their slip changes its sign every tick at 160 km/h) and give 6.3
+instead of 8.5 kN. A move to 60 Hz needs a lateral solver that does not depend on the step (the four wheels solved together with the
+effective mass of the body at each contact), and then the cornering tuned back to the numbers of 120 Hz. The vehicle reports count
+the ticks of the rate now (`vehicle_test.gd`, `steer_report.gd`, `feel_report.gd`) and `--hz=N` runs them at another rate.
 
 Left: a police car costs about 0.6 ms a tick (a chase with four of them runs at 30 fps); the HUD about 0.1 ms a frame (the 1.3 ms of a
 drive was the spread of the drives: in a parked A/B it is 0.1 ms), the shadow of the sun 0.8 ms, the occlusion culling 0.6 ms of CPU (the GPU is not the limit on an RTX 3090: the

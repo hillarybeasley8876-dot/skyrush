@@ -16,6 +16,8 @@ var paint: Color = Color.WHITE
 var index: int = 0
 ## The time the brain needed for the last tick (microseconds).
 var brain_usec: int = 0
+## The seconds since the last think of the brain (the director adds every physics tick).
+var brain_wait: float = 0.0
 ## The per-tick context, filled by the rival director.
 var _context: RivalContext = RivalContext.new()
 
@@ -47,8 +49,8 @@ func set_context(context: RivalContext) -> void:
 	_context = context
 
 
-## The brain drives the car for one tick. The director calls it: the far rivals are ticked
-## at half the rate and hold their last controls in between.
+## The brain drives the car for `delta` seconds (the time since its last think). The director calls
+## it every tick, the far rivals every second tick; the car holds its controls in between.
 func tick_brain(delta: float) -> void:
 	if brain == null:
 		return

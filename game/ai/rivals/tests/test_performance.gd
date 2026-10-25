@@ -30,13 +30,12 @@ func _ready() -> void:
 	var without := await _measure(FRAMES)
 	_modes.start_mode(&"race", {"route": "sandbox_loop", "laps": 1, "difficulty": "normal"})
 	await get_tree().create_timer(4.0).timeout
+	# The AI cost on its own: the time of the brains of the five rivals over the measured ticks, per tick (a far rival thinks every
+	# second tick: the last think of each is the cost of a think, not of a tick).
+	var brain_before := int(_rivals.get("brain_total_usec"))
 	var with_rivals := await _measure(FRAMES)
 	var cost := with_rivals - without
-	# The AI cost on its own: the sum of the brain ticks of the five rivals.
-	var brain_usec := 0
-	for c in _rivals.call("get_cars") as Array:
-		brain_usec += (c as RivalCar).brain_usec
-	var brain_ms := float(brain_usec) / 1000.0
+	var brain_ms := float(int(_rivals.get("brain_total_usec")) - brain_before) / float(FRAMES) / 1000.0
 	print("PERF without the rivals %.3f ms per tick, with 5 rivals %.3f ms, the rivals cost %.3f ms" % [
 		without, with_rivals, cost])
 	print("PERF the AI of the five rivals costs %.3f ms per tick (the rest is the physics of the cars)" % brain_ms)

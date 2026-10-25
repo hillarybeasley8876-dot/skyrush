@@ -12,8 +12,10 @@ const TRAFFIC_REFRESH := 0.25   ## s: how often the traffic list is rebuilt
 const TRAFFIC_RANGE := 60.0     ## m: only the traffic this close to a rival is kept
 const PROJECT_WINDOW := 60.0    ## m: the window of the local projection
 const PROJECT_LIMIT := 25.0     ## m: the player is off the line when it is this far from it
-const FAR_TICK := 2             ## the far rivals are ticked every other physics frame
-const FAR_DISTANCE := 150.0     ## m: a rival further away than this is ticked at half the rate
+## The brains of the rivals think in every physics tick, unlike the traffic and the police (60 Hz): the brain of a rival costs
+## about 0.1 ms, but at 60 Hz the field of the sandbox race (test_race_flow) overtook once instead of five times.
+const FAR_TICK := 2             ## the far rivals think every other physics tick
+const FAR_DISTANCE := 150.0     ## m: a rival further away than this thinks at half the rate
 const NEAR_REFRESH := 0.1       ## s: the near list of a rival is rebuilt at 10 Hz
 const NEAR_RANGE := 95.0        ## m: the cars this close to a rival are in its near list
 const LANE_LIMIT := 4.5         ## m: the personal line never leaves this far from the line
@@ -47,6 +49,8 @@ var _near_timer: float = 0.0
 var _frame: int = 0
 ## The time the director's own tick took (ms).
 var tick_ms: float = 0.0
+## The time the brains of the rivals took since the start (usec): the performance test takes it per physics tick.
+var brain_total_usec: int = 0
 var _rng := RandomNumberGenerator.new()
 
 
@@ -239,16 +243,22 @@ func _physics_process(delta: float) -> void:
 		return
 	var started := Time.get_ticks_usec()
 	_frame += 1
+	for car in cars:
+		if is_instance_valid(car):
+			car.brain_wait += delta
 	_refresh_context(delta)
 	for car in cars:
 		if not is_instance_valid(car):
 			continue
-		# The far rivals are ticked at half the rate (dossier 7.7: the far AI cars hold their
-		# last controls in between).
+		# The far rivals think at half the rate (dossier 7.7: the far AI cars hold their last
+		# controls in between); a think gets the time since the last one of the car (a far rival
+		# was given one tick for two: its brain ran at half the speed of the clock).
 		if _frame % FAR_TICK != 0 and _far_from_camera(car):
 			continue
 		car.set_context(ctx)
-		car.tick_brain(delta)
+		car.tick_brain(car.brain_wait)
+		car.brain_wait = 0.0
+		brain_total_usec += car.brain_usec
 	tick_ms = lerpf(tick_ms, float(Time.get_ticks_usec() - started) / 1000.0, 0.15)
 
 
