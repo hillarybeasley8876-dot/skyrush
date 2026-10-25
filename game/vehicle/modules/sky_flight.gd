@@ -32,6 +32,9 @@ var exiting: bool = false
 var gliding: bool = false
 ## True on the tick the car touches the ground at the end of the flight.
 var landed: bool = false
+## True on the tick the car leaves the rails past the end of the lane without touching the road
+## (it falls the rest on its own).
+var released: bool = false
 ## True on the tick an N2 ring was collected.
 var ring_collected: bool = false
 ## True while the take-off blends into the lane.
@@ -114,6 +117,7 @@ func update(dt: float, steer: float, throttle: float, brake: float, n2: float,
 	if not flying or lane == null:
 		return
 	ring_collected = false
+	released = false
 	_ground_y = ground_y
 	# The N2 boost raises the lane speed to 300 km/h (dossier 5.6). A turn too tight for the
 	# speed slows the car before it, so the car never turns faster than LANE_YAW_LIMIT_DEG.
@@ -172,6 +176,21 @@ func update(dt: float, steer: float, throttle: float, brake: float, n2: float,
 	if vertical < -lane.tube_down and not exiting:
 		vertical = -lane.tube_down
 		vertical_speed = maxf(vertical_speed, 0.0)
+	# The last LANE_EXIT_FADE metres bring the car back to the centre line: the lane ends 1 m over
+	# a lane of the road and the car lands there, not 5 m higher or beside the road.
+	var to_end: float = lane.length() - offset
+	if to_end < LaneTuning.LANE_EXIT_FADE and not gliding:
+		var keep: float = clampf(to_end / LaneTuning.LANE_EXIT_FADE, 0.0, 1.0)
+		var side_room: float = half_w * keep
+		if absf(lateral) > side_room:
+			lateral = signf(lateral) * side_room
+			lateral_speed = 0.0
+		if vertical > lane.tube_up * keep and not exiting:
+			vertical = lane.tube_up * keep
+			vertical_speed = minf(vertical_speed, 0.0)
+		if vertical < -lane.tube_down * keep and not exiting:
+			vertical = -lane.tube_down * keep
+			vertical_speed = maxf(vertical_speed, 0.0)
 	# The N2 rings.
 	var rings: PackedFloat32Array = lane.n2_ring_offsets
 	while _next_ring < rings.size() and offset >= rings[_next_ring]:
@@ -192,6 +211,9 @@ func update(dt: float, steer: float, throttle: float, brake: float, n2: float,
 		if vertical <= target_vertical + LaneTuning.LANE_EXIT_EPS:
 			# The car is on the ground: the flight ends and the wheels touch down.
 			landed = true
+		elif offset - lane.length() > LaneTuning.LANE_EXIT_MAX_DISTANCE:
+			# Not on the road yet this far past the end: the car leaves the rails and falls the rest.
+			released = true
 
 
 ## Leaves the tube early (the flight key): the car glides down outside the rails (dossier 5.6).

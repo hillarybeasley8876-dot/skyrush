@@ -10,6 +10,7 @@ const BreakerSites := preload("res://world/build/breaker_sites.gd")
 const CitySites := preload("res://world/build/city_sites.gd")
 const GasStation := preload("res://world/build/gas_station.gd")
 const LaneSpatial := preload("res://world/api/lane_spatial.gd")
+const PropLibrary := preload("res://world/loader/prop_library.gd")
 const LevelRules := preload("res://world/api/level_rules.gd")
 
 const CHARGE_GLB := "res://assets/props/sites/charge_station.glb"
@@ -25,6 +26,16 @@ const BREAKER_OFFSET := 16.0
 const MAX_BILLBOARDS := 24
 const MAX_SCAFFOLDS := 10
 const CHARGE_COLOR := Color("00e5ff")
+## The 申城闪充 gantry: the panel of the guide gantry of the props unit is 5.5 m up, 1.7 m high
+## (8:1, like its texture) and 0.5 m off the plane of the truss; its posts stand at half its span.
+const GANTRY_PANEL_BOTTOM := 5.5
+const GANTRY_PANEL_HEIGHT := 1.7
+const GANTRY_PANEL_PLANE := 0.5
+const GANTRY_POST := Vector3(0.6, 7.6, 0.6)
+## The charge area of a gantry: from the road up, over the carriageway and the depth of the POI.
+const CHARGE_AREA_HEIGHT := 6.0
+## The cyan light of a gantry fades out from this far (m).
+const GANTRY_LIGHT_FADE := 240.0
 const GAS_CLEARANCE := 6.0
 const TOLL_CLEARANCE := 7.0
 ## The size of the stunt gate over a roadblock.
@@ -46,6 +57,8 @@ var signs: Node
 var _boxes: Array[AABB] = []
 ## The buildings of the city that are not fuel sites.
 var _sites := CitySites.new()
+## The trusses of the charge gantries.
+var _props: PropLibrary = null
 
 
 func build(parent: Node3D, pois: Array, roads: Array = [], lanes: Array[LanePath] = [],
@@ -78,7 +91,11 @@ func _build_poi(parent: Node3D, poi: Dictionary, grid: LaneSpatial = null) -> vo
 
 
 ## 申城闪充: a drive-through bay; driving through it at 60 km/h or more refills N2 and battery.
+## The chargers of the city are gantries over the roads ("style": "gantry", city_charge.py).
 func _build_charge(parent: Node3D, poi: Dictionary) -> void:
+	if str(poi.get("style", "")) == "gantry":
+		_build_charge_gantry(parent, poi)
+		return
 	var root := Node3D.new()
 	root.name = "ChargeStation_" + str(poi.get("id", "poi"))
 	root.position = _position(poi)
@@ -103,9 +120,110 @@ func _build_charge(parent: Node3D, poi: Dictionary) -> void:
 	shape.position = Vector3(0, 3.0, 0)
 	station.add_child(shape)
 	if bool(area.get("loaded", false)):
-		station.position = area["position"]
+		# The bay of the model is a box on the ground (its centre is 1.2 m up): the trigger stands
+		# on the ground as well. Placed at the centre, its 6 m box began 1.2 m over the road and
+		# missed the Roadster, whose collider ends 1.1 m over it: no car ever charged.
+		var centre: Vector3 = area["position"]
+		station.position = Vector3(centre.x, 0.0, centre.z)
 	root.add_child(station)
 	charge_stations.append(station)
+
+
+## 申城闪充 over a road: the guide gantry of the props unit spans the road with its posts outside
+## the carriageway, a cyan panel faces each way, light bars glow under the beam and on the posts,
+## and the charge area covers the carriageway under it.
+func _build_charge_gantry(parent: Node3D, poi: Dictionary) -> void:
+	var root := Node3D.new()
+	root.name = "ChargeStation_" + str(poi.get("id", "poi"))
+	root.position = _position(poi)
+	root.rotation.y = Heading.yaw_from_heading(float(poi.get("heading_deg", 0.0)))
+	parent.add_child(root)
+	var span := float(poi.get("span_m", 27.0))
+	var size: Array = poi.get("size", [24.0, 16.0])
+	var width := float(size[0]) if size.size() > 0 else 24.0
+	var depth := float(size[1]) if size.size() > 1 else 16.0
+	if _props == null:
+		_props = PropLibrary.new()
+	var def := _props.get_prop("guide_gantry_%d" % int(span))
+	for part in def.get("parts", []):
+		var mi := MeshInstance3D.new()
+		mi.mesh = part["mesh"]
+		var material: Variant = part.get("material")
+		if material != null:
+			mi.material_override = material as Material
+		mi.transform = part["transform"]
+		root.add_child(mi)
+	# The posts stop a car like the posts of the sign gantries.
+	var posts := StaticBody3D.new()
+	posts.name = "Posts"
+	for side in [-1.0, 1.0]:
+		var shape := CollisionShape3D.new()
+		var box := BoxShape3D.new()
+		box.size = GANTRY_POST
+		shape.shape = box
+		shape.position = Vector3(side * span * 0.5, GANTRY_POST.y * 0.5, 0.0)
+		posts.add_child(shape)
+	root.add_child(posts)
+	var panel_width := minf(GANTRY_PANEL_HEIGHT * 8.0, span - 3.0)
+	var glow := ProcMeshes.glow(CHARGE_COLOR, 3.0)
+	for side in [1.0, -1.0]:
+		var panel := _gantry_panel(root, panel_width, side)
+		_sign_texts.append({"sign": panel, "text": "申城闪充", "text_en": "FLASH CHARGE", "type": "station",
+			"style": "charge"})
+		var bar := MeshInstance3D.new()
+		bar.name = "LightBar"
+		bar.mesh = ProcMeshes.box(Vector3(span - 1.5, 0.14, 0.3))
+		bar.material_override = glow
+		bar.position = Vector3(0.0, GANTRY_PANEL_BOTTOM - 0.3, side * (GANTRY_PANEL_PLANE + 0.35))
+		root.add_child(bar)
+		var strip := MeshInstance3D.new()
+		strip.name = "PostLight"
+		strip.mesh = ProcMeshes.box(Vector3(0.14, 4.8, 0.14))
+		strip.material_override = glow
+		strip.position = Vector3(side * (span * 0.5 - 0.5), 2.8, 0.0)
+		root.add_child(strip)
+	var light := OmniLight3D.new()
+	light.name = "Glow"
+	light.light_color = CHARGE_COLOR
+	light.light_energy = 2.0
+	light.omni_range = maxf(width, 16.0)
+	light.position = Vector3(0.0, GANTRY_PANEL_BOTTOM - 1.0, 0.0)
+	light.distance_fade_enabled = true
+	light.distance_fade_begin = GANTRY_LIGHT_FADE
+	light.distance_fade_length = 40.0
+	root.add_child(light)
+	var station := ChargeStation.new()
+	station.name = "ChargeArea"
+	station.label = str(poi.get("label", "申城闪充"))
+	var area := CollisionShape3D.new()
+	var area_box := BoxShape3D.new()
+	area_box.size = Vector3(width + 1.0, CHARGE_AREA_HEIGHT, depth)
+	area.shape = area_box
+	area.position = Vector3(0.0, CHARGE_AREA_HEIGHT * 0.5, 0.0)
+	station.add_child(area)
+	root.add_child(station)
+	charge_stations.append(station)
+
+
+## The panel of a charge gantry: a frame and a quad in front of it (the sign factory gives it its
+## texture), in the plane of the panel of the gantry of the props unit.
+func _gantry_panel(root: Node3D, width: float, side: float) -> MeshInstance3D:
+	var height := width / 8.0
+	var frame := MeshInstance3D.new()
+	frame.name = "PanelFrame"
+	frame.mesh = ProcMeshes.box(Vector3(width + 0.3, height + 0.3, 0.15))
+	frame.material_override = ProcMeshes.material("metal")
+	frame.position = Vector3(0.0, GANTRY_PANEL_BOTTOM + height * 0.5, side * GANTRY_PANEL_PLANE)
+	root.add_child(frame)
+	var quad := MeshInstance3D.new()
+	quad.name = "ChargePanel"
+	quad.mesh = ProcMeshes.quad(width, height)
+	quad.material_override = ProcMeshes.glow(CHARGE_COLOR, 1.0)
+	quad.position = frame.position + Vector3(0.0, 0.0, side * 0.1)
+	if side < 0.0:
+		quad.rotation.y = PI
+	root.add_child(quad)
+	return quad
 
 
 ## The charge station of the props unit: the glb and its "ChargeArea" empty. The gltf extras

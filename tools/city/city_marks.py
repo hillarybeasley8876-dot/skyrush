@@ -4,8 +4,11 @@ Every position is derived from the built road network, so a POI, a launch
 pad, a checkpoint or a spawn always sits on a lane centre at the lane height
 with the lane's heading.
 """
+import json
 import math
+import os
 
+import city_charge
 import citylib
 import city_skylanes
 
@@ -33,8 +36,13 @@ def _nearest_s(road, point):
 
 # ---------------------------------------------------------------- POIs
 
-def build_pois(by_id):
-    """The POIs of the map (dossier 7.2, 8.1, 8.2 and the gameplay rules)."""
+def build_pois(by_id, junctions=()):
+    """The POIs of the map (dossier 7.2, 8.1, 8.2 and the gameplay rules).
+
+    The chargers are gantries over the main roads (city_charge), placed
+    clear of the junctions, of the gantries of the road furniture, of the
+    sky lane pads and of the roadblock sites.
+    """
     pois = []
 
     def add(pid, kind, x, y, z, heading, size, label, asset):
@@ -43,25 +51,23 @@ def build_pois(by_id):
                      "size": [round(size[0], 1), round(size[1], 1)],
                      "label": label, "asset": asset})
 
-    # the toll plaza on the G50 (dossier 7.2)
+    # the toll plaza on the G50 (dossier 7.2): the 3+3 lane plaza of the
+    # props unit stands on the centre line of the road, its lanes on the
+    # lanes of the road (its old lot is kept: city_blocks.FORMER_STATIONS)
     g50 = by_id.get("g50_west")
     if g50 is not None:
         s = _nearest_s(g50, (-2070.0, 728.0))
-        p, h = _lane_at(g50, s, 1, 1)
-        add("toll_west", "toll", p[0], p[1], p[2], h, (160.0, 60.0),
-            "申城西收费站", "toll_plaza")
-    # the gas station on the frontage road (dossier 8.1)
-    add("gas_sinopex", "gas", -1900.0, 0.0, 790.0, 90.0, (80.0, 64.0),
+        p, tan = g50.point_at(s)
+        add("toll_west", "toll", p[0], p[1], p[2], citylib.heading_deg(tan),
+            (34.0, 20.0), "申城西收费站", "toll_plaza_road")
+    # the gas stations (dossier 8.1): where no column, island, dispenser,
+    # pylon or shop of the 62 x 41 m model stands on a carriageway or a lot
+    # (searched on a 1 m raster; at 790 / heading 90 the shop straddled a
+    # street, at heading 134 the columns stood in Zhongshan E-2 Rd)
+    add("gas_sinopex", "gas", -1900.0, 0.0, 764.0, 0.0, (80.0, 64.0),
         "中石华加油站", "gas_station")
-    add("gas_petrochino", "gas", 830.0, 0.0, 707.0, 134.0, (70.0, 50.0),
+    add("gas_petrochino", "gas", 830.0, 0.0, 711.0, 44.0, (70.0, 50.0),
         "申油加油站", "gas_station")
-    # the EV charging stations (dossier 8.2)
-    add("charge_sky", "charge", 1680.0, 0.0, 420.0, 0.0, (80.0, 80.0),
-        "申城闪充·浦东站", "charge_station")
-    add("charge_bund", "charge", -700.0, 0.0, 230.0, 115.0, (60.0, 50.0),
-        "申城闪充·西藏路站", "charge_station")
-    add("charge_nanjing", "charge", -330.0, 0.0, -520.0, 270.0, (60.0, 50.0),
-        "申城闪充·南京路站", "charge_station")
     # the police stations
     add("police_bund", "police_station", -160.0, 0.0, -520.0, 154.0,
         (40.0, 40.0), "外滩警察局", "police_station")
@@ -91,7 +97,42 @@ def build_pois(by_id):
             s = _nearest_s(road, target)
         p, h = _lane_at(road, s, 1, 0)
         add(pid, "roadblock_site", p[0], p[1], p[2], h, (24.0, 4.0), label, None)
+    # the EV chargers (dossier 8.2): gantries over the main roads
+    if junctions:
+        avoid = [(p["x"], p["z"]) for p in pois if p["kind"] in ("roadblock_site", "toll")]
+        avoid += _sky_pad_spots(by_id)
+        avoid += _furniture_gantries()
+        names = {rid: r.name for rid, r in by_id.items()}
+        chargers, _report = city_charge.charge_pois(list(by_id.values()), junctions, avoid, names)
+        pois += chargers
     return pois
+
+
+def _sky_pad_spots(by_id):
+    """The launch pads of the sky lanes and their gantries (300 m before the pad)."""
+    out = []
+    for spec in SKY_LANES:
+        road = by_id.get(spec[2])
+        if road is None:
+            continue
+        s_pad = straight_runup(road, spec[4], max(300.0, spec[3] - 40.0), spec[3] + 40.0) or spec[3]
+        p, h = _lane_at(road, s_pad, spec[4], spec[5])
+        out.append((p[0], p[2]))
+        back = math.radians(h)
+        out.append((p[0] - math.sin(back) * 300.0, p[2] + math.cos(back) * 300.0))
+    return out
+
+
+def _furniture_gantries():
+    """The gantries and the VMS boards of the road furniture (game/world/data/road_furniture.json, made from the
+    roads by the props unit), when the file is there."""
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "game", "world", "data",
+                        "road_furniture.json")
+    if not os.path.exists(path):
+        return []
+    with open(path, encoding="utf-8") as handle:
+        data = json.load(handle)
+    return [(p["x"], p["z"]) for p in data.get("props", []) if p.get("kind") in ("gantry", "vms")]
 
 
 def build_landmark_pois():

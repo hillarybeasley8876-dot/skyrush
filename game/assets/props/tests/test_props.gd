@@ -22,7 +22,7 @@ const SITES := "res://assets/props/sites/"
 const DYNAMIC_EXACT := ["Lens_R", "Lens_A", "Lens_G", "Spikes", "Canopy",
 		"BayNumbers"]
 const DYNAMIC_PREFIX := ["Barrier_", "LaneSignal_", "Support_", "Chevron_"]
-const SITE_FILES := ["toll_plaza", "gas_station", "charge_station", "sky_lane_pad",
+const SITE_FILES := ["toll_plaza", "toll_plaza_road", "gas_station", "charge_station", "sky_lane_pad",
 		"sky_lane_gate", "sky_lane_gantry", "guide_gantry_19", "guide_gantry_27",
 		"guide_gantry_34"]
 ## The surface budget of PR-INT1: a street prop is one node per material

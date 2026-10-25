@@ -28,6 +28,13 @@ const LANE_EDGE_MARGIN := 0.5
 ## The exit: the car descends at 3 m/s until the ground.
 const LANE_EXIT_DESCENT := 3.0
 
+## The last metres of a lane bring the car back to its centre line (the lane ends 1 m over a lane of
+## the road), and a car that has not touched the road this far past the end of the lane leaves the
+## rails and falls the rest (the road under the end may curve away from the last tangent).
+const LANE_EXIT_FADE := 60.0
+
+const LANE_EXIT_MAX_DISTANCE := 25.0
+
 const LANE_BANK_DEG := 3.5
 
 const LANE_BANK_MAX_DEG := 35.0

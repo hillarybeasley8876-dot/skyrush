@@ -12,6 +12,8 @@ const Layers := preload("res://world/api/layers.gd")
 const CityData := preload("res://world/loader/city_data.gd")
 const WorldErrorCounter := preload("res://world/tests/world_error_counter.gd")
 
+const PLAYER_CAR := "res://vehicle/player_car.tscn"
+
 var _failures := 0
 var _checks := 0
 ## Counts the engine errors of the run: the world must build without a single one.
@@ -82,6 +84,9 @@ func _fixture() -> Dictionary:
 		"pois": [
 			{"id": "charge", "kind": "charge", "x": -120, "y": 0, "z": 20, "heading_deg": 90,
 				"size": [24, 10], "label": "申城闪充", "asset": "charging_station"},
+			{"id": "charge_gantry", "kind": "charge", "style": "gantry", "x": -60, "y": 0, "z": 0,
+				"heading_deg": 90, "size": [15, 16], "span_m": 19, "road": "main_ew", "label": "申城闪充·测试路",
+				"asset": "guide_gantry_19"},
 			{"id": "gas", "kind": "gas", "x": 60, "y": 0, "z": 30, "heading_deg": 90,
 				"size": [80, 70], "label": "中石华", "asset": "gas_station"},
 			{"id": "toll", "kind": "toll", "x": 180, "y": 0, "z": 0, "heading_deg": 90,
@@ -138,24 +143,67 @@ func _check_signals(world: WorldBase) -> void:
 	_check(world.signal_state(&"j_mid", &"other") == 2, "unknown roads report green")
 
 
-## A car that drives through a closed toll lane raises the toll_evaded infraction. Two passes
-## six seconds apart have to raise two of them.
+## The toll lanes: a car that runs a closed lane at speed raises the toll_evaded infraction (two
+## passes, two infractions), a car that creeps through a closed lane pays (its arm lifts, no
+## infraction), and the ETC lane lets a car through at any speed.
 func _check_toll(world: WorldBase) -> void:
+	var plaza := world.find_child("TollPlaza_toll", true, false)
+	if plaza == null:
+		_fail("the toll plaza is missing")
+		return
+	var lane_z: Array = plaza.get("_lane_z")
+	var lane_open: Array = plaza.get("_lane_open")
+	var closed := []
+	var etc := -1
+	for i in lane_z.size():
+		if float(lane_z[i]) <= 0.0:
+			continue       # the eastbound lanes (local +z) run along +x
+		if bool(lane_open[i]):
+			etc = i if etc < 0 else etc
+		else:
+			closed.append(i)
+	_check(closed.size() >= 2 and etc >= 0, "the plaza has closed lanes and an ETC lane eastbound (%d, %d)"
+		% [closed.size(), etc])
+	if closed.size() < 2 or etc < 0:
+		return
 	_infractions.clear()
 	for run in 2:
-		var car := _make_car(world, Vector3(180.0, 1.0, 0.0))
-		for i in 10:
-			await get_tree().physics_frame
-		car.queue_free()
-		if run == 0:
-			for i in 360:
-				await get_tree().physics_frame
+		await _drive_toll_lane(world, float(lane_z[closed[0]]), 17.0)
+	_check(_toll_infractions() == 2, "%d toll_evaded infractions in two fast passes (expected 2)" % _toll_infractions())
+	_infractions.clear()
+	var open_at_arm := await _drive_toll_lane(world, float(lane_z[closed[1]]), 4.0, plaza, closed[1])
+	_check(_toll_infractions() == 0, "a car that creeps through a closed lane pays (%d infractions)" % _toll_infractions())
+	_check(open_at_arm, "the arm of the lane that was paid is up when the car reaches it")
+	await _drive_toll_lane(world, float(lane_z[etc]), 25.0)
+	_check(_toll_infractions() == 0, "the ETC lane lets a car through at 90 km/h (%d infractions)" % _toll_infractions())
+	await _check_broken_arm(world)
+
+
+## A probe car on a lane of the plaza (local z), driven along +x through it at a speed (m/s).
+## Returns whether the lane `lane` of the plaza was open while the car passed its arm.
+func _drive_toll_lane(world: WorldBase, z: float, speed: float, plaza: Node = null, lane: int = -1) -> bool:
+	var car := _make_car(world, Vector3(180.0 - 40.0, 1.0, z))
+	car.collision_mask = 0
+	car.gravity_scale = 0.0
+	var open_at_arm := false
+	var ticks := int((80.0 / speed) * Engine.physics_ticks_per_second)
+	for i in ticks:
+		car.linear_velocity = Vector3(speed, 0.0, 0.0)
+		await get_tree().physics_frame
+		var x := car.global_position.x - 180.0
+		if plaza != null and x > 0.0 and x < 6.0 and bool(plaza.call("lane_is_open", lane)):
+			open_at_arm = true
+	car.queue_free()
+	await get_tree().physics_frame
+	return open_at_arm
+
+
+func _toll_infractions() -> int:
 	var found := 0
 	for entry in _infractions:
 		if StringName(entry["kind"]) == &"toll_evaded":
 			found += 1
-	_check(found == 2, "%d toll_evaded infractions in two passes (expected 2)" % found)
-	await _check_broken_arm(world)
+	return found
 
 
 ## A broken barrier arm becomes debris on the layer 5 and comes to rest above the ground.
@@ -224,15 +272,43 @@ func _check_breaker(world: WorldBase) -> void:
 	police.queue_free()
 
 
-## A car that drives through the charge bay at speed starts a charge.
+## The Roadster that drives through the charge bay at speed starts a charge. The real car: a probe
+## box taller than its collider charged while the Roadster, whose collider ends 1.1 m over the
+## road, drove through every bay of the city without a charge.
 func _check_charge(world: WorldBase) -> void:
 	_charges = 0
-	var car := _make_car(world, Vector3(-120.0, 1.0, 20.0))
+	var car := (load(PLAYER_CAR) as PackedScene).instantiate() as VehicleBase
+	car.team = VehicleBase.Team.PLAYER
+	world.add_child(car)
+	# 30 m before the bay, on the road, heading east through it at 72 km/h
+	car.global_transform = Transform3D(Basis(Vector3.UP, -PI * 0.5), Vector3(-150.0, 0.6, 20.0))
+	await get_tree().physics_frame
 	car.linear_velocity = Vector3(20.0, 0.0, 0.0)
-	for i in 10:
+	for i in Engine.physics_ticks_per_second * 3:
 		await get_tree().physics_frame
+		if _charges > 0:
+			break
 	car.queue_free()
-	_check(_charges > 0, "driving through the charge bay starts a charge")
+	_check(_charges > 0, "the Roadster driving through the charge bay starts a charge")
+	# the gantry over the road: the Roadster drives under it along the road
+	_charges = 0
+	var gantry := world.find_child("ChargeStation_charge_gantry", true, false) as Node3D
+	_check(gantry != null, "the charge gantry is built")
+	if gantry != null:
+		_check(gantry.find_child("ChargeArea", true, false) is ChargeStation, "the gantry has a charge area")
+		_check(gantry.find_child("Posts", true, false) is StaticBody3D, "the posts of the gantry are solid")
+	var car2 := (load(PLAYER_CAR) as PackedScene).instantiate() as VehicleBase
+	car2.team = VehicleBase.Team.PLAYER
+	world.add_child(car2)
+	car2.global_transform = Transform3D(Basis(Vector3.UP, -PI * 0.5), Vector3(-90.0, 0.6, 2.875))
+	await get_tree().physics_frame
+	car2.linear_velocity = Vector3(22.0, 0.0, 0.0)
+	for i in Engine.physics_ticks_per_second * 3:
+		await get_tree().physics_frame
+		if _charges > 0:
+			break
+	car2.queue_free()
+	_check(_charges > 0, "the Roadster driving under the charge gantry starts a charge")
 
 
 func _make_car(world: WorldBase, position: Vector3) -> VehicleBase:

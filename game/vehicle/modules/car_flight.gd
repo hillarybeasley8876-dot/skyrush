@@ -74,6 +74,9 @@ func tick(state: PhysicsDirectBodyState3D, dt: float, steer: float, throttle: fl
 	readout.write_telemetry(car.telemetry, state.transform, state.linear_velocity)
 	if sky.landed:
 		_touchdown(state, absf(state.linear_velocity.y), thruster.airtime)
+	elif sky.released:
+		# Past the end of the lane and still in the air: the car falls the rest on its wheels.
+		end_flight()
 
 
 ## The glide outside the rails (the early exit): the car keeps its speed, the gravity is a

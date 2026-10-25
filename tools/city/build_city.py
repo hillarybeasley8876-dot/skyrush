@@ -152,7 +152,7 @@ def main(out=None):
     junctions = city_junctions.build_junctions(roads + streets + ramps)
     all_roads = roads + streets + ramps
     by_id = {r.id: r for r in all_roads}
-    pois = city_marks.build_pois(by_id) + city_marks.build_landmark_pois()
+    pois = city_marks.build_pois(by_id, junctions) + city_marks.build_landmark_pois()
     specials = city_blocks.special_blocks(all_roads, pois)
     for poly in [s["polygon"] for s in specials]:
         pass

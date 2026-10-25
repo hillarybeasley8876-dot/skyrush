@@ -195,18 +195,49 @@ and `selftest_skylanes.py` allow 26 and a cruise up to 240 m) and keep climbing 
 short: huangpu_jump cruises at 220 m (100 before), bund_riverside at 200 (100), century_canyon at 127 (85), dragon_stack at 86
 (60) and nanpu_cables at 80 (45), the last three as high as their length allows. The arcs: huangpu_jump 77 and 254 m, dragon_stack 200/172/172, century_canyon 72/45/44/44
 (the S bend from the D7 street to the Century Ave: 75 m sideways in a 40 m street between the towers), nanpu_cables 106,
-bund_riverside 400/317/317. `tools/city/patch_skylanes.py` makes the five lanes again from their rows and the roads of the file and
-changes nothing else (twice gives the same file); the sky lane rules and the shape check pass. The rules check the pitch only on
+bund_riverside 400/317/317. `tools/city/build_city.py` makes city.json again (a fresh build gives the file byte for byte); the sky lane rules,
+`selftest_skylanes.py` and the shape check pass. The rules check the pitch only on
 segments over 60 m: a 99 m rise in the first 8 m passed them, the patch prints the steepest segment and the first rise.
 In the game the curve has Catmull-Rom handles and is baked every 0.5 m (baked every 2 m the heading wobbled 15 % from tick to tick
 in a turn), the car banks into the turns of the lane (0.6 of a coordinated turn, at most 50 degrees and 150 deg/s of roll, read
 0.4 s ahead), slows before a turn that would need more than 70 deg/s (only the century S bend: 194 km/h), and the exit flies on
-along the last tangent. Hands-off at 60 Hz the peaks of the heading went from -4285/644/2094/1078/-2889 deg/s to 50/24/86/36/17
+along the last tangent: the last 60 m bring the car back to the centre of the lane, and a car that has not touched the road
+25 m past the end leaves the rails (the Nanpu lane lands on the curving Pudong loop: flying on straight, the car missed the
+ramp and fell out of the world). Hands-off at 60 Hz the peaks of the heading went from -4285/644/2094/1078/-2889 deg/s to 50/24/86/36/17
 (huangpu, dragon, century, nanpu, bund), the ticks of a snap from 33/16/46/16/37 to 0, the bank is 29-49 degrees, and the car lands
 17-26 m (0.3-0.5 s) past the end of the lane (dragon_stack 63 m). Unchanged: the throttle and the brake still move the car up and
 down in the tube (dossier 5.6), and a car that does not steer hits the obstacles of the lane (30 % of its speed). Check:
 `vehicle/test_sky_lane.gd`, `world/test_sky_lanes_fly.gd`, `world/test_sky_obstacles.gd`, `flight_probe.gd` (`--lane=id`,
 `--trace=FROM`, windowed `--shots=offsets --outdir=ABS`).
+
+## The charging stations and the toll plaza (the player: "many charging stations and toll stations are not done")
+
+The audit: the trigger of the charge bay stood on the centre of the bay model, so its 6 m box began 1.2 m over the road
+and the Roadster (its collider ends 1.1 m up) never charged: the battery only fell, and under 15 % the car is held at
+180 km/h (`test_gameplay_sites` charged a 1.3 m probe box). The three stations stood on the roads with columns, posts,
+dispensers and a 7 m totem in live lanes, and the nearest one was 910 m from the median lane point. Now the trigger
+stands on the ground (the test drives the real Roadster through it, mutation-checked), and the chargers are 12
+申城闪充 gantries over the main roads (`tools/city/city_charge.py`): the 27 m guide gantry of the props unit over the
+20-26 m roads, the 19 m one over the 15 m streets, placed farthest-first clear of the junctions, the other gantries, the
+sky lane pads and the roadblocks, a cyan panel each way (`sign_factory` style "charge", unshaded: lit, it read as a grey
+board), light bars and a light, the charge area over the carriageway; the nearest charger is 405 m from the median lane
+point (90 % within 746 m, all within 1,084 m). The plazas of the three old stations stay open squares, so the lots and
+the buildings do not change (a fresh build differs from the old file only in the POIs).
+The toll plaza of the G50 stood turned by 90 degrees along the road with its 20 booths in one lane, 38 of its 40 signal
+meshes red, the wrong arms up and every eastbound car counted as a toll dodger. The props unit has a 3+3 lane plaza now
+(`blender/props/toll_road.py`, `toll_plaza_road.glb`): its lanes lie on the lane centres of the road (0.00 m in the
+test), the inner lane each way is the ETC lane (green, its arm up), the closed lanes have their arms on slim islands on
+the lane lines, the booths stand on the median and outside the shoulders, an ETC gantry 30 m before the canopy, the
+canopy top at 7.4 m (a Big Hop clears it), the light markers are spot lights. A closed lane opens for the cars that pay:
+the traffic and the police (their ETC tag) and the player under 30 km/h; the player who runs it at speed breaks the arm
+and dodges the toll. `toll_plaza.gd` finds the lanes by their red signals, the arm of a lane by the lane in its extras,
+and turns the plazas of the props unit (built for traffic along x) by the heading of the road. The atlas build of the
+signs stopped on a module missing from its table (`tools/signs/prop_atlas.py`). Checks: `world/test_toll_road.gd` (the
+real plaza: six lanes on the road, the ETC lanes, a fast run, a creep through, the ETC lane at 100 km/h),
+`world/test_gameplay_sites.gd`, `assets/props/test_props.gd`.
+The two gas stations stood with their columns, a dispenser and the shop on the roads (Zhongshan E-2 Rd, a D9 street): the
+62 x 41 m of their ground colliders were searched on a 1 m raster for a spot with no collider on a carriageway or a lot,
+the Sinopex station moved 26 m and the Petrochino one turned 90 degrees (`city_marks.build_pois`; their old lots stay).
 
 ## The input method took the keys (the player: "Ctrl and Space easily trigger the input method")
 
@@ -226,7 +257,7 @@ touches at a place, `--mask=4` for the props alone), `frame_probe.gd` (`--seed`,
 and what the cast of a wheel probe costs there), `vehicle/tests/steer_report.gd` and `feel_report.gd` (`--hz=N`: the physics at N
 ticks a second; the vehicle tests count their ticks with the rate of the engine), `prop_lane_clearance.gd`, `respawn_probe.gd` (the wreck flow of the game at random
 places, followed for 4 s), `spawn_height_probe.gd` (the road height of every lane point), `flight_probe.gd` (every sky lane flown
-hands-off: the peaks of the turn, the bank, the g, the landing), `tools/city/patch_skylanes.py`, `tools/run_follow.py` (follow trials),
+hands-off: the peaks of the turn, the bank, the g, the landing), `tools/run_follow.py` (follow trials),
 `blender/city/roads/edgewalls.py`, `blender/city/roads/buildingcut.py`.
 
 ## Test state (153 tests, `python tools/run_tests.py --jobs 3 --timeout 420`)

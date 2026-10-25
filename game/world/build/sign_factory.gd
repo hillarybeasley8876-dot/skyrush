@@ -39,6 +39,9 @@ const DOT_SIZE := 4
 const PANEL_EMISSION := 0.25
 ## The energy of the emission of the name of a police station.
 const STATION_EMISSION := 1.1
+## The ground of the 申城闪充 panels and how much they glow.
+const CHARGE_BLUE := Color("003340")
+const CHARGE_EMISSION := 0.6
 ## The energy of the emission of a shop name board (the name is neon).
 const SHOP_EMISSION := 1.4
 ## The messages of the VMS boards (real words, no glyph soup).
@@ -94,7 +97,13 @@ func _apply_panel(panel: Dictionary) -> void:
 	var energy := SHOP_EMISSION if style == "shop" else PANEL_EMISSION
 	if style == "station":
 		energy = STATION_EMISSION
+	elif style == "charge":
+		energy = CHARGE_EMISSION
 	_apply(mesh, texture, energy)
+	if style == "charge":
+		# The charge panel is a light box: unshaded, so the lights of the street do not wash out its
+		# cyan ground (lit, it read as a grey board from the road).
+		(mesh.material_override as StandardMaterial3D).shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 
 
 ## The texture of a sign, in the style of the sign.
@@ -106,6 +115,8 @@ func _render_style(text: String, text_en: String, style: String) -> Texture2D:
 			return await _render_station(text)
 		"badge":
 			return await _render_badge(text)
+		"charge":
+			return await _render_charge(text, text_en)
 		_:
 			return await _render_panel(text, text_en, style)
 
@@ -200,6 +211,24 @@ func _render_station(text: String) -> Texture2D:
 		return _flat_texture(STATION_SIZE, STATION_BLUE)
 	var viewport := _make_viewport(STATION_SIZE, STATION_BLUE)
 	_text(viewport, text, "", STATION_SIZE, true, 0.62)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var image := viewport.get_texture().get_image()
+	viewport.queue_free()
+	if image == null:
+		return null
+	return ImageTexture.create_from_image(image)
+
+
+## The texture of a 申城闪充 gantry panel: white letters on the deep cyan of the charge brand,
+## in a white frame; it glows (CHARGE_EMISSION), so the gantry reads from a block away at night.
+func _render_charge(text: String, text_en: String) -> Texture2D:
+	if _headless:
+		return _flat_texture(GANTRY_SIZE, CHARGE_BLUE)
+	var viewport := _make_viewport(GANTRY_SIZE, CHARGE_BLUE)
+	_border(viewport, GANTRY_SIZE, CHARGE_BLUE)
+	# one line, as high as the panel allows: the panel is 1.7 m high and read from 100 m
+	_text(viewport, text if text_en == "" else "%s · %s" % [text, text_en], "", GANTRY_SIZE, false, 0.5)
 	await get_tree().process_frame
 	await get_tree().process_frame
 	var image := viewport.get_texture().get_image()

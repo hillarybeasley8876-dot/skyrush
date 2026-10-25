@@ -55,6 +55,8 @@ const SIGN_MATERIALS: Dictionary = {
 ## road name on it, and the world unit puts its own panels in its place.
 const HIDDEN_MATERIALS: Dictionary = {
 	"gantry": ["Prop_Sign", "Prop_SignLit"],
+	"guide_gantry_19": ["Prop_Sign", "Prop_SignLit"],
+	"guide_gantry_27": ["Prop_Sign", "Prop_SignLit"],
 }
 
 ## The mesh of a prop that carries a generated sign texture.

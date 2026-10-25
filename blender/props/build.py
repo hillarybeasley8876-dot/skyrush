@@ -1,7 +1,7 @@
 """Registry of every prop the unit builds (see build_all.py)."""
 import os
 
-from . import barriers, charge, furniture, gas, greens, lamps, neon, signs, skylane, toll
+from . import barriers, charge, furniture, gas, greens, lamps, neon, signs, skylane, toll, toll_road
 
 ROOT = os.path.expanduser("~/m/skyrush")
 OUT_STREET = os.path.join(ROOT, "game", "assets", "props", "street")
@@ -15,6 +15,7 @@ GROUPS = [
     (barriers, OUT_STREET),
     (neon, OUT_STREET),
     (toll, OUT_SITES),
+    (toll_road, OUT_SITES),
     (gas, OUT_SITES),
     (charge, OUT_SITES),
     (skylane, OUT_SITES),

@@ -292,6 +292,22 @@ def build_blocks(roads, window, water_polys, pois, specials=()):
     return blocks
 
 
+# The sites as they stood until the chargers became gantries over the roads
+# (city_charge), the toll plaza fitted its road and the gas stations moved off
+# the roads: their lots stay (open squares), so the lots and the buildings of
+# the city do not change. In the order the POIs made them.
+FORMER_STATIONS = [
+    # the toll plaza stood turned across the G50 on its middle eastbound lane
+    {"id": "toll_west", "kind": "toll", "x": -2070.0, "z": 734.6, "size": [160.0, 60.0]},
+    # the gas stations stood with columns and their shop on the roads
+    {"id": "gas_sinopex", "kind": "gas", "x": -1900.0, "z": 790.0, "size": [80.0, 64.0]},
+    {"id": "gas_petrochino", "kind": "gas", "x": 830.0, "z": 707.0, "size": [70.0, 50.0]},
+    {"id": "charge_sky", "kind": "charge", "x": 1680.0, "z": 420.0, "size": [80.0, 80.0]},
+    {"id": "charge_bund", "kind": "charge", "x": -700.0, "z": 230.0, "size": [60.0, 50.0]},
+    {"id": "charge_nanjing", "kind": "charge", "x": -330.0, "z": -520.0, "size": [60.0, 50.0]},
+]
+
+
 def special_blocks(roads, pois):
     """The declared blocks: the Bund frontage, the promenade, the pedestrian
     street, the POI sites and the Century Avenue green strips."""
@@ -353,9 +369,14 @@ def special_blocks(roads, pois):
                         "style": "park", "height_m": [0.0, 0.0],
                         "setback": 0.0, "seed": 15 + i,
                         "notes": "park:century_ave_south"})
-    for poi in pois:
+    # the lots of the former sites first: they came first in the list of the
+    # POIs when they made them (the order of the lots stays the same)
+    former = {f["id"] for f in FORMER_STATIONS}
+    for poi in FORMER_STATIONS + [p for p in pois if p["id"] not in former]:
         if poi["kind"] not in ("gas", "charge", "toll", "police_station"):
             continue
+        if poi.get("style") == "gantry" or poi.get("asset") == "toll_plaza_road":
+            continue        # a charger or a toll plaza on a road keeps no lot
         w, d = poi.get("size", [40.0, 40.0])
         x0, z0 = poi["x"] - w * 0.5, poi["z"] - d * 0.5
         out.append({"id": "plaza_poi_%s" % poi["id"], "district": "D9",

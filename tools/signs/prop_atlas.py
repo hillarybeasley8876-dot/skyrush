@@ -199,9 +199,12 @@ def build(out_dir=None):
     from props import atlas
     import guide_sign
     import site_signs
+    import site_signs_charge
     import town_signs
 
-    modules = {"town_signs": town_signs, "guide_sign": guide_sign, "site_signs": site_signs}
+    # every module the table names (site_signs_charge was missing: the atlas build stopped on its boards)
+    modules = {"town_signs": town_signs, "guide_sign": guide_sign, "site_signs": site_signs,
+               "site_signs_charge": site_signs_charge}
     tmp = os.path.join(ROOT, "tmp", "props", "boards")
     os.makedirs(tmp, exist_ok=True)
     os.environ["PROP_TEX_DIR"] = tmp
