@@ -111,7 +111,8 @@ def build_landmark_pois():
 
 BLOCK_INDEX = None
 SKY_REPORTS = {}           # the flight path of every lane: its corners and arcs (city_skylanes)
-SKY_SLOPE = 0.34           # the most a sky lane climbs or dives
+SKY_SLOPE = 0.47           # the most a sky lane climbs or dives (25 degrees: the
+                           # player asked for higher flights, 2026-10-25)
 SKY_STEP = 10.0            # the spacing of the plan points of a sky lane
 SKY_CLEAR = 10.0           # the sky lanes clear the lots by 10 m
 SKY_LIFT = 8.0             # a sky lane lands 8 m above the road
@@ -134,16 +135,16 @@ SKY_EXEMPT = ("landmark:dragon_pillar", "landmark:nanpu_tower_w",
 # the lead-in and the lead-out: they keep the lane clear of the towers.
 SKY_LANES = [
     ("huangpu_jump", "黄浦江飞跃", "st_fujian_rd", 300.0, 1, 0, 300.0,
-     "lujiazui_w_rd", 400.0, 1, 0, 300.0, 100.0, []),
+     "lujiazui_w_rd", 400.0, 1, 0, 300.0, 220.0, []),
     ("dragon_stack", "龙柱立交飞跃", "ns_elevated", 1730.0, 1, 1, 120.0,
-     "ns_elevated", 2150.0, 1, 1, 120.0, 60.0, []),
+     "ns_elevated", 2150.0, 1, 1, 120.0, 100.0, []),
     ("century_canyon", "世纪大道峡谷", "st_d7_ns_15", 300.0, -1, 0, 250.0,
-     "century_ave", 1050.0, 1, 1, 250.0, 90.0,
+     "century_ave", 1050.0, 1, 1, 250.0, 150.0,
      [(1345.8, -88.8), (1357.8, -136.8), (1381.8, -160.8), (1441.8, -136.8)]),
     ("nanpu_cables", "南浦大桥缆索", "nanpu_bridge", 492.0, 1, 0, 250.0,
-     "nanpu_pudong_loop", 60.0, 1, 0, 60.0, 60.0, []),
+     "nanpu_pudong_loop", 60.0, 1, 0, 60.0, 100.0, []),
     ("bund_riverside", "外滩江畔", "st_jiujiang_rd", 300.0, -1, 0, 300.0,
-     "lujiazui_w_rd", 500.0, 1, 0, 300.0, 100.0, []),
+     "lujiazui_w_rd", 500.0, 1, 0, 300.0, 200.0, []),
 ]
 
 
@@ -269,8 +270,9 @@ def _sky_lane(by_id, blocks, spec):
     lead = _road_run(road, s_pad, lead_in, direction, lane_index)
     tail = _road_run(goalr, goal_s - goal_dir * lead_out, lead_out,
                      goal_dir, goal_lane)
-    cruise = min(cruise, pad_p[1] + SKY_SLOPE * lead_in,
-                 end_y + SKY_SLOPE * lead_out)
+    # the climb and the dive may go on past the roads of the pad and of the
+    # landing (city_skylanes keeps them clear of the lots); a lane too short
+    # for the wanted cruise cruises lower
     # the flight between the two: the gates keep it clear of the towers
     mid = [[g[0], g[1]] for g in gates]
     parts = [_densify(lead), _densify(mid) if mid else [], _densify(tail)]

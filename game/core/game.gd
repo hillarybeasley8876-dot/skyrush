@@ -3,6 +3,7 @@ extends Node
 ## pause and respawn. Core-owned.
 
 const InputSetup := preload("res://core/input_setup.gd")
+const InputLanguage := preload("res://core/input_language.gd")
 
 var world: WorldBase
 var player: VehicleBase
@@ -18,6 +19,8 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	options = _parse_args(OS.get_cmdline_user_args())
 	InputSetup.register_actions()
+	# The input method of the player must not take the keys of the game (Ctrl+Space, Shift).
+	add_child(InputLanguage.new())
 	Events.slowmo_request.connect(_on_slowmo_request)
 
 

@@ -32,10 +32,11 @@ EXEMPT = ("landmark:dragon_pillar", "landmark:nanpu_tower_w",
 RUN_UP = 300.0                 # the straight run-up of a launch pad
 RUN_UP_TURN = 3.0              # degrees of heading change over the run-up
 HEADING_TOLERANCE = 10.0       # degrees
-PITCH_LIMIT = 20.0             # degrees over 60 m
+PITCH_LIMIT = 26.0             # degrees over 60 m (the lanes climb at 25)
 CLEARANCE = 10.0               # the lane clears the lots by 10 m
 RING_SPACING = 250.0           # the N2 rings along a lane
-MAX_CRUISE = 120.0             # the highest a sky lane flies
+MAX_CRUISE = 240.0             # the highest a sky lane flies (the player asked for
+                               # higher flights, 2026-10-25: up to 220 m)
 MIN_LENGTH = 300.0             # the shortest a sky lane may be
 OVER_RIVER = 200.0             # the river lanes cross the Huangpu
 SCRATCH = "F:/dev/skyrush-out/tmp/city-skylanes/city.json"

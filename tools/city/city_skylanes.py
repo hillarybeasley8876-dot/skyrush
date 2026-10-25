@@ -29,6 +29,8 @@ TUBE_DOWN = 4.0          # m: the tube reaches 3 m under the lane, the car 1 m m
 OFF_PLAN = 2.0           # m: a point of the lane this far from the plan is a new stretch
 LAND_LIFT = 1.0          # m: the lane ends this far over the road of the landing (the exit descends the car from there at 3 m/s)
 OUT_STEP = 4.0           # m: the spacing of the points of the lane
+MAX_LONGER = 1.1         # the legs of a corner list are at most this much longer than the plan (merged corners must not make a detour)
+MAX_DEVIATION = 150.0    # m: the farthest a smooth lane strays from its plan
 CELL = 50.0              # m: the cells of the lot index
 
 
@@ -262,30 +264,34 @@ def _ramp_integral(d, length, ramp):
 
 
 def height_profile(cum, pad_y, cruise, end_y, climb, dive, slope):
-    """The height of every point: up from the pad, the cruise, down to `end_y`. The climb takes at least `climb` metres and the
-    dive at least `dive` (the roads of the pad and of the landing), longer when the slope would pass `slope`; the slope ramps in
-    and out over SLOPE_RAMP metres. A lane too short for both cruises lower. Returns (heights, cruise)."""
+    """The height of every point: up from the pad, the cruise, down to `end_y`. The climb is never steeper than `slope` (the
+    slope ramps in and out over SLOPE_RAMP metres) and spreads over `climb` metres when the lane has the room (the road of the
+    pad), the dive likewise over `dive` metres; a lane too short to climb to the cruise at the full slope cruises lower.
+    Returns (heights, cruise)."""
     total = cum[-1]
 
-    def lengths(c):
-        h1 = max(c - pad_y, 0.0)
-        h2 = max(c - end_y, 0.0)
-        return max(climb, h1 / slope + SLOPE_RAMP), max(dive, h2 / slope + SLOPE_RAMP)
+    def shortest(c):
+        return max(c - pad_y, 0.0) / slope + SLOPE_RAMP, max(c - end_y, 0.0) / slope + SLOPE_RAMP
 
     cruise = max(cruise, pad_y, end_y)
     lo = max(pad_y, end_y)
-    if sum(lengths(cruise)) > total:
+    if sum(shortest(cruise)) > total:
         hi = cruise
         for _ in range(40):
             mid = (lo + hi) / 2.0
-            if sum(lengths(mid)) > total:
+            if sum(shortest(mid)) > total:
                 hi = mid
             else:
                 lo = mid
         cruise = lo
-    d1, d2 = lengths(cruise)
-    if d1 + d2 > total:
-        d1, d2 = d1 * total / (d1 + d2), d2 * total / (d1 + d2)
+    s1, s2 = shortest(cruise)
+    if s1 + s2 > total:
+        s1, s2 = s1 * total / (s1 + s2), s2 * total / (s1 + s2)
+    # the room left goes to the gentle climb over the road of the pad and the dive over the road of the landing
+    want1, want2 = max(climb - s1, 0.0), max(dive - s2, 0.0)
+    room = max(total - s1 - s2, 0.0)
+    share = 1.0 if want1 + want2 <= room else room / (want1 + want2)
+    d1, d2 = s1 + want1 * share, s2 + want2 * share
     h1 = cruise - pad_y
     h2 = cruise - end_y
     y = []
@@ -375,6 +381,19 @@ def _violations(path, cum, y, plan_off, lots):
     return out
 
 
+def _detour(corners, plan, plan_length):
+    """Why a corner list strays from its plan (its legs are longer than MAX_LONGER of the plan, or a corner is more than
+    MAX_DEVIATION from it), or "". The arcs only cut the corners: the legs are the longest the lane can be."""
+    legs = sum(math.dist(a, b) for a, b in zip(corners, corners[1:]))
+    if legs > plan_length * MAX_LONGER:
+        return "a detour: %.0f m of legs for %.0f m of plan" % (legs, plan_length)
+    for c in corners[1:-1]:
+        away = min(_segment_distance(c, a, b) for a, b in zip(plan, plan[1:]))
+        if away > MAX_DEVIATION:
+            return "a corner %.0f m from the plan" % away
+    return ""
+
+
 def _arc_of(d, spans):
     """The corner whose arc holds the distance d along the path, or None (a straight leg)."""
     for k, span in enumerate(spans):
@@ -388,11 +407,15 @@ def flight_plan(plan, pad_y, cruise, end_y, lots, climb, dive, slope):
     clear of the lots. Returns (points every STEP, distances, heights, report)."""
     corners = simplify(plan, SIMPLIFY)
     line = Plan(plan)
+    plan_length = sum(math.dist(a, b) for a, b in zip(plan, plan[1:]))
     best = None
     tried = []
     for cand, names in corner_sets(corners):
         caps = [MAX_RADIUS] * (len(cand) - 2)
-        fail = ""
+        fail = _detour(cand, plan, plan_length)
+        if fail:
+            tried.append((names, [], fail))
+            continue
         for _ in range(200):
             radii = allocate(cand, caps)
             path, cum, spans = arc_path(cand, radii)

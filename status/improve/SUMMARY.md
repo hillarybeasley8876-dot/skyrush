@@ -188,8 +188,12 @@ huangpu_jump, 16-46 ticks of a snap per lane (`game/tools/flight_probe.gd` flies
 `city_marks._sky_lane`) makes a lane of straight legs and arcs now: the corners of the plan (Douglas-Peucker, 2 m), neighbouring
 corners may merge into the corner where the legs before and after them meet, every corner gets the widest arc its legs allow (at
 most 400 m), narrowed while it passes less than 10 m over a lot or, off the plan, less than 9 m beside a lot the tube reaches; of
-the ways to merge, the widest tightest turn wins. The height climbs from the pad with the slope ramping in over 80 m, cruises,
-dives and ramps out 1 m over the road. The arcs: huangpu_jump 77 and 254 m, dragon_stack 200/172/172, century_canyon 72/45/44/44
+the ways to merge, the widest tightest turn wins (a corner list whose legs are 10 % longer than the plan, or with a corner 150 m
+off it, is a detour and does not count). The height climbs from the pad with the slope ramping in over 80 m, cruises, dives and
+ramps out 1 m over the road. The player: "it does not fly high enough": the lanes climb at 25 degrees now (20 before; the rule
+and `selftest_skylanes.py` allow 26 and a cruise up to 240 m) and keep climbing over the city when the road of the pad is too
+short: huangpu_jump cruises at 220 m (100 before), bund_riverside at 200 (100), century_canyon at 127 (85), dragon_stack at 86
+(60) and nanpu_cables at 80 (45), the last three as high as their length allows. The arcs: huangpu_jump 77 and 254 m, dragon_stack 200/172/172, century_canyon 72/45/44/44
 (the S bend from the D7 street to the Century Ave: 75 m sideways in a 40 m street between the towers), nanpu_cables 106,
 bund_riverside 400/317/317. `tools/city/patch_skylanes.py` makes the five lanes again from their rows and the roads of the file and
 changes nothing else (twice gives the same file); the sky lane rules and the shape check pass. The rules check the pitch only on
@@ -203,6 +207,15 @@ along the last tangent. Hands-off at 60 Hz the peaks of the heading went from -4
 down in the tube (dossier 5.6), and a car that does not steer hits the obstacles of the lane (30 % of its speed). Check:
 `vehicle/test_sky_lane.gd`, `world/test_sky_lanes_fly.gd`, `world/test_sky_obstacles.gd`, `flight_probe.gd` (`--lane=id`,
 `--trace=FROM`, windowed `--shots=offsets --outdir=ABS`).
+
+## The input method took the keys (the player: "Ctrl and Space easily trigger the input method")
+
+On a Chinese Windows the input method of the player (Sogou here, Microsoft Pinyin too) takes the keys of the game: Ctrl+Space
+(the nitro and the hop together) turns it on, Shift (the drift) switches it between Chinese and English, and then W, A, S, D go
+into its candidate box. `core/input_language.gd` (a child of the Game autoload) switches the game window to the English layout
+of the machine while it has the focus, turns the input method of the window off, and gives the player's layout back when the
+game loses the focus or quits (`--keep-layout` leaves it alone). Checked on this machine: the layouts are zh (Sogou, Microsoft
+Pinyin) and en-US, the guard goes 0 -> 1 and back to 0.
 
 ## Tools added (game/tools, tools/)
 
