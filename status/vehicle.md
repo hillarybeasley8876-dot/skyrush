@@ -1,6 +1,6 @@
 # vehicle status
 
-Arcade car physics for SKYRUSH: a RigidBody3D with four ShapeCast3D wheel probes (Jolt, 120 Hz),
+Arcade car physics for SKYRUSH: a RigidBody3D with four ShapeCast3D wheel probes (Jolt, 60 Hz, interpolated),
 QQ-style assisted drift, N2 boosts, thruster moves, sky lane flight. Every car of the game is an
 `ArcadeCar` with a `CarSpec` (the roadster for the player, the NPC presets for the traffic, the
 rivals and the police).

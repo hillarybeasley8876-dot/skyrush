@@ -9,7 +9,8 @@ executed and observed. Written for the implementer (MiniMax M3.1): follow the nu
 1. Renderer: **Forward+ on native Metal 4.0** (`rendering_device/driver.macos="metal"`). Not Vulkan/MoltenVK.
 2. Physics: write `physics/3d/physics_engine="Jolt Physics"` **explicitly**. Without the key, 4.7.2 uses
    `DEFAULT` = **GodotPhysics3D** (verified by fingerprint, §6.1). GodotPhysics3D is 7x slower with debris.
-3. Physics tick **120 Hz**; `continuous_cd = true` on the player car and on every debris body.
+3. Physics tick **120 Hz** (the game runs at **60 Hz** with the physics interpolation on: status/improve/SUMMARY.md);
+   `continuous_cd = true` on the player car and on every debris body.
 4. Car = `RigidBody3D` + 4 **ShapeCast3D sphere** wheel probes (`snippets/raycast_wheel_car.gd`).
    Do NOT use RayCast3D probes (unstable landings, §6.3). Do not use VehicleBody3D (exists, untested here).
 5. Trimesh collision is **one-sided**: set `backface_collision = true` on barrier/wall shapes.

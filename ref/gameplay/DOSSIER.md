@@ -21,7 +21,7 @@ faces Blender −Y ends up facing +Z after glTF export). If `ref/tech` states an
 
 | # | What | Value | Basis |
 |---|------|-------|-------|
-| 1 | Physics tick | 120 Hz, physics interpolation ON | Rocket League GDC 2018 (src) |
+| 1 | Physics tick | 120 Hz, physics interpolation ON (the game runs at 60 Hz, interpolated: status/improve/SUMMARY.md, the frame rate) | Rocket League GDC 2018 (src) |
 | 2 | Car mass | 1,900 kg (brief); real target 1,700 kg | MotorTrend (src) |
 | 3 | Base top speed | 250 km/h (69.4 m/s) | (ours); QQ PC top car 225 km/h (src) |
 | 4 | N₂ boost top speed | 300 km/h (83.3 m/s), +12 m/s², 3.0 s | QQ nitro 3.08–3.35 s (src) |

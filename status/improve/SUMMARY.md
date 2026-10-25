@@ -78,8 +78,6 @@ thrown up without a hop, the last 6 s of the car (position, speed, wheels, what 
 * `st_d7b_ew_11`: the right turn into it from `st_d7b_ns_7` goes to the far end of the lane of the other direction (92 m, over the
   river); `st_link_25/33` start 10-15 m out over the river (roads data; `tools/spawn_height_probe.gd` lists them).
 * 18,329 tree trunks (0.25 m) stop a car dead: they stand (a street tree is a tree), they cost 40 % of the damage of a wall.
-* The physics at 60 Hz would make the frames 35 % shorter, but the tyre law depends on the step (the frame rate below): a decision
-  of the brief.
 
 ## The frame rate (the player: "the frame rate is not stable")
 
@@ -124,17 +122,24 @@ writes down what the ticks of every long frame spent (the units, the engine part
 drive with their time; `--heat=N` starts a pursuit with the record, `--ab=police|rate` are new switches. The run-to-run spread of
 the drives is also other work on the machine: a test run beside a drive made every unit 2-3 times slower.
 
-**The physics at 60 Hz (a decision of the brief, not made).** In the same drive in turns (`--ab=rate`) the frame went from 19.6 to
-12.7 ms (mean), 17.9 to 12.8 ms (median), 34 to 20 ms (p95): at 120 Hz the median frame does not fit into a frame of a 60 Hz screen
-(16.7 ms), and with vsync a frame that misses waits for the next one (30 fps). Everything of the feel report is the same at 60 Hz
-(the 0-100, the top speed, the brake, the launch, the drift and its exits, the hops, the stability) except the cornering: the yaw
-rate at the full wheel 9-18 % lower at 80-200 km/h (`steer_report.gd --hz=60`: 80 km/h 31.4 -> 28.5 deg/s), the lateral grip
-1.24-1.46 -> 1.13-1.20 g, a small swing back after the release. The cause is the tyre law: the lateral force of a wheel is the force
-that cancels its slip in one tick for a quarter of the mass, capped by the friction; the fronts are at the cap at both rates (the
-same 15 kN), the rears are not, and at 60 Hz they over-correct (their slip changes its sign every tick at 160 km/h) and give 6.3
-instead of 8.5 kN. A move to 60 Hz needs a lateral solver that does not depend on the step (the four wheels solved together with the
-effective mass of the body at each contact), and then the cornering tuned back to the numbers of 120 Hz. The vehicle reports count
-the ticks of the rate now (`vehicle_test.gd`, `steer_report.gd`, `feel_report.gd`) and `--hz=N` runs them at another rate.
+**The physics runs at 60 Hz.** In the same drive in turns (`--ab=rate`) the frame went from 19.6 to 12.7 ms (mean), 17.9 to
+12.8 ms (median), 34 to 20 ms (p95): at 120 Hz the median frame did not fit into a frame of a 60 Hz screen (16.7 ms), and with vsync
+a frame that misses waits for the next one (30 fps). The cornering depended on the step: the lateral force of a wheel cancelled its
+slip in one tick for a quarter of the mass, so at 60 Hz the rears over-corrected (their slip changed its sign every tick at
+160 km/h) and the full wheel turned 9-18 % less. Now the two axles are solved together (the impulse of one axle changes the lateral
+speed at the other through the turn and the roll of the body), and the contact patches, found by the probes of the last tick, are
+moved to the lag of a 120 Hz tick (the tuning was made with it): `steer_report.gd` gives the same yaw rates at 60, 120 and 240 Hz
+(57.8, 31.4, 21.9, 17.3, 14.8 deg/s at 40-200 km/h), and the feel report at 60 Hz gives the cornering, the drift, the hops, the
+brake and the launch of 120 Hz. At most 2 ticks a frame
+(it was 4): below 30 fps the game slows down instead of falling into a spiral of ticks. The physics interpolation is on: at 60 ticks
+and 120 frames a second the car moved on every other frame only (`tools/smooth_probe.gd`: the speed on the screen 100 km/h with a
+spread of 50 km/h, 20 % of the frames a judder), interpolated the spread is 0.07 km/h for the car and 0.3 km/h for the camera. The
+nodes moved every drawn frame are left out of it (the wheels, the wing, the rain, the pools, the multimeshes), every teleport resets
+it, and so does the safety pass of the camera when it moves the camera (from 1 cm: a reset draws the camera at the tick). A fast
+hit counts the speed the continuous collision of Jolt leaves to the next step (a head-on at 100 km/h: 42,600 N*s at 60 Hz before,
+51,600 now, 51,700 at 120 Hz). The traffic, the police and the far rivals think at 60 Hz as before; the tests and the reports count
+the ticks of the rate (`--hz=N` runs a test at another rate). Two tests failed at 60 Hz for reasons of their own: the ramming box of
+`test_wreck` stood half under the road and fell through it, `test_rival_driving` parked the player on the line of the rivals.
 
 Left: a police car costs about 0.6 ms a tick (a chase with four of them runs at 30 fps); the HUD about 0.1 ms a frame (the 1.3 ms of a
 drive was the spread of the drives: in a parked A/B it is 0.1 ms), the shadow of the sun 0.8 ms, the occlusion culling 0.6 ms of CPU (the GPU is not the limit on an RTX 3090: the

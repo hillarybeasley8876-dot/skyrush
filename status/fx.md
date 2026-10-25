@@ -45,7 +45,7 @@ On top of that:
   depth test;
 - every strip starts at the full width of the tyre (the car's right vector is the width axis of
   the first quad), so the first quad is 24 cm wide and not a hairline;
-- the points are added in `_physics_process` (120 Hz) and the gap grows with the speed
+- the points are added in `_physics_process` (60 Hz) and the gap grows with the speed
   (`maxf(SKID_MAX_GAP, speed_mps * SKID_GAP_SECONDS / physics_ticks_per_second)`);
 - a strip is only cut after the airborne grace period.
 
