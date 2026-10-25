@@ -36,6 +36,9 @@ var _active: Array[int] = []
 
 
 func build(roads: Array) -> void:
+	# The pool moves its probes to new places now and then: no physics interpolation (a moved probe
+	# would slide there over a tick).
+	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	for road in roads:
 		if not road is Dictionary:
 			continue

@@ -69,6 +69,11 @@ func _find_nodes() -> void:
 		wheels.append(model.find_child(names[i], true, false) as Node3D if model != null else null)
 		calipers.append(model.find_child(caliper_names[i], true, false) as Node3D if model != null else null)
 	wing = model.find_child("Wing", true, false) as Node3D if model != null else null
+	# The wheels, the calipers and the wing move every drawn frame: they are left out of the physics
+	# interpolation (their own motion shows at once) and still follow the interpolated body.
+	for node: Node3D in wheels + calipers + [wing]:
+		if node != null:
+			node.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	_cache_bases()
 	lights.bind(model)
 

@@ -79,6 +79,7 @@ func can_freeze() -> bool:
 ## is the connector curve, not the lane.
 func place_on_lane() -> void:
 	global_transform = follower.transform()
+	reset_physics_interpolation()     # from the parking place under the world: no streak
 
 
 ## The road ends here: the car stops at the end of the lane and waits. The director takes it

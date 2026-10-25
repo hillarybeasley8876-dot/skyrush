@@ -12,8 +12,10 @@ func _ready() -> void:
 	var car := (load("res://vehicle/player_car.tscn") as PackedScene).instantiate()
 	add_child(car)
 	Game.player = car
-	# The player stands well behind the grid: it must not overlap a rival.
-	car.reset_to(Transform3D(Basis(Vector3.UP, PI * 0.5), Vector3(380.0, 0.04, 196.0)))
+	# The player is parked in the infield, off the loop. The rivals start on the north straight: the old
+	# spot on the south straight was on their line, and they ran into the parked car after 19 s (at
+	# 120 Hz the field got through the pile-up, at 60 Hz three of them were held up).
+	car.reset_to(Transform3D(Basis(Vector3.UP, PI * 0.5), Vector3(-450.0, 0.04, 0.0)))
 	_rivals = (load("res://ai/rivals/rival_director.tscn") as PackedScene).instantiate()
 	add_child(_rivals)
 	var route := Game.world.get_route(&"sandbox_loop")

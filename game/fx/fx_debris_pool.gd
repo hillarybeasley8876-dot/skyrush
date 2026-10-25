@@ -67,6 +67,8 @@ func _add_pool(count: int, material: Material, tint: Color, mesh: ArrayMesh, kin
 	multi.instance_count = count
 	multi.mesh = mesh
 	var mi := MultiMeshInstance3D.new()
+	# its instances are set outside the physics step (or never move): no physics interpolation
+	mi.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	mi.material_override = material
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	mi.multimesh = multi

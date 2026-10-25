@@ -191,6 +191,7 @@ func park() -> void:
 	_parking_next = (_parking_next + 1) % PARKING_PLACES
 	var spot := PARKING + Vector3(float(_parking_next) * PARKING_STEP, 0.0, 0.0)
 	global_transform = Transform3D(Basis(), spot)
+	reset_physics_interpolation()
 	linear_velocity = Vector3.ZERO
 	angular_velocity = Vector3.ZERO
 

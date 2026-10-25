@@ -433,6 +433,8 @@ func _flush(parent: Node3D) -> void:
 		multimesh.mesh = mesh
 		multimesh.instance_count = list.size()
 		var mmi := MultiMeshInstance3D.new()
+		# its instances are set outside the physics step (or never move): no physics interpolation
+		mmi.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 		mmi.name = "Furniture_" + String(key).replace("|", "_")
 		mmi.multimesh = multimesh
 		multimeshes[key] = multimesh

@@ -50,6 +50,9 @@ var last_reassign_ms := 0.0
 
 
 func _ready() -> void:
+	# The pool moves its nodes to new places now and then: no physics interpolation (a moved node
+	# would slide there over a tick).
+	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	_decal_texture = _make_radial_texture()
 	for i in max_omni:
 		var light := OmniLight3D.new()

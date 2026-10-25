@@ -13,6 +13,10 @@ var DT: float = 1.0 / Engine.physics_ticks_per_second
 const RAM_SPEED := 15.0     ## m/s: the speed of the body that rams the car
 const CAR_SPEED := 5.0      ## m/s: the speed of the car that is rammed
 const RAM_OFFSET := 0.6     ## m: how far off the centre the hit lands
+## m: the centre of the ramming box over the road (the box spans 0.15-1.65 m, the body of a car). It
+## stood on the road (half of it under the deck) and fell through it, so it met the car with its top
+## edge at 60 Hz: the solver pushed the car up instead of along.
+const RAM_HEIGHT := 0.9
 const YAW_LIMIT := 30.0     ## deg: how far the car has to turn
 const ROLL_LIMIT := 20.0    ## deg: how far the car has to roll on a side hit
 const REST_LIMIT := 3.0     ## s: how long the wreck may take to come to a stop
@@ -139,7 +143,8 @@ func _ram(car: TrafficCar, offset: Vector3) -> void:
 	body.collision_layer = 1 << 1
 	body.collision_mask = 1 << 1
 	body.mass = 1900.0
+	body.gravity_scale = 0.0     # it does not collide with the road (its mask): it would fall through
 	add_child(body)
-	var position := car.global_position + offset - Vector3(6.0, 0.0, 0.0)
+	var position := car.global_position + offset - Vector3(6.0, 0.0, 0.0) + Vector3.UP * RAM_HEIGHT
 	body.global_transform = Transform3D(Basis.IDENTITY, position)
 	body.linear_velocity = Vector3(RAM_SPEED + CAR_SPEED, 0.0, 0.0)

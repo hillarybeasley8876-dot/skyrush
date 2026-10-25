@@ -140,6 +140,8 @@ func _make_multimesh(parent: Node3D, node_name: String, mesh: ArrayMesh, count: 
 	for i in count:
 		multimesh.set_instance_custom_data(i, Color(0, 0, 0, 0))
 	var mmi := MultiMeshInstance3D.new()
+	# its instances are set outside the physics step (or never move): no physics interpolation
+	mmi.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	mmi.name = node_name
 	mmi.multimesh = multimesh
 	if material != null:

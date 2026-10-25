@@ -111,6 +111,7 @@ func set_active(active: bool) -> void:
 func setup(xform: Transform3D, _across: Vector3, carriageway: float, heat: int,
 		seed_value: int) -> void:
 	global_transform = xform
+	reset_physics_interpolation()
 	var gap := GAP if heat < 4 else 0.0
 	# The block stands on the whole carriageway, but it is never narrower than its cars and
 	# the gap: a block without a gap is a wall, and a gap of less than a car is no gap.

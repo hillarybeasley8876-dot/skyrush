@@ -13,6 +13,10 @@ const CameraBoost := preload("res://vehicle/camera/camera_boost.gd")
 const CameraEffects := preload("res://vehicle/camera/camera_effects.gd")
 const CameraRig := preload("res://vehicle/camera/camera_rig.gd")
 const TakedownCam := preload("res://vehicle/camera/takedown_cam.gd")
+## m: the safety pass leaves the camera alone below this. A camera the tick held against a wall is
+## found again within a hair of its spot, and every move resets the physics interpolation (the
+## camera was drawn at the tick, not between two: a judder on the screen).
+const SAFETY_MIN_MOVE := 0.01
 
 @export var camera_path: NodePath = ^"Camera"
 @export var overlay_path: NodePath = ^"Overlay"
@@ -37,6 +41,8 @@ var _bank: float
 var _preset: int = CameraPresets.Preset.NEAR
 var _look_back: bool = false
 var _flying: bool = false
+## True on the tick the camera snapped to its car (the physics interpolation is reset then).
+var _jumped: bool = false
 var _started: bool = false
 var _snap: bool = false
 
@@ -112,8 +118,10 @@ func _process(_delta: float) -> void:
 	var space := get_world_3d().direct_space_state
 	var safe := _rig.clamp_to_clear(space, _player.global_position
 			+ Vector3.UP * CameraMath.COLLISION_ANCHOR_HEIGHT, current)
-	if safe != current:
+	if safe.distance_squared_to(current) > SAFETY_MIN_MOVE * SAFETY_MIN_MOVE:
 		_camera.global_transform = Transform3D(_camera_basis(safe), safe)
+		# Drawn at the safe spot at once: interpolated, it would slide out of the wall over a tick.
+		_camera.reset_physics_interpolation()
 
 
 ## The camera follows Game.player and switches over as soon as the game hands it a new car.
@@ -210,6 +218,7 @@ func _update_position(dt: float) -> void:
 	if not _started:
 		_started = true
 		_pos = desired
+		_jumped = true
 		return
 	_pos = CameraMath.damp_vec(_pos, desired, lambda, dt)
 
@@ -245,6 +254,10 @@ func _apply_chase_transform(dt: float) -> void:
 				+ Vector3.UP * CameraMath.COLLISION_ANCHOR_HEIGHT, ideal)
 	final += _shake.offset
 	_camera.global_transform = Transform3D(_camera_basis(final), final)
+	if _jumped:
+		# The camera snapped to a new car: it is not drawn sliding there from the old place.
+		_camera.reset_physics_interpolation()
+		_jumped = false
 	_camera.fov = _fov
 
 

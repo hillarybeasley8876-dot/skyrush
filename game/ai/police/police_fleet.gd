@@ -140,3 +140,4 @@ static func place_unit(car: PoliceCar, role: Role, ctx: DriveContext, xform: Tra
 		offset = ctx.graph.closest_offset(lane, xform.origin)
 	car.configure(ctx, car.kind, role, lane, offset, seed_value)
 	car.global_transform = xform
+	car.reset_physics_interpolation()

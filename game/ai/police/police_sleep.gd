@@ -50,5 +50,6 @@ func roll_lane(car: RigidBody3D, follower: LaneFollower, speed: float, dt: float
 	direction = direction.normalized()
 	var yaw := atan2(-direction.x, -direction.z)
 	car.global_transform = Transform3D(Basis(Vector3.UP, yaw), position)
+	car.reset_physics_interpolation()
 	car.linear_velocity = direction * maxf(speed, 0.0)
 	car.angular_velocity = Vector3.ZERO

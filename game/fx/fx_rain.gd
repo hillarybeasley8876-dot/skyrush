@@ -45,6 +45,8 @@ var _normal_image: Image
 
 
 func _ready() -> void:
+	# The rain follows the camera every drawn frame: no physics interpolation for it.
+	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	_point_image = Image.create(TUNE.SPLASH_GRID, TUNE.SPLASH_GRID, false, Image.FORMAT_RGBF)
 	_point_image.fill(Color(0.0, 0.0, 0.0))
 	_normal_image = Image.create(TUNE.SPLASH_GRID, TUNE.SPLASH_GRID, false, Image.FORMAT_RGBF)

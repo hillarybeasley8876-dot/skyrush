@@ -139,6 +139,8 @@ func _add_rings(lane: SkyLane, mesh: Mesh, transforms: Array[Transform3D],
 	multimesh.mesh = mesh
 	multimesh.instance_count = transforms.size()
 	var mmi := MultiMeshInstance3D.new()
+	# its instances are set outside the physics step (or never move): no physics interpolation
+	mmi.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	mmi.name = "RingGates"
 	mmi.multimesh = multimesh
 	if material != null:

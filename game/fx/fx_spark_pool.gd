@@ -58,6 +58,8 @@ func _ready() -> void:
 	_multi.mesh = quad
 
 	_mesh_instance = MultiMeshInstance3D.new()
+	# its instances are set outside the physics step (or never move): no physics interpolation
+	_mesh_instance.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	_mesh_instance.name = "Sparks"
 	_mesh_instance.material_override = _material
 	_mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
