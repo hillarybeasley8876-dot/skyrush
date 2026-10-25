@@ -24,14 +24,19 @@ func setup(spec: CarSpec) -> void:
 	_spec = spec
 
 
-## Smoothed steering input. The keyboard ramps at STEER_RAMP /s toward the target and returns at
-## STEER_RETURN /s; the gamepad curve is applied before this (player_input.gd) and the stick is
-## not ramped at all (dossier 4.5).
+## Smoothed steering input. The keyboard turns the wheel in at STEER_RAMP /s and brings it back towards
+## the centre at STEER_RETURN /s; the gamepad curve is applied before this (player_input.gd) and the
+## stick is not ramped at all (dossier 4.5). The keyboard of the player (`assist`) also swaps sides
+## through the centre at STEER_RETURN: the swap took the slow rate all the way, 0.5 s from lock to lock
+## instead of 0.42 s. The AI drivers keep the slow swap: their steering was tuned with it (with the quick
+## one a rival needed the marshal at the start of rivals/test_real_start).
 ## ramp: false for the gamepad stick, true for the keyboard and the AI.
 func update_steer(steer_input: float, dt: float, speed: float, ramp: bool = true) -> void:
 	var target: float = clampf(steer_input, -1.0, 1.0)
 	if ramp:
-		var rate: float = DriveTuning.STEER_RAMP if absf(target) > absf(_steer) else DriveTuning.STEER_RETURN
+		var swap: bool = assist and target * _steer < 0.0
+		var returning: bool = absf(target) <= absf(_steer) or swap
+		var rate: float = DriveTuning.STEER_RETURN if returning else DriveTuning.STEER_RAMP
 		var diff: float = target - _steer
 		var step: float = rate * dt
 		_steer += clampf(diff, -step, step)
