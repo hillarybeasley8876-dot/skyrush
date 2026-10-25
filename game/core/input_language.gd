@@ -4,13 +4,19 @@ extends Node
 ## together) turns it on, Shift (the drift) switches it between Chinese and English, and then W, A,
 ## S, D go into its candidate box instead of the car. While the game window has the focus it uses an
 ## English keyboard layout and no input method; it gives the player's layout back when it loses the
-## focus and when it quits. --keep-layout leaves the layout alone.
+## focus and when it quits. --keep-layout leaves the layout alone. The game has no text field, so the
+## layout is checked four times a second while the window has the focus: Ctrl+Space (the toggle of the
+## Chinese input method on this machine), Alt+Shift and Win+Space switch it back in the middle of a drive.
+
+## s: how often the layout is checked while the game window has the focus.
+const CHECK_PERIOD := 0.25
 
 ## The layout of the player before the game took the focus (-1: none taken).
 var _player_layout: int = -1
 ## The English layout of the machine (-1: there is none).
 var _english: int = -1
 var _active: bool = false
+var _check_left: float = 0.0
 
 
 func _ready() -> void:
@@ -19,7 +25,19 @@ func _ready() -> void:
 	if not _active:
 		return
 	_english = english_layout()
+	process_mode = Node.PROCESS_MODE_ALWAYS     # the menus and the pause too
 	_take()
+
+
+func _process(delta: float) -> void:
+	if not _active or _english < 0:
+		return
+	_check_left -= delta
+	if _check_left > 0.0:
+		return
+	_check_left = CHECK_PERIOD
+	if DisplayServer.window_is_focused() and DisplayServer.keyboard_get_current_layout() != _english:
+		_force_english()     # the layout of the player that comes back with the focus stays the one it had before
 
 
 func _notification(what: int) -> void:
@@ -42,14 +60,19 @@ static func english_layout() -> int:
 	return found
 
 
-## The game window takes the keyboard: no input method, the English layout.
+## The game window takes the keyboard (at the start and when it gets the focus): the layout of the
+## player is kept for later, and then no input method, the English layout.
 func _take() -> void:
+	if _english >= 0:
+		var current: int = DisplayServer.keyboard_get_current_layout()
+		_player_layout = current if current != _english else -1
+	_force_english()
+
+
+## No input method, the English layout.
+func _force_english() -> void:
 	DisplayServer.window_set_ime_active(false)
-	if _english < 0:
-		return
-	var current: int = DisplayServer.keyboard_get_current_layout()
-	if current != _english:
-		_player_layout = current
+	if _english >= 0 and DisplayServer.keyboard_get_current_layout() != _english:
 		DisplayServer.keyboard_set_current_layout(_english)
 
 
