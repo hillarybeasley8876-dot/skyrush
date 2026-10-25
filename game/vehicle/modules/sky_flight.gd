@@ -5,8 +5,10 @@ extends RefCounted
 ##
 ## The take-off blends into the lane over 0.4 s (the lift jets fire, the gravity goes to 0 and
 ## the car aligns to the lane), the soft edge pushes the car back into the tube and the exit
-## descends the car at 3 m/s until the ground.
+## descends the car at 3 m/s until the ground. The car banks into the turns of the lane and
+## slows before a turn too tight for its speed.
 
+const AirTuning := preload("res://vehicle/tuning/air_tuning.gd")
 const DriveTuning := preload("res://vehicle/tuning/drive_tuning.gd")
 const LaneTuning := preload("res://vehicle/tuning/lane_tuning.gd")
 
@@ -49,6 +51,14 @@ var _exit_time: float = 0.0
 var _ground_y: float = 0.0
 ## The lateral speed the player commands (the bank follows it).
 var _lateral_command: float = 0.0
+## The turn of the lane every LANE_PROFILE_STEP metres (rad/m, positive to the right) and the
+## fastest the car may fly there (m/s): the yaw rate of LANE_YAW_LIMIT_DEG, braking at
+## LANE_TURN_BRAKE before a tighter turn. Built at the take-off (the lane of a flight does not
+## change).
+var _turn_profile: PackedFloat32Array = PackedFloat32Array()
+var _speed_profile: PackedFloat32Array = PackedFloat32Array()
+## The bank the turn of the lane gives the car (deg, positive rolls the right side down).
+var _turn_bank: float = 0.0
 
 
 ## True when the car may take off: fast enough and with enough N2.
@@ -85,6 +95,8 @@ func enter(lane_ref: SkyLane, speed_mps: float, speed_cap: float, takeoff: Trans
 	vertical = 0.0
 	var cruise: float = lane_ref.cruise_kmh / DriveTuning.KMH
 	speed = clampf(maxf(speed_mps, cruise), 0.0, speed_cap)
+	_turn_bank = 0.0
+	_build_profiles()
 
 
 ## Where the car enters the curve: negative when it is still before the start of the lane.
@@ -103,13 +115,25 @@ func update(dt: float, steer: float, throttle: float, brake: float, n2: float,
 		return
 	ring_collected = false
 	_ground_y = ground_y
-	# The N2 boost raises the lane speed to 300 km/h (dossier 5.6).
+	# The N2 boost raises the lane speed to 300 km/h (dossier 5.6). A turn too tight for the
+	# speed slows the car before it, so the car never turns faster than LANE_YAW_LIMIT_DEG.
 	var cruise: float = lane.cruise_kmh / DriveTuning.KMH
 	var target: float = maxf(speed, cruise)
 	if boost_kind == &"nitro" or boost_kind == &"launch":
 		target = maxf(target, LaneTuning.LANE_BOOST_SPEED)
-	speed = move_toward(speed, target, LaneTuning.LANE_SPEED_ACCEL * dt)
+	target = minf(target, _profile_at(_speed_profile, offset))
+	var rate: float = LaneTuning.LANE_SPEED_ACCEL if target >= speed else LaneTuning.LANE_TURN_BRAKE
+	speed = move_toward(speed, target, rate * dt)
 	offset += speed * dt
+	# The turn of the lane banks the car into it: the bank of a coordinated turn, scaled down,
+	# read a little ahead so that the roll begins with the turn.
+	var turn: float = _profile_at(_turn_profile, offset + speed * LaneTuning.LANE_TURN_BANK_LEAD, 0.0)
+	var coordinated: float = rad_to_deg(atan(speed * speed * turn / AirTuning.AIR_GRAVITY))
+	var wanted_bank: float = clampf(coordinated * LaneTuning.LANE_TURN_BANK_SCALE,
+			-LaneTuning.LANE_TURN_BANK_MAX, LaneTuning.LANE_TURN_BANK_MAX)
+	var roll: float = (wanted_bank - _turn_bank) * clampf(LaneTuning.LANE_TURN_BANK_RESPONSE * dt, 0.0, 1.0)
+	var most: float = LaneTuning.LANE_TURN_ROLL_RATE * dt
+	_turn_bank += clampf(roll, -most, most)
 	# The take-off blend.
 	if _transition > 0.0:
 		_transition = maxf(_transition - dt, 0.0)
@@ -187,9 +211,11 @@ func pose() -> Transform3D:
 	# The bank and the pitch (dossier 5.6). A positive bank rolls the right side down, so the
 	# car leans into the move; a positive pitch lifts the nose.
 	# The bank follows the lateral speed the player asks for: the car leans into the move it
-	# commands, also when it is already sliding along the wall of the tube.
+	# commands, also when it is already sliding along the wall of the tube. The turn of the
+	# lane adds its own bank.
 	var bank: float = clampf(_lateral_command * LaneTuning.LANE_BANK_DEG,
 			-LaneTuning.LANE_BANK_MAX_DEG, LaneTuning.LANE_BANK_MAX_DEG)
+	bank = clampf(bank + _turn_bank, -LaneTuning.LANE_BANK_TOTAL_MAX, LaneTuning.LANE_BANK_TOTAL_MAX)
 	var pitch: float = clampf(vertical_speed * LaneTuning.LANE_PITCH_DEG,
 			-LaneTuning.LANE_BANK_MAX_DEG, LaneTuning.LANE_BANK_MAX_DEG)
 	var fade: float = smoothstep(0.0, 1.0, _transition / LaneTuning.LANE_TRANSITION_TIME)
@@ -207,14 +233,66 @@ func pose() -> Transform3D:
 	return Transform3D(oriented, origin)
 
 
-## The lane frame at an offset; before the start of the curve the tangent is extrapolated.
+## The lane frame at an offset; before the start and past the end of the curve the tangent is
+## extrapolated (the exit flies on while it descends to the road, it does not stop in the air).
 func _frame_at(at: float) -> Transform3D:
 	if lane == null:
 		return Transform3D.IDENTITY
+	var length: float = lane.length()
+	if at > length:
+		var end: Transform3D = lane.frame_at(length)
+		return Transform3D(end.basis, end.origin - end.basis.z * (at - length))
 	if at >= 0.0:
-		return lane.frame_at(minf(at, lane.length()))
+		return lane.frame_at(at)
 	var start: Transform3D = lane.frame_at(0.0)
 	return Transform3D(start.basis, start.origin - start.basis.z * at)
+
+
+## The turn of the lane and the speed it allows, every LANE_PROFILE_STEP metres.
+func _build_profiles() -> void:
+	_turn_profile = PackedFloat32Array()
+	_speed_profile = PackedFloat32Array()
+	if lane == null:
+		return
+	var length: float = lane.length()
+	var step: float = LaneTuning.LANE_PROFILE_STEP
+	var count: int = int(ceil(length / step)) + 1
+	_turn_profile.resize(count)
+	_speed_profile.resize(count)
+	var yaw_limit: float = deg_to_rad(LaneTuning.LANE_YAW_LIMIT_DEG)
+	for i in count:
+		var turn: float = _turn_of(minf(float(i) * step, length))
+		_turn_profile[i] = turn
+		_speed_profile[i] = yaw_limit / maxf(absf(turn), 0.000001)
+	# The car brakes at LANE_TURN_BRAKE to reach the speed of every turn ahead.
+	for i in range(count - 2, -1, -1):
+		var reach: float = sqrt(_speed_profile[i + 1] * _speed_profile[i + 1]
+				+ 2.0 * LaneTuning.LANE_TURN_BRAKE * step)
+		_speed_profile[i] = minf(_speed_profile[i], reach)
+
+
+## The turn of the lane at an offset (rad per metre, positive to the right): the change of its
+## heading over LANE_TURN_SPAN metres before and after it.
+func _turn_of(at: float) -> float:
+	var length: float = lane.length()
+	var from: float = maxf(at - LaneTuning.LANE_TURN_SPAN, 0.0)
+	var to: float = minf(at + LaneTuning.LANE_TURN_SPAN, length)
+	if to - from < 0.001:
+		return 0.0
+	var a: Vector3 = -lane.frame_at(from).basis.z
+	var b: Vector3 = -lane.frame_at(to).basis.z
+	return atan2(a.x * b.z - a.z * b.x, a.x * b.x + a.z * b.z) / (to - from)
+
+
+## A profile at an offset, linear between its samples (no profile: no turn and no limit).
+func _profile_at(profile: PackedFloat32Array, at: float, none: float = INF) -> float:
+	if profile.is_empty():
+		return none
+	if profile.size() == 1:
+		return profile[0]
+	var x: float = clampf(at / LaneTuning.LANE_PROFILE_STEP, 0.0, float(profile.size() - 1))
+	var i: int = mini(int(x), profile.size() - 2)
+	return lerpf(profile[i], profile[i + 1], x - float(i))
 
 
 ## The velocity the car should have while flying.
@@ -248,3 +326,6 @@ func reset() -> void:
 	_entry_lateral = 0.0
 	_entry_vertical = 0.0
 	_transition = 0.0
+	_turn_bank = 0.0
+	_turn_profile = PackedFloat32Array()
+	_speed_profile = PackedFloat32Array()

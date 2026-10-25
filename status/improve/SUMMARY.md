@@ -178,6 +178,32 @@ cars keep the linear fall: the police and the rivals turn a wanted side force or
 Over 120 km/h the car is at the friction of its tyres (1.3-1.46 g): a sharper car needs more grip, a decision of the brief.
 Check: `vehicle/test_steer_assist.gd` (mutation-checked).
 
+## The sky lane flight (the player: "the flight feels terrible")
+
+The sky lanes were polylines with corners of up to 111 degrees in one point (huangpu_jump 78 and 108, bund_riverside 87, the gates
+of century_canyon 32 and 67 each way, nanpu_cables 35), so the car turned its heading in one tick: -4,285 deg/s of yaw and 322 g on
+huangpu_jump, 16-46 ticks of a snap per lane (`game/tools/flight_probe.gd` flies every lane hands-off). The lane rose 10 m in the
+8 m after the pad (51 degrees), and the car stood still in the air at the end of the lane while it descended the 8 m to the road
+(2.7 s): the frame of the lane was clamped to the end of the curve. The generator (`tools/city/city_skylanes.py`, called by
+`city_marks._sky_lane`) makes a lane of straight legs and arcs now: the corners of the plan (Douglas-Peucker, 2 m), neighbouring
+corners may merge into the corner where the legs before and after them meet, every corner gets the widest arc its legs allow (at
+most 400 m), narrowed while it passes less than 10 m over a lot or, off the plan, less than 9 m beside a lot the tube reaches; of
+the ways to merge, the widest tightest turn wins. The height climbs from the pad with the slope ramping in over 80 m, cruises,
+dives and ramps out 1 m over the road. The arcs: huangpu_jump 77 and 254 m, dragon_stack 200/172/172, century_canyon 72/45/44/44
+(the S bend from the D7 street to the Century Ave: 75 m sideways in a 40 m street between the towers), nanpu_cables 106,
+bund_riverside 400/317/317. `tools/city/patch_skylanes.py` makes the five lanes again from their rows and the roads of the file and
+changes nothing else (twice gives the same file); the sky lane rules and the shape check pass. The rules check the pitch only on
+segments over 60 m: a 99 m rise in the first 8 m passed them, the patch prints the steepest segment and the first rise.
+In the game the curve has Catmull-Rom handles and is baked every 0.5 m (baked every 2 m the heading wobbled 15 % from tick to tick
+in a turn), the car banks into the turns of the lane (0.6 of a coordinated turn, at most 50 degrees and 150 deg/s of roll, read
+0.4 s ahead), slows before a turn that would need more than 70 deg/s (only the century S bend: 194 km/h), and the exit flies on
+along the last tangent. Hands-off at 60 Hz the peaks of the heading went from -4285/644/2094/1078/-2889 deg/s to 50/24/86/36/17
+(huangpu, dragon, century, nanpu, bund), the ticks of a snap from 33/16/46/16/37 to 0, the bank is 29-49 degrees, and the car lands
+17-26 m (0.3-0.5 s) past the end of the lane (dragon_stack 63 m). Unchanged: the throttle and the brake still move the car up and
+down in the tube (dossier 5.6), and a car that does not steer hits the obstacles of the lane (30 % of its speed). Check:
+`vehicle/test_sky_lane.gd`, `world/test_sky_lanes_fly.gd`, `world/test_sky_obstacles.gd`, `flight_probe.gd` (`--lane=id`,
+`--trace=FROM`, windowed `--shots=offsets --outdir=ABS`).
+
 ## Tools added (game/tools, tools/)
 
 `frame_probe.gd` (the frames of a whole-game drive, split; A/B switches), `spot_probe.gd` (what stands at a place, what the
@@ -186,7 +212,8 @@ touches at a place, `--mask=4` for the props alone), `frame_probe.gd` (`--seed`,
 `--ab=traffic|police|rate|steps|...`; a hitch prints what its ticks spent, unit by unit), `spot_probe.gd` (what stands at a place
 and what the cast of a wheel probe costs there), `vehicle/tests/steer_report.gd` and `feel_report.gd` (`--hz=N`: the physics at N
 ticks a second; the vehicle tests count their ticks with the rate of the engine), `prop_lane_clearance.gd`, `respawn_probe.gd` (the wreck flow of the game at random
-places, followed for 4 s), `spawn_height_probe.gd` (the road height of every lane point), `tools/run_follow.py` (follow trials),
+places, followed for 4 s), `spawn_height_probe.gd` (the road height of every lane point), `flight_probe.gd` (every sky lane flown
+hands-off: the peaks of the turn, the bank, the g, the landing), `tools/city/patch_skylanes.py`, `tools/run_follow.py` (follow trials),
 `blender/city/roads/edgewalls.py`, `blender/city/roads/buildingcut.py`.
 
 ## Test state (153 tests, `python tools/run_tests.py --jobs 3 --timeout 420`)

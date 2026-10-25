@@ -303,6 +303,19 @@ straight line (it circled before the fix).
 18. The drift exit is a **fade**, not a snap: the slip needs ~0.3 s to go from 45° to 0 in the
     recover. The counter steer pulls the nose straight (the yaw damping is 8.0), the neutral
     release unwinds the arc over 0.20 s.
+19. The sky lane banks the car into its own turns (not in the dossier, which only banks with the
+    player's move): 0.6 of the bank of a coordinated turn, at most 50°, at most 150°/s of roll,
+    read 0.4 s ahead (`LANE_TURN_BANK_*`, `LANE_TURN_ROLL_RATE`). With the move of the player the
+    bank is at most 60°. The camera still banks at most 10°.
+20. The sky lane slows the car before a turn too tight for its speed: the car never turns faster
+    than 70°/s, and brakes at 12 m/s² to get there (`LANE_YAW_LIMIT_DEG`, `LANE_TURN_BRAKE`). Only
+    the S bend of the century canyon (44 m) binds: 194 km/h instead of 200.
+21. The exit flies on past the end of the lane along its last tangent while it descends at 3 m/s.
+    The frame was clamped to the end of the curve, so the car stood still in the air for the whole
+    descent (2.7 s from the 8 m the lanes ended at). The lanes end 1 m over the road now.
+22. The lane curve is smooth (Catmull-Rom handles, baked every 0.5 m): baked every 2 m without
+    handles the heading of the car turned at every point and wobbled ±15 % from tick to tick in a
+    turn. `game/tools/flight_probe.gd` flies every city lane and prints the peaks.
 
 ## Requests (to core / other units)
 

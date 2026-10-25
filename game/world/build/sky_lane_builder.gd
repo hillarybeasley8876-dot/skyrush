@@ -19,6 +19,7 @@ const RING_INNER := 6.4
 const RING_OUTER := 7.0
 const PAD_LENGTH := 30.0
 const GANTRY_OFFSET := 300.0
+const SKY_BAKE_INTERVAL := 0.5
 
 
 func build(parent: Node3D, specs: Array) -> Array[SkyLane]:
@@ -39,7 +40,10 @@ func _build_lane(spec: Dictionary, parent: Node3D) -> SkyLane:
 	lane.name = "SkyLane_" + str(spec.get("id", "lane"))
 	lane.label = str(spec.get("label", "飞行航道"))
 	lane.ring_spacing = RING_SPACING
-	lane.curve = Spline.make_curve(points)
+	# The flight follows the curve: smooth, so the heading of the car turns gradually, and baked
+	# every half metre (the frame of the car looks 2 m ahead along the baked points: baked every 2 m
+	# its heading wobbled by 15 % from one tick to the next in a turn).
+	lane.curve = Spline.make_curve(points, SKY_BAKE_INTERVAL, true)
 	for offset in _ring_offsets(spec.get("n2_rings_m", [])):
 		lane.n2_ring_offsets.append(offset)
 	var pad := _build_pad(spec, lane)

@@ -32,6 +32,38 @@ const LANE_BANK_DEG := 3.5
 
 const LANE_BANK_MAX_DEG := 35.0
 
+## The turn of the lane banks the car into it, like an aircraft: the bank of a coordinated turn
+## (the lift tilted so that it holds the turn) times this scale, at most LANE_TURN_BANK_MAX. A
+## full coordinated bank is near 80 degrees in the tight turns of the city lanes.
+const LANE_TURN_BANK_SCALE := 0.6
+
+const LANE_TURN_BANK_MAX := 50.0
+
+## The turn bank follows the turn this fast (1/s) and never rolls faster than LANE_TURN_ROLL_RATE
+## (deg/s: the reversal of the S bend of the century canyon, 85 degrees, takes 0.6 s); the turn is
+## read this many seconds ahead, so the roll begins before the turn, as an aircraft rolls into it.
+const LANE_TURN_BANK_RESPONSE := 5.0
+
+const LANE_TURN_ROLL_RATE := 150.0
+
+const LANE_TURN_BANK_LEAD := 0.4
+
+## The most the car banks in the lane: the turn and the player's move together.
+const LANE_BANK_TOTAL_MAX := 60.0
+
+## The fastest the car turns in the lane (deg/s): a turn too tight for the speed slows the car
+## before it, braking at LANE_TURN_BRAKE (m/s^2). The tightest turns of the city lanes (44 m)
+## allow 194 km/h.
+const LANE_YAW_LIMIT_DEG := 70.0
+
+const LANE_TURN_BRAKE := 12.0
+
+## The turn of the lane is the change of its heading over this many metres before and after a
+## point, read every LANE_PROFILE_STEP metres.
+const LANE_TURN_SPAN := 4.0
+
+const LANE_PROFILE_STEP := 4.0
+
 ## The pitch: 2.5 degrees per m/s of vertical speed.
 const LANE_PITCH_DEG := 2.5
 

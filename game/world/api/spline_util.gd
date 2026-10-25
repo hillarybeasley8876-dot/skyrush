@@ -141,14 +141,28 @@ static func road_line(road: Dictionary) -> PackedVector3Array:
 ## Builds a Curve3D through the points (baked, so sample_baked works).
 ## The bake interval of the lanes of the city is 4 m: 508 km of lanes at 2 m would double the
 ## build time of the world for nothing.
-static func make_curve(points: PackedVector3Array, bake_interval: float = 2.0) -> Curve3D:
+static func make_curve(points: PackedVector3Array, bake_interval: float = 2.0,
+		smooth: bool = false) -> Curve3D:
 	var curve := Curve3D.new()
 	curve.bake_interval = bake_interval
 	# The up vector of a curve is only needed by a track; Godot computes it with a rotation
 	# around an axis that is not normalized on a sharp turn, and the engine complains.
 	curve.set_up_vector_enabled(false)
-	for p in points:
-		curve.add_point(p)
+	var count := points.size()
+	for i in count:
+		if not smooth or count < 3:
+			curve.add_point(points[i])
+			continue
+		# A smooth curve passes the points with the tangents of a Catmull-Rom spline (its
+		# Bezier handles are a sixth of the chord around the point): the heading turns
+		# gradually instead of at every point.
+		var before := points[maxi(i - 1, 0)]
+		var after := points[mini(i + 1, count - 1)]
+		var handle := (after - before) / 6.0
+		if i == 0 or i == count - 1:
+			handle *= 2.0
+		curve.add_point(points[i], -handle if i > 0 else Vector3.ZERO,
+				handle if i < count - 1 else Vector3.ZERO)
 	return curve
 
 

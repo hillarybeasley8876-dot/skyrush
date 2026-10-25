@@ -7,6 +7,7 @@ with the lane's heading.
 import math
 
 import citylib
+import city_skylanes
 
 
 def _road(by_id, rid):
@@ -109,6 +110,7 @@ def build_landmark_pois():
 # ---------------------------------------------------------------- sky lanes
 
 BLOCK_INDEX = None
+SKY_REPORTS = {}           # the flight path of every lane: its corners and arcs (city_skylanes)
 SKY_SLOPE = 0.34           # the most a sky lane climbs or dives
 SKY_STEP = 10.0            # the spacing of the plan points of a sky lane
 SKY_CLEAR = 10.0           # the sky lanes clear the lots by 10 m
@@ -177,6 +179,13 @@ def _height_at(blocks_index, x, z):
     return best
 
 
+def sky_lots(blocks):
+    """The lots a sky lane must clear: (top, polygon) of every block but the
+    landmark plazas it may thread."""
+    return [(b["height_m"][1], b["polygon"]) for b in blocks
+            if b.get("notes") not in SKY_EXEMPT]
+
+
 def _densify(plan, step=SKY_STEP):
     """The plan with a point at least every `step` metres."""
     out = [[plan[0][0], plan[0][1]]]
@@ -186,69 +195,6 @@ def _densify(plan, step=SKY_STEP):
             t = float(k) / n
             out.append([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t])
     return out
-
-
-def _lane_profile(plan, pad_y, cruise, end_y, blocks, climb_end, cruise_end,
-                  slope=SKY_SLOPE):
-    """The height of every plan point of a sky lane.
-
-    The lane climbs over the lead-in, cruises over the flight and dives
-    over the lead-out.  It clears every lot by 10 m and never climbs or
-    dives faster than `slope`; the first point stays on the pad.
-    """
-    n = len(plan)
-    cum = [0.0]
-    for a, b in zip(plan, plan[1:]):
-        cum.append(cum[-1] + math.dist(a, b))
-    climb = cum[climb_end] or 1.0
-    dive = (cum[-1] - cum[cruise_end]) or 1.0
-    y = []
-    for i in range(n):
-        if cum[i] <= cum[climb_end]:
-            base = pad_y + (cruise - pad_y) * (cum[i] / climb)
-        elif cum[i] <= cum[cruise_end]:
-            base = cruise
-        else:
-            base = cruise + (end_y - cruise) * ((cum[i] - cum[cruise_end]) / dive)
-        y.append(base)
-    # a segment takes the height of the tallest lot under it, so the line
-    # between two points never dives into a roof
-    for i in range(n - 1):
-        a, b = plan[i], plan[i + 1]
-        steps = max(1, int(math.dist(a, b) / 2.5))
-        need = 0.0
-        for k in range(steps + 1):
-            t = float(k) / steps
-            need = max(need, _height_at(blocks, a[0] + (b[0] - a[0]) * t,
-                                        a[1] + (b[1] - a[1]) * t))
-        need += SKY_CLEAR
-        y[i] = max(y[i], need)
-        y[i + 1] = max(y[i + 1], need)
-    # the slope limit, forward and backward; the backward pass never lifts
-    # the first point: the lane starts on the pad
-    for _ in range(40):
-        for i in range(1, n):
-            y[i] = max(y[i], y[i - 1] - slope * (cum[i] - cum[i - 1]))
-        for i in range(n - 2, 0, -1):
-            y[i] = max(y[i], y[i + 1] - slope * (cum[i + 1] - cum[i]))
-    y[0] = pad_y
-    return y
-
-
-def _lane_points(plan, y, pad, end, rings=250.0):
-    """The lane points, the N2 ring distances and the end point."""
-    cum = [0.0]
-    for a, b in zip(plan, plan[1:]):
-        cum.append(cum[-1] + math.dist(a, b))
-    points = [[round(p[0], 1), round(h, 1), round(p[1], 1)]
-              for p, h in zip(plan, y)]
-    ring_list = []
-    total = cum[-1]
-    d = rings
-    while d < total - 40.0:
-        ring_list.append(d)
-        d += rings
-    return points, ring_list, cum
 
 
 def straight_runup(road, direction, lo=0.0, hi=None, min_runup=300.0):
@@ -329,10 +275,11 @@ def _sky_lane(by_id, blocks, spec):
     mid = [[g[0], g[1]] for g in gates]
     parts = [_densify(lead), _densify(mid) if mid else [], _densify(tail)]
     plan = parts[0] + parts[1] + parts[2]
-    climb_end = len(parts[0]) - 1
-    y = _lane_profile(plan, pad_p[1], cruise, end_y, _block_index(blocks),
-                      climb_end, climb_end + len(parts[1]))
-    points, rings, _cum = _lane_points(plan, y, pad_p, goal_p)
+    # the flight path: arcs and a round height profile clear of the lots (city_skylanes); the lane lands LAND_LIFT over
+    # the road
+    points, rings, report = city_skylanes.flight_lane(
+        plan, pad_p[1], cruise, goal_p[1] + city_skylanes.LAND_LIFT, sky_lots(blocks), lead_in, lead_out, SKY_SLOPE)
+    SKY_REPORTS[lid] = report
     return {"id": lid, "label": label, "points": points,
             "pad": {"x": round(pad_p[0], 1), "y": round(pad_p[1], 1),
                     "z": round(pad_p[2], 1), "heading_deg": round(pad_h, 1)},
