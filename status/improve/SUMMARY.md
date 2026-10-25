@@ -74,8 +74,6 @@ thrown up without a hop, the last 6 s of the car (position, speed, wheels, what 
 
 ## Found and not fixed yet
 
-* The plate of the junction at both ends of the Yan'an tunnel is drawn over the first metres of the ramps (its collision is cleared
-  there, `world/build/tunnel_trench.gd`): the roads unit has to cut it out of the tile.
 * `st_d7b_ew_11`: the right turn into it from `st_d7b_ns_7` goes to the far end of the lane of the other direction (92 m, over the
   river); `st_link_25/33` start 10-15 m out over the river (roads data; `tools/spawn_height_probe.gd` lists them).
 * 18,329 tree trunks (0.25 m) stop a car dead: they stand (a street tree is a tree), they cost 40 % of the damage of a wall.
@@ -95,8 +93,14 @@ drive (the run-to-run spread is large: the number of police cars decides a run).
 | the spawn ring sorted every spot of the ring for every attempt | `TrafficRing.pick_spot` | sorted once per place and heading of the player; a failed spawn waits 3 ticks | 0.2-0.3 -> 0.06 ms a tick |
 | the wheel probes cast twice a tick | an enabled ShapeCast3D casts on its own, and the car forces a cast | `enabled = false` | no measurable difference (a Jolt cast is cheap) |
 
-Left: a police car costs about 0.6 ms a tick (a chase with four of them runs at 30 fps); the HUD 1.3 ms a frame (the dials redraw
-antialiased arcs), the shadow of the sun 0.8 ms, the occlusion culling 0.6 ms of CPU (the GPU is not the limit on an RTX 3090: the
+The probe measured itself at first: it searched the tree for the cars every frame (20-30 ms), its follower walked all 11,724 lanes
+every tick while the car was wrecked or at a dead end, and a pass over every node every 3 s gave 40 ms frames. It is cheap now (the
+nodes get their slot as they join the tree, the follower searches a lane twice a second, its own time is taken out of the frames),
+and the clean numbers are lower than the table: a drive with the traffic and the police 13.6 ms a frame (median; mean 16.9 ms, the
+long frames come in the wrecks), the traffic alone 12.5 ms, the city without cars 4-7 ms. The AI cars are the cost.
+
+Left: a police car costs about 0.6 ms a tick (a chase with four of them runs at 30 fps); the HUD about 0.1 ms a frame (the 1.3 ms of a
+drive was the spread of the drives: in a parked A/B it is 0.1 ms), the shadow of the sun 0.8 ms, the occlusion culling 0.6 ms of CPU (the GPU is not the limit on an RTX 3090: the
 render is 2.5-3.5 ms). With vsync on, Windows presented the window at 15 fps while the session was not on the screen: that is the
 desktop, not the game.
 
@@ -117,7 +121,8 @@ plate of the junction at each portal reaches over the ramp at street level, and 
 stopped from 145 km/h in one tick. `world/build/tunnel_trench.gd` (from the lanes of the data, before the lane graph): the ground is
 cut between the walls of a bore where its lanes are 0.03-6 m under the ground; the bores are solid where they stand out of the
 ground (walls to the crown at 6 m, a roof under it: from outside a wall, from inside a tube); the road surfaces of the tiles lose
-their collision where they lie 0.3 m or more over the road of a ramp (79 triangles). Check: `world/test_tunnel_portals.gd` (down
+their collision where they lie 0.3 m or more over the road of a ramp (79 triangles), and they are not drawn there (1,179 triangles
+of asphalt, markings, kerbs and pavements; the bores stay): a car that drove down the ramp disappeared under the plate. Check: `world/test_tunnel_portals.gd` (down
 into the tunnel from both ends, up out of it, a car at the tube from the side; 3 mutations), `tools/tunnel_probe.gd`,
 `tools/ramp_sweep_probe.gd` (a box of the size of a car swept along the ramps). A test that drives the player car with the input
 sets `Game.options["skip-menu"]` before it builds the game: the title menu holds the car otherwise (the suite runs every unit).

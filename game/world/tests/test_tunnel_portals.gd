@@ -43,6 +43,9 @@ func _run() -> void:
 	await get_tree().physics_frame
 	_car = Game.player as ArcadeCar
 	_car.freeze = false
+	# the test drives the ramps, not the traffic: the suite runs every unit, and a traffic car in a lane of the tunnel or a police
+	# unit that chased the car stopped a drive now and then
+	_quiet_the_roads()
 	var space := get_viewport().get_world_3d().direct_space_state
 	var lanes: Array = Game.world.get_lane_paths()
 	var tunnel_lanes: Array[LanePath] = []
@@ -111,6 +114,21 @@ func _run() -> void:
 		lowest = minf(lowest, _car.global_position.y)
 	_check(lowest > -0.5, "a car that drives at the tube from the side does not fall into the ramp", "(lowest y %.2f)" % lowest)
 	_finish()
+
+
+## No traffic, no police, no rivals on the roads of the test.
+func _quiet_the_roads() -> void:
+	var traffic := get_tree().get_first_node_in_group(&"traffic_director")
+	if traffic != null:
+		traffic.set("density_override", 0)
+		traffic.call("_clear_cars")
+	var police := get_tree().get_first_node_in_group(&"police_director")
+	if police != null:
+		if police.has_method(&"remove_all_units"):
+			police.call("remove_all_units")
+		police.process_mode = Node.PROCESS_MODE_DISABLED
+	for rivals in get_tree().root.find_children("RivalDirector", "", true, false):
+		rivals.process_mode = Node.PROCESS_MODE_DISABLED
 
 
 func _finish() -> void:

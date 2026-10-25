@@ -12,7 +12,9 @@ extends RefCounted
 ##     ground: the tube that is drawn is the tube a car meets (from the outside it is a wall, from the inside a tube),
 ##   * the road surfaces of the tiles that lie over a ramp lose their collision there (clear_roads_over): the plate of the
 ##     junction at the Pudong portal reaches over the ramp at the street level, and a car that came up the ramp drove its nose
-##     into the edge of it and stopped from 145 km/h in one tick. The plate is still drawn (the roads unit cuts it).
+##     into the edge of it and stopped from 145 km/h in one tick,
+##   * and they are not drawn there (clear_meshes_over): a car that drove down the ramp disappeared under the plate. Only the
+##     surface materials of the roads (ROAD_SURFACES) are cut; the bores are over the ramp on purpose.
 
 const Spline := preload("res://world/api/spline_util.gd")
 
@@ -31,6 +33,9 @@ const CROWN := 6.0
 const STEP := 4.0
 ## m: a road surface this far over the road of a ramp is over it, not the ramp (its collision goes).
 const CLEAR_ABOVE := 0.3
+## The materials of the road surfaces that are cut over a ramp (the start of the name): the asphalt, the markings, the kerbs, the
+## pavements. The bores, the gantry and the lamps of the tunnel are not.
+const ROAD_SURFACES: Array[String] = ["SH_wet_asphalt", "SH_road_marking", "SH_kerb", "SH_sidewalk", "Road_Tactile", "Road_Planter"]
 ## m: the road tiles (blender/city/roads/tiles.py TILE) and how far a vertex may be outside its tile.
 const ROAD_TILE := 512.0
 const ROAD_TILE_MARGIN := 64.0
@@ -195,6 +200,83 @@ func _road_y(i: int, p: Vector2) -> float:
 			best = d
 			road_y = q.y
 	return road_y
+
+
+## Takes the drawn triangles of the road surfaces away where they lie over a ramp (the same rule as their collision). The meshes of
+## the tiles are one surface per material: a surface that loses triangles is built again from its arrays (without its LODs).
+## Returns the number of triangles taken away.
+func clear_meshes_over(roads: Node) -> int:
+	if cuts.is_empty():
+		return 0
+	var bounds := Rect2(cuts[0][0], Vector2.ZERO)
+	for cut in cuts:
+		for p in cut:
+			bounds = bounds.expand(p)
+	var removed := 0
+	for node in roads.find_children("*", "MeshInstance3D", true, false):
+		var mi := node as MeshInstance3D
+		var mesh := mi.mesh as ArrayMesh
+		if mesh == null:
+			continue
+		var aabb := mi.global_transform * mesh.get_aabb()
+		if not Rect2(aabb.position.x, aabb.position.z, aabb.size.x, aabb.size.z).intersects(bounds):
+			continue
+		var rebuilt := ArrayMesh.new()
+		var changed := false
+		for surface in mesh.get_surface_count():
+			var material := mesh.surface_get_material(surface)
+			var arrays := mesh.surface_get_arrays(surface)
+			var kept := _kept_triangles(mi.global_transform, arrays, material, bounds)
+			if kept.is_empty() and _is_road_surface(material):
+				# every triangle of the surface is over a ramp
+				changed = true
+				continue
+			if not kept.is_empty():
+				removed += int(kept[1])
+				arrays[Mesh.ARRAY_INDEX] = kept[0]
+				changed = changed or int(kept[1]) > 0
+			rebuilt.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+			rebuilt.surface_set_material(rebuilt.get_surface_count() - 1, material)
+		if changed:
+			mi.mesh = rebuilt
+	return removed
+
+
+## The index array of a surface without its triangles over a ramp, and how many went: [indices, removed]. Empty when the surface is
+## not a road surface (it is kept as it is) or when nothing is left.
+func _kept_triangles(xform: Transform3D, arrays: Array, material: Material, bounds: Rect2) -> Array:
+	if not _is_road_surface(material):
+		return []
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX] if arrays[Mesh.ARRAY_INDEX] != null else PackedInt32Array()
+	if indices.is_empty():
+		indices.resize(verts.size())
+		for i in verts.size():
+			indices[i] = i
+	var kept := PackedInt32Array()
+	var removed := 0
+	for t in range(0, indices.size() - 2, 3):
+		var a := xform * verts[indices[t]]
+		var b := xform * verts[indices[t + 1]]
+		var c := xform * verts[indices[t + 2]]
+		if _covers_a_ramp(a, b, c, bounds):
+			removed += 1
+			continue
+		kept.append(indices[t])
+		kept.append(indices[t + 1])
+		kept.append(indices[t + 2])
+	if kept.is_empty():
+		return []
+	return [kept, removed]
+
+
+static func _is_road_surface(material: Material) -> bool:
+	if material == null:
+		return false
+	for prefix in ROAD_SURFACES:
+		if material.resource_name.begins_with(prefix):
+			return true
+	return false
 
 
 ## True when the tile of a body ("roads_<x>_<z>_surface") reaches `bounds` (with the margin of the tiles).

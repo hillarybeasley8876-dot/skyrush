@@ -59,7 +59,6 @@ var _scripts_ticks := 0
 var _police_sum := 0
 var _police_modules: Dictionary = {}
 var _police_tick := 0.0
-var _priority_timer := 0.0
 var _process_usec: PackedFloat64Array = PackedFloat64Array()
 var _process_marks: PackedInt64Array = PackedInt64Array()
 var _process_frames := 0
@@ -70,6 +69,31 @@ var _driving := false
 var _steering := false
 var _car: ArcadeCar = null
 var _route := RandomNumberGenerator.new()
+## The phases of a frame (usec): the start of the process step (the probe runs first in it), the start and the end of the draw of
+## the rendering server; per frame the time of the process step, of the draw, and after the draw (the present, the wait).
+var _proc_start := 0
+var _draw_start := 0
+var _draw_end := 0
+var _phase_proc := 0.0
+var _phase_draw := 0.0
+var _phase_after := 0.0
+var _phase_frames := 0
+## The time of the probe's own physics callback (usec), and the wait before its driver looks for a lane again (s).
+var _self_usec := 0.0
+## The events of the drive: "<s> <what>" (the time from the start of the record).
+var _events: Array[String] = []
+var _record_start := 0
+
+
+## Writes down an event of the drive with its time.
+func _event(what: String) -> void:
+	if _driving:
+		_events.append("%.2f s %s" % [float(Time.get_ticks_usec() - _record_start) / 1000000.0, what])
+
+
+## The phases of the last whole frame (ms): the process step, the draw, after the draw.
+var _last_phases: Array = [0.0, 0.0, 0.0]
+var _pick_wait := 0.0
 ## --park=1: the car stands where it starts, the traffic drives round it.
 var _parked := false
 var _lane: LanePath = null
@@ -104,6 +128,8 @@ class Marker:
 func _ready() -> void:
 	# the probe runs first in the process step: the time from the first tick of the frame to here is the physics of the frame
 	process_priority = -1000000
+	# its own physics callback runs after the last slot of the profile (its time is taken out of the engine part)
+	process_physics_priority = 100000000
 	var clock := TickClock.new()
 	clock.probe = self
 	add_child(clock)
@@ -166,6 +192,21 @@ func _set_priorities(main: Node) -> void:
 	for i in _units.size():
 		if is_instance_valid(_units[i]):
 			_prioritise(_units[i], (i + 1) * SLOT_STEP - SLOT_STEP / 4)
+	# the nodes that join later (police units, debris, effects) get the slot of their unit as they come
+	if not get_tree().node_added.is_connected(_on_node_added):
+		get_tree().node_added.connect(_on_node_added)
+
+
+## A node joined the tree: it gets the slot of the unit it is under (a walk up its parents, not a pass over the tree).
+func _on_node_added(node: Node) -> void:
+	var up := node
+	while up != null and up.get_parent() != null:
+		var index := _units.find(up)
+		if index >= 0:
+			node.process_physics_priority = (index + 1) * SLOT_STEP - SLOT_STEP / 4
+			node.process_priority = node.process_physics_priority
+			return
+		up = up.get_parent()
 
 
 func _prioritise(node: Node, priority: int) -> void:
@@ -199,6 +240,12 @@ func _run() -> void:
 		if synth.get("cpu_ms") != null:
 			_synths.append(synth)
 	_set_priorities(main)
+	Events.vehicle_wrecked.connect(func(vehicle: VehicleBase, _source: Node3D) -> void:
+		_event("wrecked %s%s" % [vehicle.name, " (the player)" if vehicle == Game.player else ""]))
+	Events.player_respawned.connect(func() -> void: _event("the player respawned"))
+	Events.pursuit_state_changed.connect(func(state: StringName) -> void: _event("pursuit %s" % state))
+	RenderingServer.frame_pre_draw.connect(func() -> void: _draw_start = Time.get_ticks_usec())
+	RenderingServer.frame_post_draw.connect(func() -> void: _draw_end = Time.get_ticks_usec())
 	RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
 	var rigs := load("res://fx/fx_car_rig.gd")
 	rigs.set("tier_changes", 0)
@@ -221,6 +268,7 @@ func _run() -> void:
 		_last_process_usec = Time.get_ticks_usec()
 		_last_physics = Engine.get_physics_frames()
 	var started := Time.get_ticks_msec()
+	_record_start = Time.get_ticks_usec()
 	var ab := String(Game.option("ab", ""))
 	var director := get_tree().get_first_node_in_group(&"traffic_director")
 	while float(Time.get_ticks_msec() - started) / 1000.0 < seconds:
@@ -244,6 +292,14 @@ func _run() -> void:
 
 
 func _physics_process(_delta: float) -> void:
+	var self_start := Time.get_ticks_usec()
+	_physics_body()
+	if _driving:
+		_self_usec += float(Time.get_ticks_usec() - self_start)
+
+
+## The work of the probe in a tick (it runs after the last slot of the profile, and its time is taken out of the engine part).
+func _physics_body() -> void:
 	if _steering and _car != null and is_instance_valid(_car):
 		_drive(_car)
 	if not _driving:
@@ -261,6 +317,9 @@ func _physics_process(_delta: float) -> void:
 		_traffic_sum[key] += float(director.get("cost_%s_ms" % key))
 	_traffic_peak = maxf(_traffic_peak, float(director.get("tick_last_ms")))
 	var cars: Array = director.get("cars")
+	# the loops over the vehicles every 4th tick (a sample of the ticks)
+	if _ticks % 4 != 0:
+		return
 	_police_sum += get_tree().get_nodes_in_group(&"police").size()
 	var police := get_tree().get_first_node_in_group(&"police_director")
 	if police != null:
@@ -279,15 +338,21 @@ func _physics_process(_delta: float) -> void:
 
 func _process(delta: float) -> void:
 	var now := Time.get_ticks_usec()
-	_priority_timer -= delta
-	if _priority_timer <= 0.0 and not _units.is_empty():
-		# the nodes that joined since (police units, debris) get the slot of their unit
-		_priority_timer = 3.0
-		_set_priorities(_units[0].get_parent())
 	if not _driving:
 		_tick_starts.clear()
 		return
 	var physics_usec := now - _tick_starts[0] if not _tick_starts.is_empty() else 0
+	if _proc_start > 0 and _draw_start > _proc_start and _draw_end > _draw_start:
+		# the last frame: its process step ran from _proc_start to the draw, the draw to _draw_end, then the present and the
+		# wait until the physics of this frame started (or this process step, when it ran no tick)
+		var next_start: int = _tick_starts[0] if not _tick_starts.is_empty() else now
+		_phase_proc += float(_draw_start - _proc_start)
+		_phase_draw += float(_draw_end - _draw_start)
+		_phase_after += float(maxi(next_start - _draw_end, 0))
+		_phase_frames += 1
+		_last_phases = [float(_draw_start - _proc_start) / 1000.0, float(_draw_end - _draw_start) / 1000.0,
+			float(maxi(next_start - _draw_end, 0)) / 1000.0]
+	_proc_start = now
 	var frame_usec := now - _last_process_usec
 	_last_process_usec = now
 	_tick_starts.clear()
@@ -307,6 +372,8 @@ func _process(delta: float) -> void:
 		"render_cpu": RenderingServer.viewport_get_measured_render_time_cpu(vp),
 		"render_gpu": RenderingServer.viewport_get_measured_render_time_gpu(vp),
 		"setup": RenderingServer.get_frame_setup_time_cpu(),
+		"phases": _last_phases.duplicate(),
+		"at": float(Time.get_ticks_usec() - _record_start) / 1000000.0,
 		"objects": RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME),
 		"primitives": RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME),
 		"ab": _ab_turn,
@@ -321,7 +388,17 @@ func _drive(car: ArcadeCar) -> void:
 		# --park=1: the car stands (an A/B of the render compares the same place: a drive moves through the city between turns)
 		Input.action_release(&"accelerate")
 		return
-	if car.is_wrecked or _lane == null:
+	if car.is_wrecked:
+		# the crash cam and the respawn: nothing to steer (a lane search in every tick of a wreck walked the 11,724 lanes and cost
+		# the drive tens of ms a tick)
+		Input.action_release(&"accelerate")
+		_lane = null
+		return
+	if _lane == null:
+		_pick_wait -= 1.0 / float(Engine.physics_ticks_per_second)
+		if _pick_wait > 0.0:
+			return
+		_pick_wait = 0.5
 		_pick_lane(car)
 		return
 	var curve := _lane.curve
@@ -334,7 +411,8 @@ func _drive(car: ArcadeCar) -> void:
 			_offset = 0.0
 			curve = _lane.curve
 		else:
-			_pick_lane(car)
+			# a dead end: the throttled search finds a lane again (it walks every lane of the city)
+			_lane = null
 			return
 	var target := curve.sample_baked(minf(_offset + AIM_AHEAD, curve.get_baked_length()), true)
 	var to_target := target - car.global_position
@@ -440,6 +518,41 @@ func _report() -> void:
 		setup += float(f["setup"])
 		objects += float(f["objects"])
 		primitives += float(f["primitives"])
+	# the nodes with a physics callback that sit in no slot of the profile (they joined since the last pass), by script
+	var strays := {}
+	for node in get_tree().root.find_children("*", "", true, false):
+		if node.is_physics_processing() and node.process_physics_priority == 0:
+			var script := node.get_script() as Script
+			var parent_name := String(node.get_parent().name) if node.get_parent() != null else "?"
+			var key := (script.resource_path.get_file() if script != null else node.get_class()) + " under " + parent_name
+			strays[key] = int(strays.get(key, 0)) + 1
+	print("FRAMES physics callbacks outside the slots: %s" % str(strays))
+	# the particle systems and the lights of the scene at the end of the drive
+	var particles := get_tree().root.find_children("*", "GPUParticles3D", true, false)
+	var emitting := 0
+	for node in particles:
+		if (node as GPUParticles3D).emitting:
+			emitting += 1
+	var lights := get_tree().root.find_children("*", "Light3D", true, false)
+	var shadowed := 0
+	var lit := 0
+	for node in lights:
+		var light := node as Light3D
+		if light.is_visible_in_tree():
+			lit += 1
+			if light.shadow_enabled:
+				shadowed += 1
+	var decals := get_tree().root.find_children("*", "Decal", true, false)
+	var decals_on := 0
+	for node in decals:
+		if (node as Decal).is_visible_in_tree():
+			decals_on += 1
+	print("FRAMES at the end: %d particle systems (%d emitting), %d lights shown (%d with shadows) of %d, %d decals shown of %d" % [
+		particles.size(), emitting, lit, shadowed, lights.size(), decals_on, decals.size()])
+	if _phase_frames > 0:
+		print("FRAMES phases: the process step %.2f ms, the draw %.2f ms, after the draw %.2f ms (a frame)" % [
+			_phase_proc / float(_phase_frames) / 1000.0, _phase_draw / float(_phase_frames) / 1000.0,
+			_phase_after / float(_phase_frames) / 1000.0])
 	print("FRAMES render setup %.2f ms, %.0f objects, %.0f primitives a frame; thread model %s" % [setup / split_count,
 		objects / split_count, primitives / split_count, str(ProjectSettings.get_setting("rendering/driver/threads/thread_model"))])
 	if _ticks > 0:
@@ -451,8 +564,14 @@ func _report() -> void:
 	print("FRAMES synthesizers %.2f ms per frame (both, the average they report)" % (_synth_sum / float(count)))
 	hitches.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return float(a["ms"]) > float(b["ms"]))
 	for h in hitches.slice(0, 12):
-		print("FRAMES hitch %.1f ms: %d steps, process %.1f ms, physics %.1f ms, draws %d at %s" % [float(h["ms"]), int(h["steps"]),
-			float(h["process_ms"]), float(h["physics_ms"]), int(h["draws"]), str((h["pos"] as Vector3).snapped(Vector3.ONE))])
+		# the physics of this frame, and the process step, the draw and the after-draw of the frame before it (that frame's
+		# length decided how many ticks this one ran)
+		var ph: Array = h.get("phases", [0.0, 0.0, 0.0])
+		print("FRAMES hitch at %.2f s, %.1f ms: %d steps, physics %.1f ms; the frame before: process %.1f, draw %.1f, after %.1f ms; at %s" % [
+			float(h.get("at", 0.0)), float(h["frame_split"]), int(h["steps"]), float(h["physics_split"]), float(ph[0]), float(ph[1]),
+			float(ph[2]), str((h["pos"] as Vector3).snapped(Vector3.ONE))])
+	for event_line in _events:
+		print("FRAMES event ", event_line)
 
 
 ## The physics profile: the scene callbacks of every unit per tick, the engine part of a tick, the police on the road.
@@ -467,9 +586,11 @@ func _report_profile() -> void:
 	for i in order:
 		parts.append("%s %.3f" % [_units[i].name if is_instance_valid(_units[i]) else "?", _unit_usec[i] / float(_scripts_ticks) / 1000.0])
 	print("PROFILE scene callbacks %.3f ms per tick: %s" % [_scripts_usec / float(_scripts_ticks) / 1000.0, ", ".join(parts)])
-	print("PROFILE engine part of a tick (step + force integration) %.3f ms over %d ticks" % [
-		_engine_usec / maxf(float(_engine_ticks), 1.0) / 1000.0, _engine_ticks])
-	print("PROFILE %.1f police units on average" % (float(_police_sum) / maxf(float(_ticks), 1.0)))
+	# the probe's own physics callback runs after the last slot: its time is in the engine part, it is taken out
+	print("PROFILE engine part of a tick (step + force integration) %.3f ms over %d ticks; the probe itself %.3f ms a tick" % [
+		maxf(_engine_usec - _self_usec, 0.0) / maxf(float(_engine_ticks), 1.0) / 1000.0, _engine_ticks,
+		_self_usec / maxf(float(_ticks), 1.0) / 1000.0])
+	print("PROFILE %.1f police units on average" % (float(_police_sum) / maxf(float(_car_ticks), 1.0)))
 	var rig_script := load("res://fx/fx_car_rig.gd")
 	var seconds := float(_ticks) / float(Engine.physics_ticks_per_second)
 	print("PROFILE FX tiers: %.1f changes a second, %.3f ms a second in the changes" % [
@@ -529,6 +650,16 @@ func _ab_switch(ab: String, on: bool, director: Node) -> void:
 			for node in get_tree().get_nodes_in_group(StringName(ab.trim_prefix("hide:"))):
 				if node is Node3D:
 					(node as Node3D).visible = not on
+		"trafficfx":
+			# the particle systems of the traffic cars (the smoke, the spray of the wet road): shown / hidden
+			for car in get_tree().get_nodes_in_group(&"traffic"):
+				for node in (car as Node).find_children("*", "GPUParticles3D", true, false):
+					(node as GPUParticles3D).visible = not on
+		"trafficdecal":
+			# the blob shadows of the traffic cars: shown / hidden
+			for car in get_tree().get_nodes_in_group(&"traffic"):
+				for node in (car as Node).find_children("*", "Decal", true, false):
+					(node as Decal).visible = not on
 		"trafficshadow":
 			# the shadows of the traffic cars: cast / not cast
 			for car in get_tree().get_nodes_in_group(&"traffic"):
