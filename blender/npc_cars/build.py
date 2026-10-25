@@ -3,10 +3,11 @@
     python tools/gd.py blender run blender/npc_cars/build.py                   (the drone)
     python tools/gd.py blender run blender/npc_cars/build.py -- police_drone   (the same)
 
-The cars of the fleet (the traffic and the police cars) are the CC0 low poly cars of the "Free Low Poly Vehicles Pack" by Rgsdev,
-converted by blender/npc_cars/web/convert.py: a car id given to this script is refused, because the procedural cars of this
-generator (the modules body, boxcar, boxdetail, details, wheels, interior, gen_textures, gen_decals) would overwrite the converted
-glb files. They are kept for reference; the drone is the only model that is still built from scratch.
+The cars of the fleet (the traffic and the police cars) are realistic CC BY 4.0 / CC0 models converted by
+blender/npc_cars/web/convert_real.py (sources: blender/npc_cars/sources.json): a car id given to this script is refused, because
+the procedural cars of this generator (the modules body, boxcar, boxdetail, details, wheels, interior, gen_textures, gen_decals)
+would overwrite the converted glb files. They are kept for reference; the drone is the only model that is still built from
+scratch.
 
 Rebuilds the drone deterministically and exports game/assets/cars/npc/<name>.glb. The build fails if a textured surface has no
 UV map. The textures of the drone (decal_drone, npc_paint_rough, npc_glass_grime) are made by gen_textures.py.
@@ -206,7 +207,7 @@ def build_box(sp, col):
     return mats
 
 
-# the models that this script still builds (the cars are converted from the pack: blender/npc_cars/web/convert.py)
+# the models that this script still builds (the cars are converted by blender/npc_cars/web/convert_real.py)
 PROCEDURAL = ("police_drone",)
 
 
@@ -215,7 +216,7 @@ def main():
     want = [a for a in args if not a.startswith("-")]
     cars = [a for a in want if a not in PROCEDURAL]
     if cars:
-        print("REFUSED %s: the cars come from blender/npc_cars/web/convert.py now, this script builds %s" % (
+        print("REFUSED %s: the cars come from blender/npc_cars/web/convert_real.py now, this script builds %s" % (
             ", ".join(cars), ", ".join(PROCEDURAL)))
         raise SystemExit(2)
     common.reset()

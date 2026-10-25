@@ -40,6 +40,6 @@ tools/blender.sh run blender/npc_cars/web/convert.py   # 重新转换交通车�
 ## 第三方素材
 
 - 主角车模：Khronos glTF Sample Assets 的 Car Concept（Eric Chadwick，CC BY 4.0，原型是 Unity Fan 的 CC0 模型），改成黑白双色并按本项目的车辆契约重新拆分，转换脚本在 `blender/car/concept/`，署名全文见 `CREDITS.md`
-- 交通车和警车：Rgsdev 的 Free Low Poly Vehicles Pack（CC0），按车辆契约拆分材质和部件，转换脚本在 `blender/npc_cars/web/convert.py`，原始 FBX 和许可证在 `blender/npc_cars/web/source/`
+- 交通车和警车：Daniel Zhabotinsky 的 Kiri '10、Ace '11、Urban '10、LCT 3000 '07，Comrade1280 的 minivan，denniswoo1993 的 SHC MC（CC BY 4.0，经 Objaverse），以及 Grab3D 的 City Bus（CC0）；去掉贴图和内饰、按车辆契约拆分部件，转换脚本在 `blender/npc_cars/web/convert_real.py`，来源链接和 sha256 在 `blender/npc_cars/sources.json`（`fetch_sources.py` 下载，原文件不入仓），署名和改动全文见 `CREDITS.md`
 - 贴图：Poly Haven、ambientCG（CC0），用 `tools/textures/fetch.py` 下载
 - 字体：得意黑 Smiley Sans、Noto Sans SC（SIL OFL，许可证见 `game/assets/fonts/`）

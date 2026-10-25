@@ -60,6 +60,11 @@ const PIT_CATCH_UP_MAX := 6.0
 const PIT_REAR_CLEARANCE := 2.0
 ## The steer of the strike: 25 degrees of wheel angle (the dossier §6.3).
 const PIT_STRIKE_STEER := 0.78
+## The PIT unit aims at its line at least this far ahead of itself (m). The line-up point sits 4 m behind the player: a unit 5 m
+## behind him aimed at a point a metre in front of its own nose, the pure pursuit weaved (+-0.1 of steer, the unit 2.8-4.0 m to
+## the side) and the corner limit of the wanted speed held it back, so it hovered 5.2 m behind the player until it crashed
+## (test_pit with the interceptor of the real car models).
+const PIT_AIM_AHEAD := 8.0
 ## The duration of the strike (s).
 ##
 ## The strike has to be long enough for the unit to reach the rear quarter of the player: the
@@ -193,8 +198,8 @@ static func ram_speed(player: VehicleBase, boosted: bool, top_speed: float) -> f
 ## behind) and moves in on the rear quarter for the strike.
 static func pit_target(player: VehicleBase, side: float, rel: Vector3) -> Vector3:
 	if rel.z > PIT_BEHIND:
-		return player.global_transform * Vector3(side * PIT_OFFSET, 0.0, PIT_BEHIND)
-	return player.global_transform * Vector3(side * PIT_STRIKE_OFFSET, 0.0, PIT_STRIKE_BEHIND)
+		return player.global_transform * Vector3(side * PIT_OFFSET, 0.0, minf(PIT_BEHIND, rel.z - PIT_AIM_AHEAD))
+	return player.global_transform * Vector3(side * PIT_STRIKE_OFFSET, 0.0, minf(PIT_STRIKE_BEHIND, rel.z - PIT_AIM_AHEAD))
 
 
 ## True when the unit has lined up beside the player and may strike.

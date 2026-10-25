@@ -159,9 +159,11 @@ static func _lamp_anchor(root: Node3D, lamp_name: String, body: MeshInstance3D,
 	if mesh != null and mesh.mesh != null:
 		var aabb := mesh.get_aabb()
 		if aabb.size.x > 0.05:
+			# The outer face of the lens: the front of a front lamp, the back of a tail lamp (the tail lamps of the real
+			# car models are 0.2-0.4 m deep, and a card on their front face sat inside the car).
 			return Vector3(aabb.size.x * 0.5 - INDICATOR_INSET,
 					aabb.position.y + aabb.size.y * 0.5,
-					aabb.position.z + sign * INDICATOR_PROUD)
+					(aabb.end.z if sign > 0.0 else aabb.position.z) + sign * INDICATOR_PROUD)
 	var fallback := body.get_aabb()
 	return Vector3(fallback.size.x * 0.5 - INDICATOR_INSET,
 			clampf(fallback.position.y + fallback.size.y * 0.35, 0.4, 1.0),

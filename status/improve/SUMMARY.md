@@ -11,10 +11,15 @@ rims, smoked glass. Collision box 1.9 m wide (the oracles' car), floor 0.34 m ov
 
 ## The traffic and police cars
 
-Found on the web instead of generated: the CC0 "Free Low Poly Vehicles Pack" by Rgsdev, converted to the car contract by
-`blender/npc_cars/web/convert.py` (status/npc_cars.md). 11 cars of 1.4-1.9 k triangles and 70-95 KB each, replace the procedural fleet
-(21 k triangles, 34-42 surfaces and 5 MB of textures per car); the nodes, the lamps, the wheels and the tear-off parts (bumpers, bonnet)
-of the contract are kept, so the traffic, the police, the vehicle specs and the damage unit work unchanged. The drone is still procedural.
+Real car models now (the player: "the cars are still placeholders"): Daniel Zhabotinsky's Kiri '10, Ace '11, Urban '10 and LCT 3000 '07,
+Comrade1280's minivan and denniswoo1993's SHC MC (CC BY 4.0, via Objaverse; their Sketchfab pages still say CC Attribution) and
+Grab3D's City Bus (CC0), converted to the car contract by `blender/npc_cars/web/convert_real.py` from the files of
+`blender/npc_cars/sources.json` (status/npc_cars.md): 7-27 k triangles and 20-28 surfaces a car, no textures; the credits are in
+`CREDITS.md` and on the title screen. They replace the CC0 pack of 1.4-1.9 k triangles; the nodes, the lamps, the wheels and the
+tear-off parts of the contract are kept, so the traffic, the police, the vehicle specs and the damage unit work unchanged. Two things
+came with them: the rear indicator cards of the traffic sat on the front face of the tail lamp (inside the car: the new tail lamps are
+0.2-0.4 m deep), and the PIT unit hovered 5.2 m behind the player with the new interceptor (`police_tactics.gd`: it aims at its line at
+least 8 m ahead now; it weaved at a point a metre in front of its nose). The drone is still procedural.
 
 ## Collisions and interactions fixed in the last rounds (every item has a test or a tool that measures it)
 

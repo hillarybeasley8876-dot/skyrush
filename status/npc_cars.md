@@ -2,13 +2,38 @@
 
 Unit: NPC traffic fleet + police fleet (Blender → glTF). Owns `blender/npc_cars/**`, `game/assets/cars/npc/**`.
 
-## State: the fleet is a CC0 pack, converted
+## State: the fleet is real car models (CC BY 4.0, the bus CC0), converted
 
-The eleven cars of the traffic and the police (`sedan_ev`, `hatch_ev`, `suv_ev`, `taxi`, `robotaxi`, `van`, `bus`, `truck`,
-`police_patrol`, `police_interceptor`, `police_suv`) are the low poly cars of the **"Free Low Poly Vehicles Pack" by Rgsdev**
-(Raphael Goncalves, CC0), found on the web and converted to the car contract by `blender/npc_cars/web/convert.py`. The procedural
-fleet of the earlier rounds (a generated body, 34-42 surfaces, 21 k triangles and 5 MB of texture sheets per car, three bugs a
-round) is retired. The police drone is still the procedural model of `blender/npc_cars/build.py`.
+The eleven cars of the traffic and the police are modified versions of real low poly car models (2026-10-26; the player said the
+cars were "still placeholders"): `blender/npc_cars/web/convert_real.py` (with `real_mesh.py`, `real_rules.py`, `real_sources.py`,
+`real_extras.py`; the whole fleet in about 15 s) builds them from the files of `blender/npc_cars/sources.json` (the URL, the sha256,
+the author, the title and the licence of each), which `python blender/npc_cars/fetch_sources.py` downloads into
+`F:/dev/skyrush-out/cache/cars` (not in the repository). The credits are in `CREDITS.md` and on the title screen.
+
+| slot | source (author) | triangles | surfaces |
+|---|---|---|---|
+| sedan_ev | Kiri '10 (Daniel Zhabotinsky) | 11,028 | 22 |
+| taxi | Kiri '10 + a roof sign | 11,040 | 23 |
+| police_patrol | Kiri '10 + the police look | 13,084 | 26 |
+| hatch_ev | Ace '11 (Daniel Zhabotinsky), the wheels of the Kiri '10 | 10,737 | 21 |
+| suv_ev | Urban '10 (Daniel Zhabotinsky) | 15,600 | 24 |
+| police_suv | Urban '10 + a push bar | 18,443 | 28 |
+| robotaxi | SHC MC (denniswoo1993) + a LiDAR | 21,841 | 24 |
+| police_interceptor | SHC MC | 23,223 | 26 |
+| van | the minivan of the Generic passenger car pack (Comrade1280) | 7,450 | 21 |
+| truck | LCT 3000 '07 (Daniel Zhabotinsky) | 12,576 | 20 |
+| bus | City Bus (Grab3D, CC0) | 27,425 | 22 |
+
+Still no texture and no UV: the textures are dropped and every face gets the plain colour its texture showed (the paint is the
+game's shared car paint). The interiors are dropped (the glass is opaque). The police look is cut into the mesh (a navy band, a
+yellow pinstripe, a red/blue light bar), there is no lettering. The GLB files are 6.9 MB together (0.9 MB before); in a parked
+frame-probe A/B the median frame was 18.4 ms against 17.0 ms with the same draw calls (1034 against 1019). The earlier CC0 pack
+("Free Low Poly Vehicles Pack" by Rgsdev) and its converter (`convert.py`, the section below) are kept in `blender/npc_cars/web/`
+but no longer used. The police drone is still the procedural model of `blender/npc_cars/build.py`.
+
+## The earlier CC0 pack (not used any more)
+
+The cars of the pack were 1.4-1.9 k triangles, 70-95 KB each:
 
 | model | source FBX | triangles | surfaces | notes |
 |---|---|---|---|---|
@@ -27,7 +52,7 @@ round) is retired. The police drone is still the procedural model of `blender/np
 
 No texture and no UV: every surface is a plain colour. The GLB of a car is 70-95 KB.
 
-## What the conversion does (`convert.py`)
+## What the conversion of the earlier pack did (`convert.py`; `convert_real.py` keeps the same contract)
 
 * Puts the car into the game frame (nose to Godot -Z, on the road, origin in the middle of the body, metres), scales it to the length
   of the fleet table and narrows it to the width of the table (and lowers the roof to the table's height: the pack's cars are bigger

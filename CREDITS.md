@@ -25,17 +25,42 @@ textures and are **not** in the derived model.
 
 The credit is also shown on the title screen of the game.
 
-## The traffic and police cars: "Free Low Poly Vehicles Pack" (CC0)
+## The traffic and police cars (CC BY 4.0, one CC0)
 
-The cars of the traffic and the police (`game/assets/cars/npc/*.glb`: sedan, hatchback, SUV, taxi, robotaxi, van, bus, truck and the
-three police cars) are converted from the **Free Low Poly Vehicles Pack** by **Rgsdev** (Raphael Goncalves):
+The cars of the traffic and the police (`game/assets/cars/npc/*.glb`, all but the drone) are modified versions of these models.
+The list with the download links and the sha256 of every file is `blender/npc_cars/sources.json`;
+`python blender/npc_cars/fetch_sources.py` downloads them (they are not in the repository) and
+`blender/npc_cars/web/convert_real.py` converts them.
 
-* Source: the FBX files of the pack, kept in `blender/npc_cars/web/source/` with their `License.txt`
-* Licence: CC0 1.0 (public domain), no credit needed; it is given anyway
-* Changes: the cars were scaled and narrowed to the sizes of the fleet table, the roofs were lowered, the body mesh was split into the
-  parts of the SKYRUSH car contract (bumpers, bonnet, lamps, glass, mirrors, light bar), the materials were replaced by the game's
-  paint, glass and lamp materials, and a cargo box (truck) and a LiDAR puck (robotaxi) were added. The conversion is in
-  `blender/npc_cars/web/convert.py` and can be re-run.
+| Cars | Model | Author | Licence | Source |
+|---|---|---|---|---|
+| sedan, taxi, patrol car | **Kiri '10 - Low poly model** (in the Objaverse snapshot: "Generic sedan 2010 - Low poly model") | **Daniel Zhabotinsky** | CC BY 4.0 | https://sketchfab.com/3d-models/kiri-10-low-poly-model-7fd6e15785fa4aa9bfd6e31eb7c97ba6, via Objaverse (allenai/objaverse) |
+| hatchback | **Ace '11 - Low Poly model** ("Modern Hatchback - Low Poly model") | **Daniel Zhabotinsky** | CC BY 4.0 | https://sketchfab.com/3d-models/ace-11-low-poly-model-055ff8a21b8d4d279debca089e2fafcd, via Objaverse (allenai/objaverse) |
+| SUV, heavy police SUV | **Urban '10 - Low poly model** ("Generic SUV - Low poly model") | **Daniel Zhabotinsky** | CC BY 4.0 | https://sketchfab.com/3d-models/urban-10-low-poly-model-2866efdfa943484391ef8313768e074d, via Objaverse (allenai/objaverse) |
+| box truck | **LCT 3000 '07- Low poly model** (in the Objaverse snapshot: "Light Commercial Truck '07- Low poly model") | **Daniel Zhabotinsky** | CC BY 4.0 | https://sketchfab.com/3d-models/3be03b6a43aa41898c9ca806b8787052, via Objaverse (allenai/objaverse) |
+| van | the minivan of **Generic passenger car pack** | **Comrade1280** | CC BY 4.0 | https://sketchfab.com/3d-models/generic-passenger-car-pack-20f9af9b8a404d5cb022ac6fe87f21f5, via Objaverse (allenai/objaverse) |
+| robotaxi, police interceptor | **SHC MC Free Promotion Car** | **denniswoo1993 (SHCreations)**, https://sketchfab.com/denniswoo1993 | CC BY 4.0 | https://opengameart.org/content/shc-mc-free-promotion-car (submitted by brylie; original https://sketchfab.com/models/cfaabdec76a74b68a48ba5657b6d9aee) |
+| city bus | **City Bus** (Cozy Vehicles Kit) | **Grab3D** | CC0 1.0 (no credit needed; given anyway) | https://grab3d.com/models/vehicles/city-bus/ |
+
+Licence: Creative Commons Attribution 4.0 International, https://creativecommons.org/licenses/by/4.0/ (CC0 1.0:
+https://creativecommons.org/publicdomain/zero/1.0/).
+
+**Changes made** (CC BY 4.0 section 3(a)(1)(B)): every model was turned to face the game's forward axis, re-origined and
+scaled (the Kiri '10 was also made 5-7 % wider, the Urban '10 of the heavy police SUV 4 % wider and the SHC MC 6 % narrower;
+the minivan was taken out of its pack), its interior, the inner surface of its double window panes and the parts hidden
+behind the lamp lenses were removed, the mesh was split into the parts of the SKYRUSH car contract (body, bonnet, bumpers,
+mirrors, glass, lamps, four wheels with their origin on the hub), **all textures were removed** and every face got a plain
+material of the colour its texture showed (paint, one black for the trims, chrome, silver, lamp lenses, tyres, rims), the
+paint became the game's shared car paint, the wheels of the Ace '11 were replaced by the wheels of the Kiri '10, the
+honeycomb grilles of the SHC MC were replaced by dark plates and its wheels and lamp housings were decimated, the window
+glass of the city bus was decimated. Added: a roof sign (taxi), a roof LiDAR (robotaxi), the fictional "天巡 SKYPOL" police
+look (a navy band and a yellow pinstripe cut into the body, a light bar, a push bar on the heavy SUV) and the box of the
+truck repainted as a white cargo box. No brand badge, emblem or text of the originals is used.
+
+The credit is also shown on the title screen of the game.
+
+The earlier low poly fleet ("Free Low Poly Vehicles Pack" by Rgsdev, CC0) is no longer used by the game; its FBX files and the
+old converter are still in `blender/npc_cars/web/` (`source/`, `convert.py`).
 
 ## Other assets
 

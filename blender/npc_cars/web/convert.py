@@ -1,5 +1,8 @@
 """Converts the CC0 "Free Low Poly Vehicles Pack" by Rgsdev into the traffic and police fleet of SKYRUSH.
 
+SUPERSEDED: the fleet of the game is built by convert_real.py (realistic CC BY 4.0 / CC0 models, see CREDITS.md); running this
+script would put the low poly pack back into game/assets/cars/npc. It is kept with its source files for the record.
+
     python tools/gd.py blender run blender/npc_cars/web/convert.py -- [model ids] [--out DIR]
 
         model ids   the models to build (default: all of MODELS)

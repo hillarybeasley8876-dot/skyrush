@@ -1,0 +1,103 @@
+{
+  "about": "The third-party models of the traffic and police fleet (game/assets/cars/npc). The files are NOT in the repository: python blender/npc_cars/fetch_sources.py downloads them into the car cache (<checkout>/../skyrush-out/cache/cars, or --cache DIR / SKYRUSH_CAR_CACHE) and checks the sha256; blender/npc_cars/web/convert_real.py converts them. The credits are in CREDITS.md and on the title screen.",
+  "sources": {
+    "kiri": {
+      "title": "Kiri '10 - Low poly model",
+      "snapshot_title": "Generic sedan 2010 - Low poly model",
+      "author": "Daniel Zhabotinsky",
+      "author_url": "https://sketchfab.com/DanielZhabotinsky",
+      "page": "https://sketchfab.com/3d-models/kiri-10-low-poly-model-7fd6e15785fa4aa9bfd6e31eb7c97ba6",
+      "licence": "CC BY 4.0",
+      "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+      "via": "Objaverse (allenai/objaverse), uid 7fd6e15785fa4aa9bfd6e31eb7c97ba6",
+      "url": "https://huggingface.co/datasets/allenai/objaverse/resolve/main/glbs/000-107/7fd6e15785fa4aa9bfd6e31eb7c97ba6.glb",
+      "file": "7fd6e15785fa4aa9bfd6e31eb7c97ba6.glb",
+      "sha256": "6a3336e33bbda536b0f8736b531eb04fff9b66a1cb587af5c0aa1fca26eabde7",
+      "used_for": ["sedan_ev", "taxi", "police_patrol"]
+    },
+    "ace": {
+      "title": "Ace '11 - Low Poly model",
+      "snapshot_title": "Modern Hatchback - Low Poly model",
+      "author": "Daniel Zhabotinsky",
+      "author_url": "https://sketchfab.com/DanielZhabotinsky",
+      "page": "https://sketchfab.com/3d-models/ace-11-low-poly-model-055ff8a21b8d4d279debca089e2fafcd",
+      "licence": "CC BY 4.0",
+      "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+      "via": "Objaverse (allenai/objaverse), uid 055ff8a21b8d4d279debca089e2fafcd",
+      "url": "https://huggingface.co/datasets/allenai/objaverse/resolve/main/glbs/000-125/055ff8a21b8d4d279debca089e2fafcd.glb",
+      "file": "055ff8a21b8d4d279debca089e2fafcd.glb",
+      "sha256": "ee239312a0f7f51f6a78c5fa09f60188347e85bcafc2f1f3177a8422467ba48f",
+      "used_for": ["hatch_ev"]
+    },
+    "urban": {
+      "title": "Urban '10 - Low poly model",
+      "snapshot_title": "Generic SUV - Low poly model",
+      "author": "Daniel Zhabotinsky",
+      "author_url": "https://sketchfab.com/DanielZhabotinsky",
+      "page": "https://sketchfab.com/3d-models/urban-10-low-poly-model-2866efdfa943484391ef8313768e074d",
+      "licence": "CC BY 4.0",
+      "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+      "via": "Objaverse (allenai/objaverse), uid 2866efdfa943484391ef8313768e074d",
+      "url": "https://huggingface.co/datasets/allenai/objaverse/resolve/main/glbs/000-005/2866efdfa943484391ef8313768e074d.glb",
+      "file": "2866efdfa943484391ef8313768e074d.glb",
+      "sha256": "b951f07d92afbfb71dc2c5c3d23c78e5b2f86351f02c7e7bf3794ba1eade44e5",
+      "used_for": ["suv_ev", "police_suv"]
+    },
+    "lct07": {
+      "title": "LCT 3000 '07- Low poly model",
+      "snapshot_title": "Light Commercial Truck '07- Low poly model",
+      "author": "Daniel Zhabotinsky",
+      "author_url": "https://sketchfab.com/DanielZhabotinsky",
+      "page": "https://sketchfab.com/3d-models/3be03b6a43aa41898c9ca806b8787052",
+      "licence": "CC BY 4.0",
+      "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+      "via": "Objaverse (allenai/objaverse), uid 3be03b6a43aa41898c9ca806b8787052",
+      "url": "https://huggingface.co/datasets/allenai/objaverse/resolve/main/glbs/000-149/3be03b6a43aa41898c9ca806b8787052.glb",
+      "file": "3be03b6a43aa41898c9ca806b8787052.glb",
+      "sha256": "a77f386a822382e648b2423819f6e40614856521226a1952c442bd96d68e7312",
+      "used_for": ["truck"]
+    },
+    "comrade_cars": {
+      "title": "Generic passenger car pack (the minivan)",
+      "snapshot_title": "Generic passenger car pack",
+      "author": "Comrade1280",
+      "author_url": "https://sketchfab.com/comrade1280",
+      "page": "https://sketchfab.com/3d-models/generic-passenger-car-pack-20f9af9b8a404d5cb022ac6fe87f21f5",
+      "licence": "CC BY 4.0",
+      "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+      "via": "Objaverse (allenai/objaverse), uid 20f9af9b8a404d5cb022ac6fe87f21f5",
+      "url": "https://huggingface.co/datasets/allenai/objaverse/resolve/main/glbs/000-102/20f9af9b8a404d5cb022ac6fe87f21f5.glb",
+      "file": "20f9af9b8a404d5cb022ac6fe87f21f5.glb",
+      "sha256": "a2d5667f3a1d47fa0dbb84cf2cf76b8aeee6a69f7fff209af09973c625f9be6e",
+      "used_for": ["van"]
+    },
+    "shc_mc": {
+      "title": "SHC MC Free Promotion Car",
+      "author": "denniswoo1993 (SHCreations)",
+      "author_url": "https://sketchfab.com/denniswoo1993",
+      "page": "https://opengameart.org/content/shc-mc-free-promotion-car",
+      "original": "https://sketchfab.com/models/cfaabdec76a74b68a48ba5657b6d9aee",
+      "licence": "CC BY 4.0",
+      "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+      "via": "OpenGameArt.org (submitted by brylie)",
+      "url": "https://opengameart.org/sites/default/files/shc_mc_free_promotion_car.gltf_.zip",
+      "file": "shc_mc_free_promotion_car.gltf_.zip",
+      "sha256": "6ecfbfd26439db566d70918c6318e022c8fb370c804223640d3ccb7b95c0d712",
+      "unzip": "shc_mc",
+      "used_for": ["robotaxi", "police_interceptor"]
+    },
+    "city_bus": {
+      "title": "City Bus (Cozy Vehicles Kit)",
+      "author": "Grab3D",
+      "author_url": "https://grab3d.com",
+      "page": "https://grab3d.com/models/vehicles/city-bus/",
+      "licence": "CC0 1.0",
+      "licence_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "via": "grab3d.com",
+      "url": "https://grab3d.com/dl/city-bus/city-bus.glb",
+      "file": "city-bus.glb",
+      "sha256": "42ad77fe1d2b5c4843299057e926be4cf088138ed984d966a8073b7e2c7a49f4",
+      "used_for": ["bus"]
+    }
+  }
+}

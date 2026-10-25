@@ -10,22 +10,24 @@ const TAXI_COLOR := Color("1e8c8a")
 
 ## id -> {name, type, length, width, height, mass, health, glb}
 ## type: &"car", &"taxi", &"van", &"bus_truck"
+## length, width and height are the size of the `Body` of the glb (the box collider is measured from it; the mirrors, the
+## bumpers' overhang, a roof sign or a LiDAR are not in it): blender/npc_cars/web/convert_real.py prints them.
 const MODELS: Dictionary = {
-	&"sedan_ev": {"name": "轿车", "type": &"car", "length": 4.84, "width": 1.97, "height": 1.52,
+	&"sedan_ev": {"name": "轿车", "type": &"car", "length": 4.59, "width": 1.84, "height": 1.56,
 		"mass": 1500.0, "health": 40.0, "glb": "sedan_ev"},
-	&"hatch_ev": {"name": "两厢", "type": &"car", "length": 3.94, "width": 1.83, "height": 1.51,
+	&"hatch_ev": {"name": "两厢", "type": &"car", "length": 3.91, "width": 1.72, "height": 1.52,
 		"mass": 1350.0, "health": 40.0, "glb": "hatch_ev"},
-	&"suv_ev": {"name": "SUV", "type": &"car", "length": 4.74, "width": 2.01, "height": 1.91,
+	&"suv_ev": {"name": "SUV", "type": &"car", "length": 4.49, "width": 1.84, "height": 1.61,
 		"mass": 1900.0, "health": 45.0, "glb": "suv_ev"},
-	&"taxi_ev": {"name": "申城出租", "type": &"taxi", "length": 4.84, "width": 1.97, "height": 1.80,
+	&"taxi_ev": {"name": "申城出租", "type": &"taxi", "length": 4.59, "width": 1.84, "height": 1.56,
 		"mass": 1500.0, "health": 40.0, "glb": "taxi"},
-	&"robotaxi": {"name": "无人出租车", "type": &"taxi", "length": 4.60, "width": 1.86, "height": 1.61,
+	&"robotaxi": {"name": "无人出租车", "type": &"taxi", "length": 4.63, "width": 1.94, "height": 1.35,
 		"mass": 1500.0, "health": 40.0, "glb": "robotaxi"},
-	&"van_ev": {"name": "厢式货车", "type": &"van", "length": 5.30, "width": 2.07, "height": 2.16,
+	&"van_ev": {"name": "厢式货车", "type": &"van", "length": 4.87, "width": 1.83, "height": 1.91,
 		"mass": 2400.0, "health": 60.0, "glb": "van"},
-	&"bus_city": {"name": "公交车", "type": &"bus_truck", "length": 12.00, "width": 2.60, "height": 3.40,
+	&"bus_city": {"name": "公交车", "type": &"bus_truck", "length": 11.55, "width": 2.47, "height": 3.10,
 		"mass": 12000.0, "health": 300.0, "glb": "bus"},
-	&"truck_box": {"name": "货车", "type": &"bus_truck", "length": 5.51, "width": 2.41, "height": 3.08,
+	&"truck_box": {"name": "货车", "type": &"bus_truck", "length": 6.12, "width": 2.29, "height": 2.74,
 		"mass": 9000.0, "health": 200.0, "glb": "truck"},
 }
 

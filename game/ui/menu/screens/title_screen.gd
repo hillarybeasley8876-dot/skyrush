@@ -76,6 +76,12 @@ func _ready() -> void:
 	UI.place(model_credit, 1, 1, 1, 1, -700, -26, -36, -6)
 	add_child(model_credit)
 
+	# The traffic and police cars (CC BY 4.0 too, CREDITS.md): under the build line, on the left.
+	var fleet_credit := UI.label("交通车/警车 Daniel Zhabotinsky (Kiri '10 · Ace '11 · Urban '10 · LCT '07) · Comrade1280"
+			+ " · denniswoo1993 (SHC MC) · CC BY 4.0 · 公交车 Grab3D (CC0)", 13, Palette.TEXT_DIM, Fonts.text())
+	UI.place(fleet_credit, 0, 1, 0, 1, 36, -26, 1160, -6)
+	add_child(fleet_credit)
+
 	_snapshot = TextureRect.new()
 	_snapshot.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_snapshot.stretch_mode = TextureRect.STRETCH_SCALE

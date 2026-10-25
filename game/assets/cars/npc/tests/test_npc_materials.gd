@@ -1,7 +1,8 @@
 extends Node
 ## npc_cars material contract test.
 ##
-## The fleet is made of plain colours (no texture, no UV), and the game finds its surfaces by the name of the material: the traffic
+## The fleet is made of plain colours (no texture, no UV: convert_real.py gives every textured face of a source the plain material
+## of the colour its texture shows), and the game finds its surfaces by the name of the material: the traffic
 ## paints the surface that wears SH_car_paint_npc (the colour of a car is an instance uniform; the taxi wears its own SH_car_paint_taxi,
 ## the white of a police car is SH_car_paint_police: all three are materials of the shader library), the lamps of a traffic car are the
 ## surfaces NPC_lamp_front (Lamp_F) and NPC_lamp_rear (Lamp_R), the brake lamps of a car with physics are NPC_lamp_brake, the light
@@ -16,7 +17,7 @@ const PAINT := "SH_car_paint_npc"
 const TAXI_PAINT := "SH_car_paint_taxi"
 const POLICE_PAINT := "SH_car_paint_police"
 const GLASS := "NPC_glass_dark"
-## The cars of the pack have no texture: nothing may sample an image.
+## The cars have no texture: nothing may sample an image.
 const FLAT := true
 
 
@@ -49,11 +50,16 @@ func _check_car(model_name: String, police: bool) -> bool:
 	var body_materials := _materials(root, "Body")
 	if police:
 		if body_materials.has(PAINT):
-			print("FAIL %s wears the traffic paint (the police cars are black and white)" % model_name)
+			print("FAIL %s wears the traffic paint (the police cars are white with a navy band)" % model_name)
 			ok = false
 		if not body_materials.has("NPC_police_black") or not body_materials.has(POLICE_PAINT):
 			print("FAIL %s Body lacks the police black and white (%s): %s" % [model_name, POLICE_PAINT, body_materials])
 			ok = false
+		# the 天巡 SKYPOL livery (ref/art/DOSSIER.md 4.8): a navy band along the lower doors, a yellow pinstripe above it
+		for livery: String in ["NPC_police_navy", "NPC_police_yellow"]:
+			if not body_materials.has(livery):
+				print("FAIL %s Body lacks the %s of the livery: %s" % [model_name, livery, body_materials])
+				ok = false
 	else:
 		var paint := TAXI_PAINT if model_name == "taxi" else PAINT
 		if not body_materials.has(paint):

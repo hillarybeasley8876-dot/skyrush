@@ -1,10 +1,12 @@
 extends Node
 ## npc_cars node and geometry contract test.
 ##
-## The fleet is the CC0 "Free Low Poly Vehicles Pack" by Rgsdev, converted by blender/npc_cars/web/convert.py (the drone is the
-## procedural model of the old generator). Every model must expose the node names the game relies on (CONTRACTS.md 6, the traffic
-## lamps, the police light bar, the damage parts), stand on the ground, carry its lamps on the right end, have its wheels where
-## the physics expects them, match the dimensions of the fleet table, and stay inside the triangle budget.
+## The fleet is made of realistic CC BY 4.0 / CC0 models (Daniel Zhabotinsky's Kiri '10, Ace '11, Urban '10 and Light Commercial
+## Truck '07, Comrade1280's minivan, denniswoo1993's SHC MC, Grab3D's city bus; CREDITS.md), converted by
+## blender/npc_cars/web/convert_real.py (the drone is the procedural model of the old generator). Every model must expose the
+## node names the game relies on (CONTRACTS.md 6, the traffic lamps, the police light bar, the damage parts), stand on the
+## ground, carry its lamps on the right end, have its wheels where the physics expects them, match the dimensions of the fleet
+## table, and stay inside the triangle budget.
 ##
 ##     python tools/gd.py test res://assets/cars/npc/tests/test_npc_nodes.gd
 
@@ -18,10 +20,17 @@ const POLICE_NODES := ["LightBar_Red", "LightBar_Blue", "Siren"]
 const PART_NODES := ["Bumper_F", "Bumper_R"]
 const HOOD_CARS := ["sedan_ev", "suv_ev", "hatch_ev", "taxi", "police_patrol", "police_interceptor", "police_suv"]
 const DRONE_NODES := ["Spot", "Strobe_Red", "Strobe_Blue", "Rotor_FL", "Rotor_FR", "Rotor_RL", "Rotor_RR"]
-## The triangles and surfaces of a car (the pack's cars are 1.4-1.8 k triangles, the box truck has its cargo box). A surface is a draw
-## call: the body, the glass, the lamps, the mirrors, the three tear-off parts and the wheels (a tyre and a rim each) make 21-24.
-const CAR_BUDGET := 4000
+## The triangles of a car: CONTRACTS.md 2 allows an NPC car 25 k and a police car 30 k, briefs/npc_cars.md a bus or a truck
+## 30 k (the cars are 7-24 k).
+const CAR_BUDGET := 25000
+const POLICE_BUDGET := 30000
+const BIG_BUDGET := 30000
+const BIG_CARS := ["bus", "truck"]
+## The surfaces of a car. A surface is a draw call, and the traffic runs up to 90 cars: the body (its paint, one black and a
+## chrome or silver trim), the glass, the lenses, the mirrors, the three tear-off parts and the wheels (a tyre and a rim each)
+## make 20-25; a police car adds the navy band and the yellow stripe of its livery and the two halves of its light bar.
 const CAR_SURFACES := 26
+const POLICE_SURFACES := 30
 const DRONE_BUDGET := 8000
 const DRONE_SURFACES := 20
 ## How far the Body may differ from the fleet table of the traffic (m): the mirrors are not part of the Body.
@@ -88,9 +97,12 @@ func _check_car(model_name: String) -> bool:
 	ok = _check_parts(root, model_name) and ok
 	var surfaces := _surface_count(root)
 	var tris := _triangles(root)
-	if surfaces > CAR_SURFACES or tris > CAR_BUDGET:
+	var police := model_name.begins_with("police_")
+	var max_surfaces := POLICE_SURFACES if police else CAR_SURFACES
+	var budget := POLICE_BUDGET if police else (BIG_BUDGET if BIG_CARS.has(model_name) else CAR_BUDGET)
+	if surfaces > max_surfaces or tris > budget:
 		print("FAIL %s has %d surfaces (max %d) and %d triangles (budget %d)"
-				% [model_name, surfaces, CAR_SURFACES, tris, CAR_BUDGET])
+				% [model_name, surfaces, max_surfaces, tris, budget])
 		ok = false
 	else:
 		print("PASS %s surfaces=%d tris=%d" % [model_name, surfaces, tris])
