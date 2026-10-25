@@ -14,6 +14,9 @@ var world: Node3D = null
 
 func _init(scene_tree: SceneTree) -> void:
 	tree = scene_tree
+	# --hz=N: the physics runs at N ticks a second (the project: 120; the reports compare the rates)
+	if Game.option("hz", "") != "":
+		Engine.physics_ticks_per_second = int(Game.option("hz"))
 
 
 ## Builds the sandbox world and waits for it to settle.
@@ -56,7 +59,7 @@ func step() -> void:
 
 ## Runs the physics for the given number of seconds.
 func run(seconds: float) -> void:
-	var steps: int = int(seconds * 120.0)
+	var steps: int = int(seconds * Engine.physics_ticks_per_second)
 	for i in steps:
 		await tree.physics_frame
 
@@ -65,7 +68,7 @@ func run(seconds: float) -> void:
 ## ground is a single 2.4 km box, so a long straight run would drive the car off the edge (and
 ## the fall would be measured as a speed). The velocity is kept, the position is reset.
 func run_steady(car: ArcadeCar, seconds: float) -> void:
-	var steps: int = int(seconds * 120.0)
+	var steps: int = int(seconds * Engine.physics_ticks_per_second)
 	for i in steps:
 		if i % 60 == 0:
 			keep_on_ground(car)
@@ -81,10 +84,10 @@ func keep_on_ground(car: ArcadeCar) -> void:
 ## Runs the physics until the predicate is true or the timeout expires. Returns the time used
 ## in seconds, or -1.0 on timeout.
 func run_until(predicate: Callable, timeout: float) -> float:
-	var steps: int = int(timeout * 120.0)
+	var steps: int = int(timeout * Engine.physics_ticks_per_second)
 	for i in steps:
 		if predicate.call():
-			return float(i) / 120.0
+			return float(i) / Engine.physics_ticks_per_second
 		await tree.physics_frame
 	return -1.0
 

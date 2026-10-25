@@ -102,7 +102,10 @@ var flight: FlightMod = FlightMod.new()
 
 ## The last measured physics cost of this car in microseconds.
 var cpu_usec: float = 0.0
-## The last measured cost of the per frame work (the probes and the visual) in microseconds.
+## The physics cost of all the cars together since the start (usec): the frame probe reads it (tools/frame_probe.gd).
+static var cpu_total_usec: float = 0.0
+## The last measured cost of the work of the physics tick outside the force integration (the probes, the input, the modules) in
+## microseconds.
 var frame_cpu_usec: float = 0.0
 
 var _visual: Node3D = null
@@ -241,9 +244,14 @@ func _physics_process(delta: float) -> void:
 		_sample_input()
 	_push_input_to_modules()
 	dynamics.tick_effects(delta)
+	frame_cpu_usec = Time.get_ticks_usec() - t0
+
+
+## The visual (the wheels on the suspension, their spin and steer, the wing, the lamps) follows the car once a frame: in the physics
+## tick it was set 2-4 times a frame and only the last was ever drawn (17 us a car a tick).
+func _process(delta: float) -> void:
 	readout.flying = sky.flying
 	readout.update_visual(delta, telemetry.speed_kmh, _in_brake > DriveTuning.BRAKE_ON)
-	frame_cpu_usec = Time.get_ticks_usec() - t0
 
 
 ## The wheel probes are cast outside the physics step: a shape cast inside _integrate_forces
@@ -305,6 +313,7 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		# The speed of the lane is not a contact: the impact module starts again when the lane ends.
 		impact.reset()
 		cpu_usec = Time.get_ticks_usec() - t0
+		cpu_total_usec += cpu_usec
 		return
 	# The height of the ground under the car. The ray has to be cast inside the physics step:
 	# Jolt only answers the queries while the space is locked. The landing cushion needs it.
@@ -333,11 +342,15 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		Events.hover_changed.emit(self, thruster.hovering)
 	impact.tick(dt, self, state, spec.mass, drift, dynamics.ground_normal(), dynamics.own_kick())
 	power.tick(dt, _in_throttle)
-	gravity_scale = AirTuning.AIR_GRAVITY_SCALE if dynamics.air_gravity else 1.0
+	# written when it changes: a write is a call into the physics server
+	var gravity: float = AirTuning.AIR_GRAVITY_SCALE if dynamics.air_gravity else 1.0
+	if gravity_scale != gravity:
+		gravity_scale = gravity
 	readout.write_telemetry(telemetry, state.transform, state.linear_velocity)
 	_check_upside_down(state, dt)
 	_check_stuck(state, dt)
 	cpu_usec = Time.get_ticks_usec() - t0
+	cpu_total_usec += cpu_usec
 
 
 ## The player car that is stuck goes back on the road (BodyTuning.STUCK_*): off its wheels or leaning on a wall, and standing still,

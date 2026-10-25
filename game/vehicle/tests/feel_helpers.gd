@@ -23,7 +23,7 @@ func hop(t: T, car: ArcadeCar, kmh: float, big: bool) -> Array:
 	car.thruster.hop_pressed = false
 	if big:
 		# The Big Hop: the key is held for the charge.
-		for i in 40:
+		for i in Engine.physics_ticks_per_second / 3:
 			await t.step()
 	car.thruster.hop_held = false
 	car.thruster.hop_released = true
@@ -32,12 +32,12 @@ func hop(t: T, car: ArcadeCar, kmh: float, big: bool) -> Array:
 	var apex: float = 0.0
 	var above: float = 0.0
 	var flew: bool = false
-	for i in 120 * 3:
+	for i in Engine.physics_ticks_per_second * 3:
 		await t.step()
 		var height: float = car.global_position.y - ground
 		apex = maxf(apex, height)
 		if height > 7.0:
-			above += 1.0 / 120.0
+			above += 1.0 / Engine.physics_ticks_per_second
 		if car.telemetry.airborne:
 			flew = true
 		elif flew and car.telemetry.grounded_wheels >= 3:
@@ -55,18 +55,18 @@ func exit_series(t: T, car: ArcadeCar, steer: float) -> Array:
 	var ticks: int = 0
 	car.set_drift(false)
 	car.set_controls(1.0, 0.0, steer, false)
-	for i in 120 * 3:
+	for i in Engine.physics_ticks_per_second * 3:
 		await t.step()
 		if exited < 0.0 and car.drift.state != &"drift":
-			exited = float(i) / 120.0
-			start = float(i) / 120.0
+			exited = float(i) / Engine.physics_ticks_per_second
+			start = float(i) / Engine.physics_ticks_per_second
 			series.append(rad_to_deg(car.drift.beta))
 			continue
 		if exited >= 0.0:
 			ticks += 1
-			if ticks % 6 == 0:
+			if ticks % (Engine.physics_ticks_per_second / 20) == 0:
 				series.append(rad_to_deg(car.drift.beta))
-			if float(i) / 120.0 - start >= 1.0:
+			if float(i) / Engine.physics_ticks_per_second - start >= 1.0:
 				break
 	return [series, exited]
 

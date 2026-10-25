@@ -67,7 +67,7 @@ func _turn(kmh: float, input: float, release: bool) -> Dictionary:
 	await _t.run(0.3)
 	var target := kmh / 3.6
 	car.linear_velocity = -car.global_transform.basis.z * target
-	for i in 30:
+	for i in Engine.physics_ticks_per_second / 4:
 		car.set_controls(1.0 if car.linear_velocity.length() < target else 0.0, 0.0, 0.0, false)
 		await _t.step()
 	var start_speed := car.linear_velocity.length()
@@ -75,36 +75,36 @@ func _turn(kmh: float, input: float, release: bool) -> Dictionary:
 	var lateral_sum := 0.0
 	var slip_peak := 0.0
 	var samples := 0
-	for i in 240:
+	for i in Engine.physics_ticks_per_second * 2:
 		car.set_controls(1.0 if car.linear_velocity.length() < target else 0.0, 0.0, input, false)
 		await _t.step()
 		var yaw := rad_to_deg(car.angular_velocity.y) * -1.0
 		yaws.append(yaw)
-		if i >= 120:
+		if i >= Engine.physics_ticks_per_second:
 			var v := car.linear_velocity
 			lateral_sum += absf(car.angular_velocity.y) * Vector2(v.x, v.z).length() / 9.81
 			samples += 1
 		slip_peak = maxf(slip_peak, absf(car.telemetry.slip_angle_deg))
 	var plateau := 0.0
-	for i in range(120, 240):
+	for i in range(Engine.physics_ticks_per_second, Engine.physics_ticks_per_second * 2):
 		plateau += yaws[i]
-	plateau /= 120.0
+	plateau /= float(Engine.physics_ticks_per_second)
 	var t63 := -1.0
 	for i in yaws.size():
 		if yaws[i] >= plateau * 0.63:
-			t63 = float(i) / 120.0
+			t63 = float(i) / Engine.physics_ticks_per_second
 			break
 	var kept := car.linear_velocity.length() / maxf(start_speed, 0.1)
 	var settle := -1.0
 	var swing := 0.0
 	if release:
-		for i in 180:
+		for i in Engine.physics_ticks_per_second * 3 / 2:
 			car.set_controls(1.0 if car.linear_velocity.length() < target else 0.0, 0.0, 0.0, false)
 			await _t.step()
 			var yaw := rad_to_deg(car.angular_velocity.y) * -1.0
 			swing = minf(swing, yaw)
 			if settle < 0.0 and absf(yaw) < 5.0:
-				settle = float(i) / 120.0
+				settle = float(i) / Engine.physics_ticks_per_second
 	car.queue_free()
 	return {"plateau": plateau, "t63": t63, "lateral": lateral_sum / maxf(float(samples), 1.0), "slip": slip_peak,
 		"kept": kept, "settle": settle, "swing": -swing}

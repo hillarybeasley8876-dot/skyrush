@@ -43,9 +43,9 @@ func _run() -> void:
 	var t100: float = -1.0
 	var clock: float = 0.0
 	var top: float = 0.0
-	for i in 120 * 13:
+	for i in Engine.physics_ticks_per_second * 13:
 		await t.step()
-		clock += 1.0 / 120.0
+		clock += 1.0 / Engine.physics_ticks_per_second
 		top = maxf(top, car.telemetry.forward_speed_kmh)
 		if i % 60 == 0:
 			t.keep_on_ground(car)
@@ -59,7 +59,7 @@ func _run() -> void:
 	car.boost.n2 = BoostTuning.N2_MAX
 	car.use_nitro()
 	var boosted: float = 0.0
-	for i in 120 * 3:
+	for i in Engine.physics_ticks_per_second * 3:
 		await t.step()
 		boosted = maxf(boosted, car.telemetry.forward_speed_kmh)
 	_row("N2 top speed", "%.1f km/h" % boosted, "300 +- 8 km/h")
@@ -71,7 +71,7 @@ func _run() -> void:
 	await t.run(0.2)
 	var start: Vector3 = car.global_position
 	car.set_controls(0.0, 1.0, 0.0, false)
-	for i in 120 * 5:
+	for i in Engine.physics_ticks_per_second * 5:
 		await t.step()
 		if car.telemetry.forward_speed_kmh <= 1.0:
 			break
@@ -88,9 +88,9 @@ func _run() -> void:
 	t.events().race_started.emit()
 	var launch: float = -1.0
 	clock = 0.0
-	for i in 120 * 3:
+	for i in Engine.physics_ticks_per_second * 3:
 		await t.step()
-		clock += 1.0 / 120.0
+		clock += 1.0 / Engine.physics_ticks_per_second
 		if launch < 0.0 and car2.telemetry.forward_speed_kmh >= 100.0:
 			launch = clock
 	_row("0-100 with the launch", "%.2f s" % launch, "0.9 +- 0.2 s")
@@ -106,22 +106,22 @@ func _run() -> void:
 		# The drift is entered to the right, the hold steer decides the slip angle.
 		car3.set_drift(true)
 		car3.set_controls(1.0, 0.0, 1.0, false)
-		for i in 36:
+		for i in Engine.physics_ticks_per_second * 3 / 10:
 			await t.step()
 		car3.set_controls(1.0, 0.0, hold, false)
 		var beta_sum: float = 0.0
 		var beta_samples: int = 0
 		var beta_max: float = 0.0
-		for i in 120 * 3:
+		for i in Engine.physics_ticks_per_second * 3:
 			await t.step()
 			var beta: float = absf(car3.telemetry.slip_angle_deg)
 			beta_max = maxf(beta_max, beta)
-			if i >= 120 * 2:
+			if i >= Engine.physics_ticks_per_second * 2:
 				beta_sum += beta
 				beta_samples += 1
 		car3.set_drift(false)
 		car3.set_controls(1.0, 0.0, -1.0, false)
-		for i in 120 * 3:
+		for i in Engine.physics_ticks_per_second * 3:
 			await t.step()
 			if car3.telemetry.drift_state == &"grip":
 				break
@@ -179,7 +179,7 @@ func _run() -> void:
 	car5.thruster.hop_released = true
 	await t.step()
 	car5.thruster.hop_released = false
-	for i in 60:
+	for i in Engine.physics_ticks_per_second / 2:
 		await t.step()
 		if car5.telemetry.airborne:
 			break
@@ -187,9 +187,9 @@ func _run() -> void:
 	var angle: float = 0.0
 	var duration: float = 0.0
 	var previous: float = _roll_angle(car5)
-	for i in 120 * 2:
+	for i in Engine.physics_ticks_per_second * 2:
 		await t.step()
-		duration += 1.0 / 120.0
+		duration += 1.0 / Engine.physics_ticks_per_second
 		var now: float = _roll_angle(car5)
 		angle += wrapf(now - previous, -180.0, 180.0)
 		previous = now
@@ -203,7 +203,7 @@ func _run() -> void:
 	await t.run(0.2)
 	t.set_speed(car6, 150.0)
 	var drop_start: Vector3 = car6.global_position
-	for i in 120 * 3:
+	for i in Engine.physics_ticks_per_second * 3:
 		await t.step()
 		if car6.telemetry.grounded_wheels >= 3 and car6.telemetry.airtime == 0.0:
 			break
@@ -218,13 +218,13 @@ func _run() -> void:
 	var car7: ArcadeCar = await t.spawn_car(t.roadster(), Vector3(0.0, 0.15, 0.0), 0.0)
 	await t.run(0.5)
 	car7.set_controls(1.0, 0.0, 0.0, false)
-	for i in 120 * 10:
+	for i in Engine.physics_ticks_per_second * 10:
 		await t.step()
 		if i % 60 == 0:
 			t.keep_on_ground(car7)
 	car7.boost.n2 = BoostTuning.N2_MAX
 	car7.use_nitro()
-	for i in 120 * 3:
+	for i in Engine.physics_ticks_per_second * 3:
 		await t.step()
 		if i % 60 == 0:
 			t.keep_on_ground(car7)
@@ -232,7 +232,7 @@ func _run() -> void:
 	var max_roll: float = 0.0
 	for steer: float in [0.8, -0.8]:
 		car7.set_controls(1.0, 0.0, steer, false)
-		for i in 120 * 2:
+		for i in Engine.physics_ticks_per_second * 2:
 			await t.step()
 			max_roll = maxf(max_roll, absf(car7.telemetry.roll_deg))
 			if i % 60 == 0:
@@ -249,7 +249,7 @@ func _run() -> void:
 	var max_lateral: float = 0.0
 	var max_jump: float = 0.0
 	var prev_pos: Vector3 = car8.global_position
-	for i in 120 * 12:
+	for i in Engine.physics_ticks_per_second * 12:
 		car8.set_controls(0.0, 0.0, 1.0, false)
 		await t.step()
 		max_jump = maxf(max_jump, car8.global_position.distance_to(prev_pos))
@@ -269,7 +269,7 @@ func _run() -> void:
 	car9.boost.n2 = 20.0
 	car9.power.battery = 0.4
 	t.set_speed(car9, 100.0)
-	for i in 120 * 3:
+	for i in Engine.physics_ticks_per_second * 3:
 		await t.step()
 		if car9.boost.n2 >= BoostTuning.N2_MAX:
 			break

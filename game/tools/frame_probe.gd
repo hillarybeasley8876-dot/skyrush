@@ -9,11 +9,12 @@ extends Node
 ## The car is driven in the physics tick and the lanes it takes are drawn from a seeded source: with --seed=N (the traffic and the
 ## police take it too) two runs are the same drive.
 ##
-## Options: seconds (45) the drive; warm (0) seconds of driving before the record starts; park (0) 1 = the car stands (the A/B
+## Options: seconds (45) the drive; warm (0) seconds of driving before the record starts; heat (none) a pursuit at this heat
+## from the start of the record; park (0) 1 = the car stands (the A/B
 ## turns are 2 s then: the same place for both); vsync (1) 0 = vsync off (the headroom of
 ## the machine); start=x,z (the Bund) where it starts; ab=<switch>: a paired comparison in one drive, the switch is off (A) and on
 ## (B) in turns of 4 s and the frames of the two are reported apart. Switches: traffic (the traffic thinks every tick / every second
-## tick), occlusion (the occlusion culling on / off), hud (the HUD shown / hidden), shadows (the shadow of the sun on / off), probes
+## tick), police (the police dispatcher thinks every tick / every second tick), rate (the physics at 120 Hz / 60 Hz), occlusion (the occlusion culling on / off), hud (the HUD shown / hidden), shadows (the shadow of the sun on / off), probes
 ## (the wheel probes of the cars cast on their own as well / only when the car casts them), steps (up to 8 / 4 physics ticks a
 ## frame).
 ##
@@ -93,6 +94,12 @@ func _event(what: String) -> void:
 
 ## The phases of the last whole frame (ms): the process step, the draw, after the draw.
 var _last_phases: Array = [0.0, 0.0, 0.0]
+## The totals at the end of the last frame (usec): a hitch reports what its own ticks spent.
+var _unit_prev: PackedFloat64Array = PackedFloat64Array()
+var _engine_prev := 0.0
+var _self_prev := 0.0
+var _cars_prev := 0.0
+var _traffic_integrate_prev := 0.0
 var _pick_wait := 0.0
 ## --park=1: the car stands where it starts, the traffic drives round it.
 var _parked := false
@@ -247,6 +254,11 @@ func _run() -> void:
 	RenderingServer.frame_pre_draw.connect(func() -> void: _draw_start = Time.get_ticks_usec())
 	RenderingServer.frame_post_draw.connect(func() -> void: _draw_end = Time.get_ticks_usec())
 	RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
+	TrafficCar.measure_cost = true
+	var traffic_script: Script = load("res://ai/traffic/traffic_car.gd")
+	for key in ["t_plan", "t_speed", "t_lane", "t_think", "t_move", "t_lamp"]:
+		traffic_script.set(key, 0.0)
+	traffic_script.set("t_calls", 0)
 	var rigs := load("res://fx/fx_car_rig.gd")
 	rigs.set("tier_changes", 0)
 	rigs.set("tier_usec", 0.0)
@@ -267,6 +279,11 @@ func _run() -> void:
 		_tick_starts.clear()
 		_last_process_usec = Time.get_ticks_usec()
 		_last_physics = Engine.get_physics_frames()
+	# --heat=N: a pursuit at heat N runs from the start of the record (the police are on the road for the whole drive)
+	if Game.has_option("heat"):
+		var dispatcher := get_tree().get_first_node_in_group(&"police_director")
+		if dispatcher != null:
+			dispatcher.call(&"start_pursuit", int(Game.option("heat")))
 	var started := Time.get_ticks_msec()
 	_record_start = Time.get_ticks_usec()
 	var ab := String(Game.option("ab", ""))
@@ -309,6 +326,9 @@ func _physics_body() -> void:
 		return
 	_ticks += 1
 	_car_count += (director.get("cars") as Array).size()
+	# the loops over the vehicles every 4th tick (a sample of the ticks), whether the traffic thought in it or not
+	if _ticks % 4 == 0:
+		_sample_vehicles(director)
 	if not bool(director.get("ran_this_tick")):
 		return
 	_traffic_sum["tick"] += float(director.get("tick_last_ms"))
@@ -316,10 +336,11 @@ func _physics_body() -> void:
 	for key in ["index", "modes", "cars", "events", "ring"]:
 		_traffic_sum[key] += float(director.get("cost_%s_ms" % key))
 	_traffic_peak = maxf(_traffic_peak, float(director.get("tick_last_ms")))
+
+
+## The police units, the police dispatcher, the physics of the cars and the near traffic cars of this tick.
+func _sample_vehicles(director: Node) -> void:
 	var cars: Array = director.get("cars")
-	# the loops over the vehicles every 4th tick (a sample of the ticks)
-	if _ticks % 4 != 0:
-		return
 	_police_sum += get_tree().get_nodes_in_group(&"police").size()
 	var police := get_tree().get_first_node_in_group(&"police_director")
 	if police != null:
@@ -361,6 +382,12 @@ func _process(delta: float) -> void:
 		if is_instance_valid(synth):
 			_synth_sum += float(synth.get("cpu_ms"))
 	var physics := Engine.get_physics_frames()
+	var spent := _frame_spending(now) if frame_usec > int(HITCH_MS * 1000.0) else {}
+	_unit_prev = _unit_usec.duplicate()
+	_engine_prev = _engine_usec
+	_self_prev = _self_usec
+	_cars_prev = ArcadeCar.cpu_total_usec
+	_traffic_integrate_prev = float(_traffic_sum["integrate"])
 	_frames.append({
 		"ms": delta * 1000.0,
 		"steps": physics - _last_physics,
@@ -378,8 +405,39 @@ func _process(delta: float) -> void:
 		"primitives": RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME),
 		"ab": _ab_turn,
 		"pos": Game.player.global_position if Game.player != null else Vector3.ZERO,
+		"spent": spent,
 	})
 	_last_physics = physics
+
+
+## What the ticks of the frame that ends `now` spent (ms): the callbacks of every unit that took 0.5 ms or more, the engine part
+## (the Jolt steps and the force integration: the probe's own callback is taken out), the physics of the player, police and rival
+## cars (their _integrate_forces, a part of the engine part) and of the near traffic cars; what was on the road at its end.
+func _frame_spending(now: int) -> Dictionary:
+	var spent := {}
+	for i in mini(_units.size(), _unit_prev.size()):
+		var ms := (_unit_usec[i] - _unit_prev[i]) / 1000.0
+		if ms >= 0.5 and is_instance_valid(_units[i]):
+			spent[String(_units[i].name)] = snappedf(ms, 0.1)
+	var engine := _engine_usec - _engine_prev - (_self_usec - _self_prev)
+	# the engine part of the last tick of the frame: from the end of its callbacks to this process step
+	if _tick_end > 0 and not _tick_starts.is_empty() and _tick_end > _tick_starts[_tick_starts.size() - 1]:
+		engine += float(now - _tick_end)
+	spent["engine"] = snappedf(engine / 1000.0, 0.1)
+	spent["cars"] = snappedf((ArcadeCar.cpu_total_usec - _cars_prev) / 1000.0, 0.1)
+	spent["near traffic"] = snappedf(float(_traffic_sum["integrate"]) - _traffic_integrate_prev, 0.1)
+	spent["police units"] = get_tree().get_nodes_in_group(&"police").size()
+	var director := get_tree().get_first_node_in_group(&"traffic_director")
+	if director != null:
+		var near := 0
+		for car in director.get("cars") as Array:
+			if int(car.get("mode")) == 1:
+				near += 1
+		spent["near cars"] = near
+	for unit in _units:
+		if is_instance_valid(unit) and unit.has_method(&"debris_count"):
+			spent["debris"] = int(unit.call(&"debris_count"))
+	return spent
 
 
 ## The lane follower: aims at a point AIM_AHEAD along its lane, takes the next lane at the end, starts again after a wreck.
@@ -570,6 +628,7 @@ func _report() -> void:
 		print("FRAMES hitch at %.2f s, %.1f ms: %d steps, physics %.1f ms; the frame before: process %.1f, draw %.1f, after %.1f ms; at %s" % [
 			float(h.get("at", 0.0)), float(h["frame_split"]), int(h["steps"]), float(h["physics_split"]), float(ph[0]), float(ph[1]),
 			float(ph[2]), str((h["pos"] as Vector3).snapped(Vector3.ONE))])
+		print("FRAMES   its ticks spent (ms) %s" % str(h.get("spent", {})))
 	for event_line in _events:
 		print("FRAMES event ", event_line)
 
@@ -595,10 +654,18 @@ func _report_profile() -> void:
 	var seconds := float(_ticks) / float(Engine.physics_ticks_per_second)
 	print("PROFILE FX tiers: %.1f changes a second, %.3f ms a second in the changes" % [
 		float(rig_script.get("tier_changes")) / maxf(seconds, 0.001), float(rig_script.get("tier_usec")) / 1000.0 / maxf(seconds, 0.001)])
+	# the think of the traffic cars (traffic_car.gd keeps the sums: usec)
+	var think_parts: Array[String] = []
+	var traffic_script: Script = load("res://ai/traffic/traffic_car.gd")
+	var calls := float(traffic_script.get("t_calls"))
+	for key in ["t_plan", "t_speed", "t_lane", "t_think", "t_move", "t_lamp"]:
+		think_parts.append("%s %.1f" % [key.trim_prefix("t_"), float(traffic_script.get(key)) / maxf(calls, 1.0)])
+	print("PROFILE traffic cars that thought: %.1f a tick, us per car: %s" % [calls / maxf(float(_ticks), 1.0), ", ".join(think_parts)])
 	var police_parts: Array[String] = []
 	for key in _police_modules:
-		police_parts.append("%s %.3f" % [key, float(_police_modules[key]) / maxf(float(_ticks), 1.0)])
-	print("PROFILE police dispatcher %.3f ms per tick: %s" % [_police_tick / maxf(float(_ticks), 1.0), ", ".join(police_parts)])
+		police_parts.append("%s %.3f" % [key, float(_police_modules[key]) / maxf(float(_car_ticks), 1.0)])
+	# sampled every 4th tick (_sample_vehicles)
+	print("PROFILE police dispatcher %.3f ms per tick: %s" % [_police_tick / maxf(float(_car_ticks), 1.0), ", ".join(police_parts)])
 	if _process_frames > 0:
 		var proc_order: Array[int] = []
 		for i in _units.size():
@@ -631,6 +698,17 @@ func _ab_switch(ab: String, on: bool, director: Node) -> void:
 		"steps":
 			# A: up to 8 physics ticks a frame (the project), B: up to 4
 			Engine.max_physics_steps_per_frame = 4 if on else 8
+		"police":
+			# A: the police dispatcher thinks every tick, B: every second tick (the game)
+			var dispatcher := get_tree().get_first_node_in_group(&"police_director")
+			if dispatcher != null:
+				dispatcher.set("tick_period", 2 if on else 1)
+		"rate":
+			# A: the physics at 120 Hz (the project), B: at 60 Hz; the traffic thinks at 60 Hz in both (every second tick of A,
+			# every tick of B)
+			Engine.physics_ticks_per_second = 60 if on else 120
+			if director != null:
+				director.set("tick_period", 1 if on else 2)
 		"probes":
 			# A: the wheel probes cast on their own as well (as before vehicle/modules/wheel.gd turned that off), B: they do not
 			for vehicle in get_tree().get_nodes_in_group(&"vehicles"):
