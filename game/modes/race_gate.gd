@@ -76,6 +76,7 @@ func build(gate_index: int, xform: Transform3D, width: float, gate_tint: Color,
 	tint = gate_tint
 	energy = LED_ENERGY
 	global_transform = xform
+	reset_physics_interpolation()
 	collision_layer = 1 << 3      # the trigger layer
 	collision_mask = 1 << 1       # the vehicles
 	monitoring = true

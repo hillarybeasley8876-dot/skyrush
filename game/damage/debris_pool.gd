@@ -61,6 +61,7 @@ func spawn(spec: Dictionary, xform: Transform3D, velocity: Vector3) -> void:
 		return
 	var debris := _take()
 	debris.body.global_transform = xform
+	debris.body.reset_physics_interpolation()     # from the parking place 500 m down: no streak
 	_clear_meshes(debris)
 	for entry: Dictionary in meshes:
 		debris.meshes.append(_add_mesh(debris, entry))
