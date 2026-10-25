@@ -189,7 +189,7 @@ def _options(a, arms, exits, by_road=None, centre=None):
             continue
         pool = exits.get(id(b), [])
         if not pool and by_road is not None and centre is not None:
-            pool = _nearest_lanes(b["road"], by_road, centre)
+            pool = _nearest_lanes(b, by_road, centre)
         if not pool:
             continue
         kind = turn(-a["dir"], b["dir"])
@@ -198,29 +198,49 @@ def _options(a, arms, exits, by_road=None, centre=None):
     return out
 
 
+def _starts_along(lane, arm):
+    """True when the first metres of the lane run along the arm's outward direction (the chord of a long
+    curved lane does not tell where it starts out to)."""
+    pts = lane["points"]
+    k = min(len(pts) - 1, 3)
+    d = Vector((float(pts[k][0]) - float(pts[0][0]), -(float(pts[k][2]) - float(pts[0][2])), 0.0))
+    return d.length > 0.01 and d.normalized().dot(arm["dir"]) > SAME_WAY
+
+
 # why a movement could not be built (a diagnostic of the lane graph)
 SKIPPED = {}
 
 
-def _nearest_lanes(road, by_road, centre, count=3):
-    """The lanes of a road that lie closest to a point (a fallback for an arm)."""
+def _nearest_lanes(arm, by_road, centre, count=3):
+    """The lanes of the road of an arm that leave a point along the arm, the nearest first (a fallback
+    for an arm whose exits are not found).
+
+    A lane whose end is nearer to the point than its start runs towards it, and a lane of the other
+    carriageway starts out against the arm: neither is an exit. Both were: 117 movements led into the
+    far start of a lane that runs towards the junction (85 m on the median, up to 146 m: the car drove
+    down the road against its traffic and turned round there; the game dropped most of those links, and
+    the connector stayed a dead end in the middle of the junction), 79 into the start of the approach
+    itself, and the other carriageway would make a U-turn of "straight on".
+    """
     scored = []
-    for lane in by_road.get(road.id, []):
+    for lane in by_road.get(arm["road"].id, []):
         if lane.get("connector"):
             continue
         pts = lane["points"]
         if len(pts) < 2:
             continue
-        d = min(math.hypot(pts[0][0] - centre.x, pts[0][2] + centre.y),
-                math.hypot(pts[-1][0] - centre.x, pts[-1][2] + centre.y))
-        scored.append((d, lane))
+        df = math.hypot(pts[0][0] - centre.x, pts[0][2] + centre.y)
+        dl = math.hypot(pts[-1][0] - centre.x, pts[-1][2] + centre.y)
+        if dl < df or not _starts_along(lane, arm):
+            continue
+        scored.append((df, lane))
     scored.sort(key=lambda item: item[0])
     return [lane for (_d, lane) in scored[:count]]
 
 
 def _add_movement(lanes, links, seen_ids, junction, src, dst, kind, centre, fan):
     """Add the connector lane of one movement and its two links."""
-    pts = lane_paths.connector_points(src, dst, centre, fan)
+    pts = lane_paths.connector_points(src, dst, centre, fan, straight=kind == "straight")
     if len(pts) < 2:
         gap = (lane_paths.v3(dst["points"][0]) - lane_paths.v3(src["points"][-1])).length
         key = "%s %.0f m" % (junction["id"], gap)

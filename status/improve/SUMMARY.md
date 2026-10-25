@@ -259,20 +259,28 @@ Pinyin) and en-US, the guard goes 0 -> 1 and back to 0. Ctrl+Space is the toggle
 checks it every 0.25 s while the window has the focus (the menus and the pause too: the game has no text field) and puts the
 English layout back; windowed, a switch to the Chinese layout was undone within 0.6 s.
 
-## The lanes that led back into themselves (the player: "there are still many bugs")
+## The lanes that led back into themselves, against the traffic or across the other lanes (the player: "there are still many bugs")
 
-79 connectors of the lane graph led a lane "straight on" into its own start: the car drove to the end of its lane, turned round
-and drove back along it, again and again (52 such loops in the AI graph of the game; Waibaidu bridge, Chongqing Rd, Beijing Rd
-and 70 street lanes). The fallback of a junction arm whose exits are not found (the lanes of its road nearest to the centre) held
-the approach itself when the road passes the junction uncut. `blender/city/roads/lane_links.py` never links a lane to itself
-now: the 79 connectors are gone and nothing else of `lanes.json` changed. Three lanes had the loop as their only way on, so 9
-lanes end at a junction now (6 before: the end of Pudong South Rd at the Nanpu loop, which only comes in, and two side streets
-whose end stops 15-20 m short of the road they meet). A traffic car does not take a continuation that ends at once when it has
-another way (`LaneFollower.choose_next`; a junction without a dead end is chosen as before, the same random numbers):
-`traffic/test_dead_end_choice.gd` (mutation-checked). Cutting the uncut roads at those junctions and U-turns at the dead ends
-were tried and dropped: the connectors swerved 15 m off the road with 1-3 m radii. `world/test_respawn_direction.gd` counts its
-every-7th lane among the street lanes (counted among all lanes, the connectors that went away moved the sample), and a reset
-that walks along its own road to a clear spot (28 m on the Yan'an elevated road) stays on its street.
+The movements of a junction whose exits are not found (a road that passes the junction uncut, an arm that is trimmed further
+away) took the lanes of the road nearest to the centre, whatever their way: 79 led a lane "straight on" into its own start (the
+car drove to the end of its lane, turned round and drove back along it, again and again: 52 loops in the AI graph of the game),
+117 led into the far start of a lane that runs towards the junction (85 m on the median, up to 146 m down the road against its
+traffic), 83 into the other carriageway of the same road (a U-turn called straight on). The game dropped 179 of those links
+(the turn at their end was over 100 degrees), and 124 connectors were left without a way on: a car that took one stopped in the
+middle of the junction. `blender/city/roads/lane_links.py` never links a lane to itself, and the fallback offers only the lanes
+that leave the junction along the arm (their start nearer than their end, their first metres outward): the junction connectors
+that go the wrong way fall from 541 to 203 (the rest come from the exits the junction finds itself). A straight movement swerved
+too: when its plain curve left the fill of the junction, it was pulled to the centre and clamped to the fill, and 734 of 3306
+straight connectors ran more than 4 m off their line, the outer lanes of Century Ave at its side streets 27 m (the fill of a
+junction does not reach the far lanes of a wide road that passes it). `lane_paths.connector_points` keeps the plain curve of a
+straight movement then: 67 are left over 4 m. The game drops 79 links instead of 179, and 45 connectors are left without a way on
+instead of 124. 5 lanes end at a junction (6 before: the end of Pudong South Rd at the Nanpu loop,
+which only comes in, and two side streets that stop 15-20 m short of the road they meet). A traffic car does not take a
+continuation that ends at once when it has another way (`LaneFollower.choose_next`; a junction without a dead end draws the same
+random numbers as before): `traffic/test_dead_end_choice.gd` (mutation-checked). Cutting the uncut roads at the dead ends and
+U-turns there were tried and dropped: their connectors swerved 15 m off the road with 1-3 m radii. `world/test_respawn_direction.gd`
+counts its every-7th lane among the street lanes (counted among all lanes, the connectors that went away moved the sample), and a
+reset that walks along its own road to a clear spot (28 m on the Yan'an elevated road) stays on its street.
 
 ## Tools added (game/tools, tools/)
 
@@ -300,8 +308,9 @@ jobs running; alone 1.0 ms of its 3.0 ms). The other six are the baseline; `ai/r
 The baseline (147 tests): 140 pass, 7 fail. All 7 failed in the integration baseline of the first round as well (`ai/rivals/test_performance`: 0.54 ms against
 0.35; `ai/rivals/test_race_flow`: 5 passes of 6 and 4 contacts over 800 N*s, the sandbox race now runs to its own thresholds;
 `ai/rivals/test_real_route`: passes alone in 100 s, the suite gives a test 120 s and runs it without the stubs; `ai/traffic/test_lanes_world`;
-`roads/test_lanes`: 9 lanes that end at a junction (6, and 3 whose only way on was a loop back into themselves); `roads/test_drive_collision`:
-the surface oracle is not a hole detector, the ground backs it (7604 -> 6425 -> 6043 bad samples, parapet or pier in the way 791 -> 276); `world/test_world_api`: the `test_loop` route, 5 failing checks -> 2).
+`roads/test_lanes`: 5 lanes that end at a junction (6 before the connectors were cleaned); `roads/test_drive_collision`: the surface
+oracle is not a hole detector, the ground backs it (7604 -> 6425 -> 4364 bad samples, parapet or pier in the way 791 -> 276 -> 244: the
+connectors that ran against the traffic and the ones that swerved crossed the kerbs); `world/test_world_api`: the `test_loop` route, 5 failing checks -> 2).
 Five tests of that baseline pass now (`police/test_perf`, `rivals/test_rival_driving`, `city/blocks/test_blocks`, `core/test_core_smoke`,
 `damage/test_budget`), and nothing that passed before fails.
 

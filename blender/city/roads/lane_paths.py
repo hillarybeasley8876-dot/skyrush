@@ -14,6 +14,7 @@ from city.roads import junction_fill, levels
 SAMPLE = 2.0
 MAX_CONNECTOR = 120.0    # a movement longer than this is a data error, not a link
 BLEND_SAMPLES = 4.0     # how many samples the lane's height blends into the fill
+STRAIGHT_IN_LINE = 0.95  # cos 18 deg: the two lanes of a straight movement run on in line
 
 
 def v3(p):
@@ -57,13 +58,19 @@ def bezier(p0, p1, p2, p3, step=SAMPLE):
     return out
 
 
-def connector_points(src, dst, centre=None, fan=None):
+def connector_points(src, dst, centre=None, fan=None, straight=False):
     """The Bezier from the approach lane's end to the exit lane's start.
 
     The control points are pulled towards the junction centre so the movement
     stays inside the junction (and on its asphalt) instead of bowing out over
     the kerb, and the height of every sample is the height of the junction's
     fill there, so a car never drives on air.
+
+    A straight movement (`straight`, the two lanes in line) whose plain curve
+    leaves the fill keeps the plain curve: pulled to the centre and clamped to
+    the fill it swerved across the other lanes, 734 of 3306 more than 4 m and
+    up to 27 m (the outer lanes of Century Ave at its side streets: the fill of
+    a junction does not reach the far lanes of a wide road that passes it).
     """
     p0 = v3(src["points"][-1])
     p3 = v3(dst["points"][0])
@@ -91,6 +98,8 @@ def connector_points(src, dst, centre=None, fan=None):
             p2 = p2.lerp(centre, pull)
         pts = bezier(p0, p1, p2, p3)
         if fan is None:
+            return resample(pts)
+        if straight and pull == 0.0 and d0.dot(d1) > STRAIGHT_IN_LINE                 and not all(inside_fan(p, fan) for p in pts):
             return resample(pts)
         pts = clamp_to_fill(pts, fan)
         pts = fit_to_fill(pts, wide, src, dst)
