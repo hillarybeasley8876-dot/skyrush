@@ -219,7 +219,7 @@ func _check_broken_arm(world: WorldBase) -> void:
 		return
 	var body := arms[0] as RigidBody3D
 	plaza.call("break_arm", int(lanes[0]), Vector3(0.0, 0.0, -20.0))
-	for i in 240:
+	for i in Engine.physics_ticks_per_second * 2:
 		await get_tree().physics_frame
 	_check(body.collision_layer == Layers.DEBRIS, "the broken arm is on the debris layer (%d)" % body.collision_layer)
 	_check(body.global_position.y >= 0.0,
@@ -248,7 +248,7 @@ func _check_breaker(world: WorldBase) -> void:
 	car.collision_mask = 0
 	var hit_at := -1
 	var touch_at := -1
-	for i in 300:
+	for i in Engine.physics_ticks_per_second * 5 / 2:
 		car.linear_velocity = Vector3(0.0, 0.0, 19.4)
 		await get_tree().physics_frame
 		if touch_at < 0 and Vector2(car.global_position.x - support.global_position.x,

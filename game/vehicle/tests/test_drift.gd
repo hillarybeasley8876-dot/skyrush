@@ -20,20 +20,20 @@ func _drift(t: T, car: ArcadeCar, hold: float) -> Array:
 	car.set_drift(true)
 	car.set_controls(1.0, 0.0, 1.0, false)
 	# The drift is entered to the right, then the steer decides the slip angle.
-	for i in 36:
+	for i in Engine.physics_ticks_per_second * 3 / 10:
 		await t.step()
 	car.set_controls(1.0, 0.0, hold, false)
 	var sum: float = 0.0
 	var samples: int = 0
 	var peak: float = 0.0
 	var spin: float = 0.0
-	for i in 120 * 3:
+	for i in Engine.physics_ticks_per_second * 3:
 		await t.step()
 		var beta: float = absf(rad_to_deg(car.drift.beta))
 		spin = maxf(spin, absf(car.angular_velocity.y))
 		if i >= 48:
 			peak = maxf(peak, beta)
-		if i >= 120 * 2:
+		if i >= Engine.physics_ticks_per_second * 2:
 			sum += beta
 			samples += 1
 	return [sum / maxf(float(samples), 1.0), peak, spin]
@@ -70,21 +70,21 @@ func _exit_series(t: T, car: ArcadeCar, mode: String) -> Array:
 		var steer: float = -0.5 if mode == "counter" else 0.0
 		car.set_controls(1.0, 0.0, steer, false)
 	# The exit: the state leaves the drift.
-	for i in 120 * 3:
+	for i in Engine.physics_ticks_per_second * 3:
 		await t.step()
 		if exited < 0.0 and car.drift.state != &"drift":
-			exited = float(i) / 120.0
-			start = float(i) / 120.0
+			exited = float(i) / Engine.physics_ticks_per_second
+			start = float(i) / Engine.physics_ticks_per_second
 			series.append(rad_to_deg(car.drift.beta))
 			continue
 		if exited >= 0.0:
 			ticks += 1
-			if ticks % 6 == 0:
+			if ticks % (Engine.physics_ticks_per_second / 20) == 0:
 				var beta: float = rad_to_deg(car.drift.beta)
 				series.append(beta)
 				if window_at_straight < 0.0 and absf(beta) < 12.0:
 					window_at_straight = maxf(car.boost.mini_window, car.telemetry.mini_window)
-			if float(i) / 120.0 - start >= 1.0:
+			if float(i) / Engine.physics_ticks_per_second - start >= 1.0:
 				break
 	return [series, exited, window_at_straight]
 
@@ -103,7 +103,7 @@ func _run() -> void:
 		if hold < 0.0:
 			# The roll up to 200 km/h is checked once (the other parts set the speed).
 			car.set_controls(1.0, 0.0, 0.0, false)
-			for i in 120 * 10:
+			for i in Engine.physics_ticks_per_second * 10:
 				await t.step()
 				if car.telemetry.forward_speed_kmh >= 200.0:
 					break
@@ -126,7 +126,7 @@ func _run() -> void:
 		# The exit: release the drift and pull the nose straight with a full counter steer.
 		car.set_drift(false)
 		car.set_controls(1.0, 0.0, -1.0, false)
-		for i in 120 * 3:
+		for i in Engine.physics_ticks_per_second * 3:
 			await t.step()
 			if car.telemetry.drift_state == &"grip":
 				break
@@ -144,7 +144,7 @@ func _run() -> void:
 	t.check_range("the gauge slip", res3[0], 30.0, 40.0)
 	car3.set_drift(false)
 	car3.set_controls(1.0, 0.0, -1.0, false)
-	for i in 120 * 3:
+	for i in Engine.physics_ticks_per_second * 3:
 		await t.step()
 		if car3.telemetry.drift_state == &"grip":
 			break
@@ -164,13 +164,13 @@ func _run() -> void:
 	var left: float = -1.0
 	var turned: float = 0.0
 	var prev: float = heading0
-	for i in 120 * 3:
+	for i in Engine.physics_ticks_per_second * 3:
 		await t.step()
 		var h: float = _heading(car4)
 		turned += absf(wrapf(h - prev, -180.0, 180.0))
 		prev = h
 		if left < 0.0 and car4.drift.state != &"drift":
-			left = float(i) / 120.0
+			left = float(i) / Engine.physics_ticks_per_second
 	t.check("the released drift ends", left >= 0.0 and left <= 1.0,
 			"= %.2f s after the release" % left)
 	t.check("the heading change after the release", turned <= 90.0, "= %.0f deg" % turned)
@@ -241,7 +241,7 @@ func _run() -> void:
 	await t.step()
 	car7.set_drift(true)
 	await t.step()
-	for i in 120 * 3:
+	for i in Engine.physics_ticks_per_second * 3:
 		await t.step()
 		if car7.drift.state != &"drift":
 			break

@@ -84,10 +84,10 @@ func _on_its_side_against_a_wall() -> void:
 	car.reset_to(Transform3D(Basis(Vector3.FORWARD, -PI * 0.5), lying))
 	var peak := 0.0
 	var back := -1.0
-	for i in 120 * 4:
+	for i in Engine.physics_ticks_per_second * 4:
 		await _t.step()
 		if i > 6 and back < 0.0 and _upright(car):
-			back = float(i) / 120.0
+			back = float(i) / Engine.physics_ticks_per_second
 	var moved := Vector2(car.global_position.x - lying.x, car.global_position.z - lying.z).length()
 	_rows.append("ROLL %-40s back on its wheels after %.2f s, %.1f m from where it lay" % ["on its side against a wall", back, moved])
 	_t.check("a car on its side against a wall gets back on its wheels", back > 0.0 and back < 3.0, "(%.2f s)" % back)
@@ -113,7 +113,7 @@ func _tipped_drops() -> void:
 		var yaw := rng.randf_range(-PI, PI)
 		var car: ArcadeCar = await _spawn(place)
 		car.reset_to(Transform3D(Basis(Vector3.UP, yaw) * Basis(Vector3.FORWARD, roll), place))
-		for i in int(120.0 * DROP_TIME):
+		for i in int(DROP_TIME * Engine.physics_ticks_per_second):
 			await _t.step()
 		if _tilt(car) > ON_ITS_SIDE:
 			tipped.append("#%d %s roll %.0f: tilt %.0f, %d wheels" % [n, "planter" if near_planter else "kerb", rad_to_deg(roll),
@@ -134,10 +134,10 @@ func _on_its_roof() -> void:
 	var lying := Vector3(at.x, 1.05, at.z)
 	car.reset_to(Transform3D(Basis(Vector3.FORWARD, PI), lying))
 	var back := -1.0
-	for i in 120 * 3:
+	for i in Engine.physics_ticks_per_second * 3:
 		await _t.step()
 		if back < 0.0 and _upright(car):
-			back = float(i) / 120.0
+			back = float(i) / Engine.physics_ticks_per_second
 	_rows.append("ROLL %-40s back on its wheels after %.2f s" % ["on its roof", back])
 	_t.check("a car on its roof gets back on its wheels within a second", back > 0.0 and back < 1.0, "(%.2f s)" % back)
 	car.queue_free()
@@ -175,7 +175,7 @@ func _roll_that_meets_the_ground() -> void:
 	var started := car.api.request_roll(car, 1)
 	_t.check("the roll starts over the ground", started, "(altitude %.2f m)" % car.telemetry.altitude_m)
 	var landed_rolling := false
-	for i in 120 * 3:
+	for i in Engine.physics_ticks_per_second * 3:
 		await _t.step()
 		if car.telemetry.grounded_wheels > 0 and car.thruster.rolling:
 			landed_rolling = true

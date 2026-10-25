@@ -18,14 +18,14 @@ func _run() -> void:
 	await t.run(0.5)
 	# The base speed first, then the nitro on top of it.
 	car.set_controls(1.0, 0.0, 0.0, false)
-	for i in 120 * 12:
+	for i in Engine.physics_ticks_per_second * 12:
 		await t.step()
 		if i % 60 == 0:
 			t.keep_on_ground(car)
 	car.boost.n2 = BoostTuning.N2_MAX
 	t.check("the nitro fires", car.use_nitro())
 	var top: float = 0.0
-	for i in 120 * 3:
+	for i in Engine.physics_ticks_per_second * 3:
 		await t.step()
 		top = maxf(top, car.telemetry.forward_speed_kmh)
 		if i % 60 == 0:
@@ -40,7 +40,7 @@ func _run() -> void:
 	t.keep_on_ground(car)
 	for steer: float in [0.8, -0.8, 0.0]:
 		car.set_controls(1.0, 0.0, steer, false)
-		for i in 120 * 2:
+		for i in Engine.physics_ticks_per_second * 2:
 			await t.step()
 			max_roll = maxf(max_roll, absf(car.telemetry.roll_deg))
 			max_pitch = maxf(max_pitch, absf(car.telemetry.pitch_deg))

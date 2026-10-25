@@ -139,7 +139,7 @@ func _test_ghost_alpha() -> void:
 	await Kit.wait_frames(get_tree(), 4)
 	var lowest := 1.0
 	var highest := 0.0
-	for i in 40:
+	for i in Engine.physics_ticks_per_second / 3:
 		await Kit.wait_frames(get_tree(), 3)
 		var alpha := _transparency_of(player)
 		lowest = minf(lowest, alpha)
@@ -164,7 +164,7 @@ func _test_second_wreck_in_ghost() -> void:
 	flow.call("_respawn", player, 20.0, Vector3.FORWARD)
 	# half way through the ghost the car is half transparent, and it is put back again (the car is held where it is: the
 	# respawn sends it off at 60 km/h, and a crash would be a third wreck)
-	for i in 25:
+	for i in Engine.physics_ticks_per_second * 5 / 24:
 		player.linear_velocity = Vector3.ZERO
 		await Kit.wait_frames(get_tree(), 1)
 	_expect("the first ghost is running (%.2f)" % _transparency_of(player), _transparency_of(player) > 0.2)
@@ -212,14 +212,14 @@ func _test_ghost_ends_inside_a_car() -> void:
 	var peak_speed := 0.0
 	var ghosts: Dictionary = flow.get("_ghosts")
 	var held := false
-	for i in int(4.5 * 120.0):
+	for i in int(4.5 * Engine.physics_ticks_per_second):
 		await get_tree().physics_frame
-		if i == int(2.5 * 120.0):
+		if i == int(2.5 * Engine.physics_ticks_per_second):
 			# half a second after the 2 s of the ghost the police car drives off
 			held = ghosts.has(player.get_instance_id())
 			intruder.global_position += Vector3(6.0, 0.0, 0.0)
 			intruder.linear_velocity = Vector3.ZERO
-		if i < int(0.2 * 120.0):
+		if i < int(0.2 * Engine.physics_ticks_per_second):
 			continue          # the player settles on its wheels first
 		peak_vy = maxf(peak_vy, absf(player.linear_velocity.y))
 		peak_rise = maxf(peak_rise, player.global_position.y - rest.y)

@@ -154,7 +154,7 @@ func _run() -> void:
 		var t := 0.0
 		var cars_seen := 0
 		while t < seconds:
-			for k in int(SAMPLE * 120.0):
+			for k in int(SAMPLE * Engine.physics_ticks_per_second):
 				await get_tree().physics_frame
 			t += SAMPLE
 			var cars := _near_cars()

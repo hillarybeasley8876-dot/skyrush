@@ -64,7 +64,7 @@ func _run() -> void:
 	var debris_before := breaker.debris_count()
 	var before := 0.0
 	var after := 0.0
-	for i in 120:
+	for i in Engine.physics_ticks_per_second:
 		var speed := car.linear_velocity.length()
 		await get_tree().physics_frame
 		if breaker.broken_count > broken_before:
@@ -116,7 +116,7 @@ func _run() -> void:
 		var slow_base := (breaker.lamp(slow)["transform"] as Transform3D).origin
 		var slow_dir: Vector3 = slow_pick["direction"]
 		car.reset_to(Transform3D(Basis.looking_at(slow_dir, Vector3.UP), slow_base - slow_dir * 1.0 + Vector3.UP * 0.4))
-		for i in 60:
+		for i in Engine.physics_ticks_per_second / 2:
 			car.linear_velocity = slow_dir * 1.0
 			await get_tree().physics_frame
 		_check(not breaker.is_broken(slow), "a car that creeps into a lamp does not break it")
@@ -134,7 +134,7 @@ func _run() -> void:
 		var soft_before := 0.0
 		var soft_after := 0.0
 		var soft_debris := breaker.debris_count()
-		for i in 120:
+		for i in Engine.physics_ticks_per_second:
 			var speed := car.linear_velocity.length()
 			await get_tree().physics_frame
 			if breaker.is_broken(soft):
@@ -151,7 +151,7 @@ func _run() -> void:
 	# the cost of the breaker: every car near the camera, every physics tick (the traffic and the police are on in a game)
 	var total := 0.0
 	var peak := 0.0
-	for i in 240:
+	for i in Engine.physics_ticks_per_second * 2:
 		await get_tree().physics_frame
 		total += breaker.cost_usec
 		peak = maxf(peak, breaker.cost_usec)

@@ -51,7 +51,7 @@ func _run() -> void:
 func _roll_in_lane(t: T) -> void:
 	var car: ArcadeCar = await _spawn_on_pad(t)
 	Game.player = car
-	for i in 120 * 6:
+	for i in Engine.physics_ticks_per_second * 6:
 		car.set_controls(1.0, 0.0, 0.0, false)
 		await t.step()
 		if car.telemetry.flying:
@@ -74,7 +74,7 @@ func _roll_in_air(t: T) -> void:
 	await t.run(0.6)
 	car.boost.n2 = 100.0
 	t.check("the hop starts", car.request_hop())
-	for i in 120 * 2:
+	for i in Engine.physics_ticks_per_second * 2:
 		await t.step()
 		if car.thruster.airborne:
 			break
@@ -98,7 +98,7 @@ func _refusal(t: T) -> void:
 	_styles.clear()
 	var ai: ArcadeCar = await _spawn_on_pad(t)
 	Game.player = null
-	for i in 120 * 5:
+	for i in Engine.physics_ticks_per_second * 5:
 		ai.set_controls(0.0, 0.0, 0.0, false)
 		t.set_speed(ai, 60.0)
 		await t.step()
@@ -113,7 +113,7 @@ func _refusal(t: T) -> void:
 	_styles.clear()
 	var slow: ArcadeCar = await _spawn_on_pad(t)
 	Game.player = slow
-	for i in 120 * 5:
+	for i in Engine.physics_ticks_per_second * 5:
 		slow.set_controls(0.0, 0.0, 0.0, false)
 		t.set_speed(slow, 60.0)
 		await t.step()
@@ -142,7 +142,7 @@ func _refusal(t: T) -> void:
 	var dry: ArcadeCar = await _spawn_on_pad(t)
 	Game.player = dry
 	dry.boost.n2 = 5.0
-	for i in 120 * 5:
+	for i in Engine.physics_ticks_per_second * 5:
 		dry.set_controls(1.0, 0.0, 0.0, false)
 		await t.step()
 		if _toasts.size() > 0:
@@ -166,7 +166,7 @@ func _hit(t: T) -> void:
 	Game.player = car
 	car.damaged.connect(func(amount: float, _point: Vector3, _source: Node3D) -> void:
 		_damage.append(amount))
-	for i in 120 * 6:
+	for i in Engine.physics_ticks_per_second * 6:
 		car.set_controls(1.0, 0.0, 0.0, false)
 		await t.step()
 		if car.telemetry.flying and not car.sky.transitioning:
@@ -193,7 +193,7 @@ func _hit(t: T) -> void:
 	t.check("the hit toast is danger", _styles.size() == 1 and _styles[0] == &"danger",
 			"= %s" % str(_styles))
 	# The car keeps flying.
-	for i in 60:
+	for i in Engine.physics_ticks_per_second / 2:
 		await t.step()
 	t.check("the car still flies after the hit", car.telemetry.flying)
 	# A second hit right away does nothing.
@@ -204,7 +204,7 @@ func _hit(t: T) -> void:
 			absf(car.health - health_now) < 0.01 and absf(car.sky.speed - speed_now) < 0.01,
 			"= %.1f HP, %.1f m/s" % [car.health, car.sky.speed])
 	# After the immunity the hit counts again.
-	for i in 120 * 2:
+	for i in Engine.physics_ticks_per_second * 2:
 		await t.step()
 	t.check("the third hit counts", car.api.flight_hit(car))
 	t.check("the third hit costs 15 HP", absf(health_now - car.health - 15.0) < 0.1,

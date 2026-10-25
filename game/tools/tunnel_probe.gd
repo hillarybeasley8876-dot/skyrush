@@ -47,7 +47,7 @@ func _run() -> void:
 		while t < SECONDS:
 			_drive()
 			await get_tree().physics_frame
-			t += 1.0 / 120.0
+			t += 1.0 / Engine.physics_ticks_per_second
 			# every tick of the crash on the Pudong ramp
 			if _car.global_position.x > 696.0 and _car.global_position.x < 706.0 and t < SECONDS and _car.global_position.y < 0.0:
 				var v := _car.linear_velocity

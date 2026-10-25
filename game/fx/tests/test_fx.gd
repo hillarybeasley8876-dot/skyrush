@@ -165,7 +165,7 @@ func _test_idle_rigs() -> void:
 	_check(_tier_of(far) == TIER_OFF, "a rig 200 m away is OFF")
 	Events.vehicle_wrecked.emit(car, null)
 	# The emitter budget is handed out every 0.2 s: wait for it.
-	for i in 40:
+	for i in Engine.physics_ticks_per_second / 3:
 		await get_tree().physics_frame
 	_check(_emitting_systems(car) > 0, "a wrecked car runs its smoke column")
 	car.queue_free()
@@ -210,7 +210,7 @@ func _test_skids() -> void:
 	var pool: Node = _director.call("skid_pool")
 	# 0.7 m per physics tick: the speed of a real drift (the points of the ribbon are 0.6 m
 	# apart, so a slower car would not leave a mark at all).
-	for i in 180:
+	for i in Engine.physics_ticks_per_second * 3 / 2:
 		car.global_position = Vector3(0.0, 0.6, -float(i) * 0.7)
 		await get_tree().physics_frame
 	var used := int(pool.call("live_count"))

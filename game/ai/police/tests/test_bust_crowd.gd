@@ -65,10 +65,10 @@ func _check_crowd(t: T, count: int) -> void:
 			"the player stops within %.0f s of the brake (%d units, %.1f s)"
 			% [STOP_TIME, count, stopped])
 	var busted_at := -1.0
-	for i in int(BUST_TIME * 120.0):
+	for i in int(BUST_TIME * Engine.physics_ticks_per_second):
 		await t.drive_frame(0.0, 0.0)
 		if t.director.pursuit_state == &"busted":
-			busted_at = float(i) / 120.0
+			busted_at = float(i) / Engine.physics_ticks_per_second
 			break
 	t.check(busted_at >= 0.0, "the player is busted after the stop (%d units, %.1f s)"
 			% [count, busted_at])

@@ -151,10 +151,10 @@ func _run_seconds(director: Node, world_path: String) -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--seconds="):
 			seconds = float(arg.trim_prefix("--seconds="))
-	var frames := int(seconds * 120.0 / TIME_SCALE)
+	var frames := int(seconds * Engine.physics_ticks_per_second / TIME_SCALE)
 	for i in frames:
 		await get_tree().physics_frame
-		_probe.sample(director, 1.0 / (120.0 / TIME_SCALE))
+		_probe.sample(director, 1.0 / (Engine.physics_ticks_per_second / TIME_SCALE))
 	Engine.time_scale = 1.0
 	TrafficCar.measure_cost = false
 

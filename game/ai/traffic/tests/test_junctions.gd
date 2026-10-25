@@ -9,7 +9,8 @@ extends Node
 ## that it stops in front of the line and goes on when the light turns green.
 
 const WORLD := "res://world/world.tscn"
-const DT := 1.0 / 120.0
+## s: the physics step of the engine (the tests wait its ticks)
+var DT: float = 1.0 / Engine.physics_ticks_per_second
 const STOP_GAP := 4.0     ## m: how far in front of the line the car may stand
 const APPROACH := 30.0    ## m: the car starts this far before the line
 
@@ -96,7 +97,7 @@ func _test_stop_at_a_red_light() -> void:
 	car.place(lane, maxf(length - APPROACH, 0.0))
 	var stopped_at := -1.0
 	var saw_red := false
-	for step in 3600:
+	for step in Engine.physics_ticks_per_second * 30:
 		# The signal controller runs in the process of the world: the frames have to pass.
 		await get_tree().physics_frame
 		car.tick(DT)
@@ -113,7 +114,7 @@ func _test_stop_at_a_red_light() -> void:
 			"the car stops %.1f m before the line (at most %.1f m)" % [stopped_at, STOP_GAP])
 	# The light turns green again: the car has to go on.
 	var moved := false
-	for step in 3600:
+	for step in Engine.physics_ticks_per_second * 30:
 		await get_tree().physics_frame
 		car.tick(DT)
 		if car.speed > 3.0:

@@ -499,7 +499,7 @@ func _drive_into(world: WorldBase, target: Vector3, direction: Vector3) -> Dicti
 	world.add_child(body)
 	body.linear_velocity = direction * 16.7
 	var speed := 60.0
-	for i in 300:
+	for i in Engine.physics_ticks_per_second * 5 / 2:
 		await get_tree().physics_frame
 		speed = body.linear_velocity.length() * 3.6
 		if body.global_position.distance_to(target) < 2.0:

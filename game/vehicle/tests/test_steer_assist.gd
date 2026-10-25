@@ -43,10 +43,10 @@ func _yaw(kmh: float, input: float) -> float:
 	var target := kmh / 3.6
 	car.linear_velocity = -car.global_transform.basis.z * target
 	var total := 0.0
-	for i in 240:
+	for i in Engine.physics_ticks_per_second * 2:
 		car.set_controls(1.0 if car.linear_velocity.length() < target else 0.0, 0.0, input, false)
 		await _t.step()
-		if i >= 120:
+		if i >= Engine.physics_ticks_per_second:
 			total += -rad_to_deg(car.angular_velocity.y)
 	car.queue_free()
-	return total / 120.0
+	return total / float(Engine.physics_ticks_per_second)

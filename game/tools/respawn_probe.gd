@@ -14,7 +14,8 @@ extends Node
 ##   verbose  print the flight recorder of this trial, whether it was odd or not
 
 const MAIN := "res://main.tscn"
-const FPS := 120.0
+## the physics ticks a second (the tool counts its frames in ticks)
+var FPS: float = float(Engine.physics_ticks_per_second)
 ## A hit on the world harder than this (N*s) in the first seconds after a respawn is written down.
 const HIT_IMPULSE := 3000.0
 ## The tilt (degrees) that counts as a car on its side or on a wall, and for how long.
@@ -192,7 +193,7 @@ func _run() -> void:
 		for frame in total:
 			await get_tree().physics_frame
 			_clock = float(frame + 1) / FPS
-			if frame % 12 == 0:
+			if frame % (Engine.physics_ticks_per_second / 10) == 0:
 				frames.append(_frame(car))
 			var tilt := _tilt(car)
 			peak_tilt = maxf(peak_tilt, tilt)

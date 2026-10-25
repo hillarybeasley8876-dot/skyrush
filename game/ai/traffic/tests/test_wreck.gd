@@ -8,7 +8,8 @@ extends Node
 ## happens: the car has to turn (at least 30 degrees), come to a stop within three seconds and
 ## the car behind it has to stop behind the wreck and drive on in the next lane.
 
-const DT := 1.0 / 120.0
+## s: the physics step of the engine (the tests wait its ticks)
+var DT: float = 1.0 / Engine.physics_ticks_per_second
 const RAM_SPEED := 15.0     ## m/s: the speed of the body that rams the car
 const CAR_SPEED := 5.0      ## m/s: the speed of the car that is rammed
 const RAM_OFFSET := 0.6     ## m: how far off the centre the hit lands

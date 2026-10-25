@@ -49,10 +49,10 @@ func _flight(t: T, car: ArcadeCar, ground: float, seconds: float) -> HopTrace:
 	var tr: HopTrace = HopTrace.new()
 	var prev_vy: float = car.linear_velocity.y
 	var first_dir: Vector3 = Vector3.FORWARD
-	for i in int(seconds * 120.0):
+	for i in int(seconds * Engine.physics_ticks_per_second):
 		await t.step()
 		var v: Vector3 = car.linear_velocity
-		var accel: float = (v.y - prev_vy) * 120.0
+		var accel: float = (v.y - prev_vy) * Engine.physics_ticks_per_second
 		prev_vy = v.y
 		tr.apex = maxf(tr.apex, car.global_position.y - ground)
 		if not car.telemetry.airborne:
@@ -69,7 +69,7 @@ func _flight(t: T, car: ArcadeCar, ground: float, seconds: float) -> HopTrace:
 		tr.turn = maxf(tr.turn, rad_to_deg(_flat_dir(v).angle_to(first_dir)))
 		if _trace and i % 6 == 0:
 			print("TRACE t=%.2f grounded=%d vy=%.2f ay=%.1f state=%s beta=%.1f assist=%.0f pull=%.1f" % [
-					float(i) / 120.0, car.telemetry.grounded_wheels, v.y, accel, car.drift.state,
+					float(i) / Engine.physics_ticks_per_second, car.telemetry.grounded_wheels, v.y, accel, car.drift.state,
 					rad_to_deg(car.drift.beta), car.drift.assist_accel, tr.extra_pull])
 	return tr
 
@@ -83,7 +83,7 @@ func _hop(t: T, car: ArcadeCar, big: bool) -> HopTrace:
 	await t.step()
 	car.thruster.hop_pressed = false
 	if big:
-		for i in 40:
+		for i in Engine.physics_ticks_per_second / 3:
 			await t.step()
 	car.thruster.hop_held = false
 	car.thruster.hop_released = true

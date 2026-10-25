@@ -15,7 +15,8 @@ extends Node
 
 const T := preload("res://vehicle/tests/vehicle_test.gd")
 
-const DT := 1.0 / 120.0
+## s: the physics step of the engine (the tests wait its ticks)
+var DT: float = 1.0 / Engine.physics_ticks_per_second
 const PLAYER_KMH := 64.8   ## 18 m/s
 const TRAFFIC_SPEED := 5.0
 const GAP := 14.0

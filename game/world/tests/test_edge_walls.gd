@@ -69,7 +69,7 @@ func _run() -> void:
 		holder.add_child(body)
 		body.global_position = Vector3(AREA.end.x - 40.0, 1.0, centre.y)
 		body.linear_velocity = Vector3(speed, 0.0, 0.0)
-		for i in 240:
+		for i in Engine.physics_ticks_per_second * 2:
 			await get_tree().physics_frame
 		if body.global_position.x > AREA.end.x:
 			tunnelled += 1

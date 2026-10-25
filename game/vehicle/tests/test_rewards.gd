@@ -23,11 +23,11 @@ func _hop(t: T, car: ArcadeCar, big: bool) -> StringName:
 	Input.action_press(&"hop")
 	await t.step()
 	if big:
-		for i in 40:
+		for i in Engine.physics_ticks_per_second / 3:
 			await t.step()
 	Input.action_release(&"hop")
 	# The impulse fires after the spool (0.08 s / 0.15 s).
-	for i in 60:
+	for i in Engine.physics_ticks_per_second / 2:
 		await t.step()
 		if _hops.size() > 0:
 			break
@@ -76,7 +76,7 @@ func _run() -> void:
 	car.boost.n2 = 100.0
 	var kind: StringName = await _hop(t, car, true)
 	t.check("the Big Hop fired", kind == &"big_hop", "= %s" % kind)
-	for i in 120 * 4:
+	for i in Engine.physics_ticks_per_second * 4:
 		await t.step()
 		if car.dynamics.landed:
 			break
@@ -94,7 +94,7 @@ func _run() -> void:
 	car.boost.n2 = 100.0
 	var tap: StringName = await _hop(t, car, false)
 	t.check("the tap hop fired", tap == &"hop", "= %s" % tap)
-	for i in 120 * 4:
+	for i in Engine.physics_ticks_per_second * 4:
 		await t.step()
 		if car.dynamics.landed:
 			break
@@ -116,13 +116,13 @@ func _run() -> void:
 	var roll_kind: StringName = await _hop(t, car, false)
 	t.check("the roll hop fired", roll_kind == &"hop", "= %s" % roll_kind)
 	# The roll starts in the air and ends before the touchdown.
-	for i in 120:
+	for i in Engine.physics_ticks_per_second:
 		await t.step()
 		if car.telemetry.airborne:
 			break
 	t.check("the car is in the air", car.telemetry.airborne, "= %.2f m" % car.telemetry.altitude_m)
 	t.check("the roll starts", car.request_roll(1))
-	for i in 120 * 4:
+	for i in Engine.physics_ticks_per_second * 4:
 		await t.step()
 		if car.dynamics.landed:
 			break

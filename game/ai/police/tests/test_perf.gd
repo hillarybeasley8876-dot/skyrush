@@ -104,6 +104,6 @@ func _load() -> float:
 ## The mean wall time of a physics frame in milliseconds.
 func _wall_time(t: T) -> float:
 	var started := Time.get_ticks_usec()
-	for i in 300:
+	for i in Engine.physics_ticks_per_second * 5 / 2:
 		await t.tree.physics_frame
 	return float(Time.get_ticks_usec() - started) / 300.0 / 1000.0

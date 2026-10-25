@@ -19,7 +19,7 @@ func _run() -> void:
 	t.set_speed(car, 150.0)
 	var start: Vector3 = car.global_position
 	var landed: bool = false
-	for i in 120 * 4:
+	for i in Engine.physics_ticks_per_second * 4:
 		await t.step()
 		if car.telemetry.grounded_wheels >= 3 and car.telemetry.airtime == 0.0:
 			landed = true
@@ -42,7 +42,7 @@ func _run() -> void:
 	# The roll is about the car's own forward axis, the position stays where it is.
 	var basis: Basis = car2.global_transform.basis * Basis(Vector3(0.0, 0.0, -1.0), deg_to_rad(10.0))
 	car2.global_transform = Transform3D(basis, car2.global_position)
-	for i in 120 * 8:
+	for i in Engine.physics_ticks_per_second * 8:
 		await t.step()
 		if car2.telemetry.grounded_wheels >= 3 and car2.telemetry.airtime == 0.0:
 			break

@@ -33,7 +33,7 @@ func _run() -> void:
 	await t.run(0.6)
 	# The car drives at 150 km/h (the accelerate key: the player car reads the InputMap).
 	Input.action_press(&"accelerate")
-	for i in 120 * 12:
+	for i in Engine.physics_ticks_per_second * 12:
 		await t.step()
 		if car.telemetry.forward_speed_kmh >= 150.0:
 			break
@@ -53,7 +53,7 @@ func _run() -> void:
 	t.check("the second nitro is refused", _started.is_empty(), "= %s" % str(_started))
 	# The car reaches the cap of the nitro.
 	var top: float = 0.0
-	for i in 120 * 10:
+	for i in Engine.physics_ticks_per_second * 10:
 		await t.step()
 		top = maxf(top, car.telemetry.forward_speed_kmh)
 	t.check_range("the top speed with the nitro", top, 292.0, 308.0)
@@ -76,9 +76,9 @@ func _run() -> void:
 	# 0-100 km/h with the launch.
 	var clock: float = 0.0
 	var to_100: float = -1.0
-	for i in 120 * 8:
+	for i in Engine.physics_ticks_per_second * 8:
 		await t.step()
-		clock += 1.0 / 120.0
+		clock += 1.0 / Engine.physics_ticks_per_second
 		if to_100 < 0.0 and car2.telemetry.forward_speed_kmh >= 100.0:
 			to_100 = clock
 	Input.action_release(&"accelerate")

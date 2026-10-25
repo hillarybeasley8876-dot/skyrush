@@ -116,7 +116,7 @@ func _test_reversing() -> void:
 	car.telemetry.brake = 1.0
 	car.linear_velocity = Vector3(0.0, 0.0, 11.0)
 	var pool: Node = _director.call("skid_pool")
-	for i in 30:
+	for i in Engine.physics_ticks_per_second / 4:
 		car.global_position = Vector3(0.0, 0.6, float(i) * 0.5)
 		await get_tree().physics_frame
 	var quads := int(pool.call("live_count"))
@@ -204,7 +204,7 @@ func _test_emitter_cap() -> void:
 		Events.vehicle_wrecked.emit(car, null)
 	await get_tree().process_frame
 	# The emitter budget is handed out every 0.2 s: wait for it.
-	for i in 40:
+	for i in Engine.physics_ticks_per_second / 3:
 		await get_tree().physics_frame
 	var count := int(_director.call("active_emitter_count"))
 	_check(count == 8, "12 wrecked cars run 8 smoke / fire emitters (got %d)" % count)
@@ -242,7 +242,7 @@ func _test_impact_ground() -> void:
 	Events.vehicle_collided.emit(car, null, 26000.0, Vector3(0.0, 10.0, 0.0), Vector3.UP)
 	await get_tree().process_frame
 	_check(int(sparks.call("live_count")) > 0, "the hit throws sparks")
-	for i in 24:
+	for i in Engine.physics_ticks_per_second / 5:
 		await get_tree().physics_frame
 	var lowest := float(sparks.call("lowest_point"))
 	_check(lowest > 9.9, "no spark falls through the deck (lowest %.2f m)" % lowest)
@@ -264,7 +264,7 @@ func _test_skid_geometry() -> void:
 	car.telemetry.forward_speed_kmh = 270.0
 	var pool: Node = _director.call("skid_pool")
 	# 0.64 m per physics tick: the speed of a real drift at 270 km/h.
-	for i in 240:
+	for i in Engine.physics_ticks_per_second * 2:
 		car.global_position = Vector3(0.0, 0.6, -float(i) * 0.64)
 		await get_tree().physics_frame
 	var quads := int(pool.call("live_count"))
@@ -311,7 +311,7 @@ func _test_skid_width() -> void:
 	car.telemetry.speed_kmh = 60.0
 	car.telemetry.forward_speed_kmh = 60.0
 	var pool: Node = _director.call("skid_pool")
-	for i in 120:
+	for i in Engine.physics_ticks_per_second:
 		car.global_position = Vector3(0.0, 0.6, -float(i) * 0.5)
 		await get_tree().physics_frame
 	var width := float(pool.call("quad_width"))

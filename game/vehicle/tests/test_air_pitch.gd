@@ -28,7 +28,7 @@ func _hop(t: T, kmh: float, throttle: bool, big: bool = false) -> Dictionary:
 	await t.step()
 	car.thruster.hop_pressed = false
 	if big:
-		for i in 40:
+		for i in Engine.physics_ticks_per_second / 3:
 			await t.step()
 	car.thruster.hop_held = false
 	car.thruster.hop_released = true
@@ -37,7 +37,7 @@ func _hop(t: T, kmh: float, throttle: bool, big: bool = false) -> Dictionary:
 	var air_start: float = car.telemetry.forward_speed_kmh
 	var flew: bool = false
 	var out: Dictionary = {"pitch": 0.0, "quality": &"clean", "window": false, "delta": 0.0}
-	for i in 120 * 4:
+	for i in Engine.physics_ticks_per_second * 4:
 		await t.step()
 		if car.telemetry.airborne:
 			if not flew:
@@ -77,7 +77,7 @@ func _run() -> void:
 	car.thruster.hop_pressed = true
 	await t.step()
 	car.thruster.hop_pressed = false
-	for i in 40:
+	for i in Engine.physics_ticks_per_second / 3:
 		await t.step()
 	car.thruster.hop_held = false
 	car.thruster.hop_released = true
@@ -87,7 +87,7 @@ func _run() -> void:
 	var phase: int = 0
 	var max_rate: float = 0.0
 	var left_ground: bool = false
-	for i in 120 * 2:
+	for i in Engine.physics_ticks_per_second * 2:
 		await t.step()
 		if not car.telemetry.airborne:
 			if left_ground:

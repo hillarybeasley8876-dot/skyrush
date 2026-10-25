@@ -33,7 +33,7 @@ func _run() -> void:
 	await t.step()
 	car.thruster.hop_released = false
 	var air_alt: float = 0.0
-	for i in 60:
+	for i in Engine.physics_ticks_per_second / 2:
 		await t.step()
 		air_alt = maxf(air_alt, car.telemetry.altitude_m)
 	t.check("the altitude grows in the air", air_alt > 1.0, "= %.2f m" % air_alt)
@@ -41,7 +41,7 @@ func _run() -> void:
 	var car2: ArcadeCar = await t.spawn_car(t.roadster(), Vector3(0.0, 0.15, 0.0), 0.0)
 	await t.run(0.5)
 	car2.set_controls(1.0, 0.0, 0.0, false)
-	for i in 120 * 13:
+	for i in Engine.physics_ticks_per_second * 13:
 		await t.step()
 		if i % 60 == 0:
 			t.keep_on_ground(car2)

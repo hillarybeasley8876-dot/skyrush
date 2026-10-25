@@ -35,7 +35,7 @@ func _ready() -> void:
 	var hits := t.hits_of(cop)
 	var heading := t.player_heading()
 	var touched := false
-	for i in int(BUDGET * 120.0):
+	for i in int(BUDGET * Engine.physics_ticks_per_second):
 		await t.drive_frame(0.0, 90.0)
 		if t.hits_of(cop) <= hits:
 			continue
@@ -46,7 +46,7 @@ func _ready() -> void:
 	# The player lets go of the wheel: the tap alone has to spin him.
 	t.release_all()
 	var turned := 0.0
-	for j in int(SPIN_TIME * 120.0):
+	for j in int(SPIN_TIME * Engine.physics_ticks_per_second):
 		await t.tree.physics_frame
 		turned = rad_to_deg(absf(angle_difference(t.player_heading(), heading)))
 		if turned >= SPIN_DEGREES:
@@ -73,7 +73,7 @@ func _check_ram(t: T) -> void:
 		t.check(false, "the ramming unit is on the road")
 		return
 	cop.linear_velocity = Vector3(32.0, 0.0, 0.0)
-	for i in int(20.0 * 120.0):
+	for i in int(20.0 * Engine.physics_ticks_per_second):
 		await t.drive_frame(0.0, 90.0)
 		if t.hits_of(cop) > 0:
 			break

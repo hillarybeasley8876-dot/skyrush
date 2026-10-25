@@ -56,11 +56,11 @@ func _check_formation(t: T, front: PoliceCar, left: PoliceCar, right: PoliceCar)
 	var formed := 0.0
 	var runs := 0
 	var was_formed := false
-	for i in int(FORM_TIME * 120.0):
+	for i in int(FORM_TIME * Engine.physics_ticks_per_second):
 		await t.drive_frame(0.0, PLAYER_KMH)
 		var ok := _formed(t, front, left, right)
 		if ok:
-			formed += 1.0 / 120.0
+			formed += 1.0 / Engine.physics_ticks_per_second
 			if not was_formed:
 				runs += 1
 		was_formed = ok
@@ -81,7 +81,7 @@ func _check_formation(t: T, front: PoliceCar, left: PoliceCar, right: PoliceCar)
 ## A boxed player below 40 km/h is busted twice as fast.
 func _check_busted(t: T, front: PoliceCar, left: PoliceCar, right: PoliceCar) -> void:
 	# The box has to hold for two seconds, then the meter fills at 2/3 per second.
-	for i in int(4.0 * 120.0):
+	for i in int(4.0 * Engine.physics_ticks_per_second):
 		await t.drive_frame(0.0, 30.0)
 	t.director.pursuit.busted = 0.0
 	await t.drive(1.0, 0.0, 30.0)

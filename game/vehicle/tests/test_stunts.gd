@@ -69,7 +69,7 @@ func _player(t: T, pos: Vector3, yaw: float) -> ArcadeCar:
 func _jump(t: T, vy: float) -> float:
 	_landings.clear()
 	_car.linear_velocity = Vector3(0.0, vy, 0.0)
-	for i in 120 * 8:
+	for i in Engine.physics_ticks_per_second * 8:
 		await t.step()
 		if _landings.size() > 0:
 			return _landings[0]
@@ -78,7 +78,7 @@ func _jump(t: T, vy: float) -> float:
 
 ## Waits until the car is off the ground. Returns false when it did not get there in time.
 func _wait_air(t: T) -> bool:
-	for i in 120 * 2:
+	for i in Engine.physics_ticks_per_second * 2:
 		await t.step()
 		if _car.telemetry.airborne:
 			return true
@@ -97,7 +97,7 @@ func _drift(t: T, seconds: float) -> float:
 	Input.action_release(&"drift")
 	Input.action_release(&"steer_right")
 	Input.action_press(&"steer_left")
-	for i in 120 * 3:
+	for i in Engine.physics_ticks_per_second * 3:
 		await t.step()
 		if _drifts.size() > 0:
 			break
@@ -107,7 +107,7 @@ func _drift(t: T, seconds: float) -> float:
 
 ## Waits until the drift is over and the car is in grip again.
 func _wait_grip(t: T) -> void:
-	for i in 120 * 3:
+	for i in Engine.physics_ticks_per_second * 3:
 		if _car.drift.state == &"grip":
 			return
 		await t.step()
@@ -150,7 +150,7 @@ func _run() -> void:
 	car.linear_velocity = Vector3(0.0, JUMP_VY, 0.0)
 	t.check("the car is in the air", await _wait_air(t))
 	t.check("the roll starts", car.request_roll(1))
-	for i in 120 * 8:
+	for i in Engine.physics_ticks_per_second * 8:
 		await t.step()
 		if _of_kind(&"barrel_roll").size() > 0:
 			break
@@ -165,12 +165,12 @@ func _run() -> void:
 	car.linear_velocity = Vector3(0.0, JUMP_VY, 0.0)
 	await _wait_air(t)
 	t.check("the first roll starts", car.request_roll(1))
-	for i in 120 * 2:
+	for i in Engine.physics_ticks_per_second * 2:
 		await t.step()
 		if not car.thruster.rolling:
 			break
 	t.check("the second roll starts", car.request_roll(-1))
-	for i in 120 * 8:
+	for i in Engine.physics_ticks_per_second * 8:
 		await t.step()
 		if _of_kind(&"barrel_roll").size() >= 2:
 			break
@@ -182,7 +182,7 @@ func _run() -> void:
 	car.linear_velocity = Vector3.ZERO
 	car.global_position.y += 1.5
 	var short_airtime: float = -1.0
-	for i in 120 * 4:
+	for i in Engine.physics_ticks_per_second * 4:
 		await t.step()
 		if _landings.size() > 0:
 			short_airtime = _landings[0]
@@ -220,12 +220,12 @@ func _run() -> void:
 	await _player(t, Vector3(320.0, 0.3, -30.0), PI * 0.5)
 	_car.boost.n2 = 100.0
 	t.set_speed(_car, 150.0)
-	for i in 120 * 20:
+	for i in Engine.physics_ticks_per_second * 20:
 		await t.step()
 		if _car.telemetry.flying:
 			break
 	t.check("the car took off", _car.telemetry.flying)
-	for i in 120 * 20:
+	for i in Engine.physics_ticks_per_second * 20:
 		await t.step()
 		if not _car.telemetry.flying and _landings.size() > 0:
 			break

@@ -24,7 +24,7 @@ func _hop(t: T, car: ArcadeCar) -> void:
 	car.thruster.hop_released = true
 	await t.step()
 	car.thruster.hop_released = false
-	for i in 60:
+	for i in Engine.physics_ticks_per_second / 2:
 		await t.step()
 		if car.telemetry.airborne:
 			return
@@ -54,7 +54,7 @@ func _run() -> void:
 	car.actions.handle(car, _mini_press())
 	t.check("a second air mini is refused", _started.is_empty(), "= %s" % str(_started))
 	# The landing mini boost: a tap 0.3 s after the touchdown.
-	for i in 120 * 3:
+	for i in Engine.physics_ticks_per_second * 3:
 		await t.step()
 		if car.telemetry.grounded_wheels >= 3 and not car.telemetry.airborne:
 			break
@@ -63,14 +63,14 @@ func _run() -> void:
 	t.check("the landing window is open", car.telemetry.mini_window,
 			"= %s" % str(car.telemetry.mini_window))
 	_started.clear()
-	for i in 36:
+	for i in Engine.physics_ticks_per_second * 3 / 10:
 		await t.step()
 	car.actions.handle(car, _mini_press())
 	t.check("the landing mini fires", _started.size() == 1 and _started[0] == &"landing",
 			"= %s" % str(_started))
 	# Too late: the window is closed.
 	_started.clear()
-	for i in 120:
+	for i in Engine.physics_ticks_per_second:
 		await t.step()
 	car.actions.handle(car, _mini_press())
 	t.check("a late landing mini is refused", _started.is_empty(), "= %s" % str(_started))

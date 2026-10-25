@@ -37,24 +37,24 @@ func _run() -> void:
 	car.boost.n2 = BoostTuning.N2_MAX
 	before = car.boost.n2
 	t.check("the hop starts", car.request_hop())
-	for i in 20:
+	for i in Engine.physics_ticks_per_second / 6:
 		await t.step()
 	t.check_close("the hop costs 25 N2", before - car.boost.n2, 25.0, 1.0)
 	t.check("one hop event", _hops.size() == 1 and _hops[0] == &"hop", "= %s" % str(_hops))
 	# The Big Hop: 50 N2 (the hop cooldown has to be over).
 	_hops.clear()
-	for i in 150:
+	for i in Engine.physics_ticks_per_second * 5 / 4:
 		await t.step()
 	car.boost.n2 = BoostTuning.N2_MAX
 	before = car.boost.n2
 	t.check("the Big Hop starts", car.request_hop(true))
-	for i in 20:
+	for i in Engine.physics_ticks_per_second / 6:
 		await t.step()
 	t.check_close("the Big Hop costs 50 N2", before - car.boost.n2, 50.0, 1.0)
 	t.check("one big hop event", _hops.size() == 1 and _hops[0] == &"big_hop", "= %s" % str(_hops))
 	# The barrel roll: 20 N2 and one roll event, only in the air.
 	_rolls.clear()
-	for i in 300:
+	for i in Engine.physics_ticks_per_second * 5 / 2:
 		await t.step()
 		if car.telemetry.grounded_wheels >= 3:
 			break
@@ -70,7 +70,7 @@ func _run() -> void:
 	car.thruster.hop_released = true
 	await t.step()
 	car.thruster.hop_released = false
-	for i in 60:
+	for i in Engine.physics_ticks_per_second / 2:
 		await t.step()
 		if car.telemetry.airborne:
 			break
@@ -81,7 +81,7 @@ func _run() -> void:
 	t.check("one roll event", _rolls.size() == 1 and _rolls[0] == 1, "= %s" % str(_rolls))
 	# The standing launch: it needs a standstill, the throttle and half a tank. It costs
 	# nothing.
-	for i in 300:
+	for i in Engine.physics_ticks_per_second * 5 / 2:
 		await t.step()
 		if car.telemetry.grounded_wheels >= 3 and not car.telemetry.airborne:
 			break

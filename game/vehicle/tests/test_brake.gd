@@ -16,7 +16,7 @@ func _run() -> void:
 	await t.run(0.5)
 	# Roll up to 100 km/h.
 	car.set_controls(1.0, 0.0, 0.0, false)
-	for i in 120 * 8:
+	for i in Engine.physics_ticks_per_second * 8:
 		await t.step()
 		if car.telemetry.forward_speed_kmh >= 100.0:
 			break
@@ -25,9 +25,9 @@ func _run() -> void:
 	var start: Vector3 = car.global_position
 	var brake_time: float = 0.0
 	car.set_controls(0.0, 1.0, 0.0, false)
-	for i in 120 * 6:
+	for i in Engine.physics_ticks_per_second * 6:
 		await t.step()
-		brake_time += 1.0 / 120.0
+		brake_time += 1.0 / Engine.physics_ticks_per_second
 		if car.telemetry.forward_speed_kmh <= 1.0:
 			break
 	var distance: float = t.distance_travelled(start, car.global_position)

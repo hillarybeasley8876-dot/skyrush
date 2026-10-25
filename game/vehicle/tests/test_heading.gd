@@ -23,9 +23,9 @@ func _grip(t: T, yaw: float) -> float:
 	car.set_controls(0.35, 0.0, 0.6, false)
 	var sum: float = 0.0
 	var samples: int = 0
-	for i in 120 * 4:
+	for i in Engine.physics_ticks_per_second * 4:
 		await t.step()
-		if i < 120 * 3:
+		if i < Engine.physics_ticks_per_second * 3:
 			continue
 		var v: Vector3 = car.linear_velocity
 		v.y = 0.0
@@ -43,25 +43,25 @@ func _drift(t: T, yaw: float) -> Dictionary:
 	var car: ArcadeCar = await t.spawn_car(t.roadster(), Vector3(0.0, 0.15, 0.0), yaw)
 	await t.run(0.6)
 	car.set_controls(1.0, 0.0, 0.0, false)
-	for i in 120 * 12:
+	for i in Engine.physics_ticks_per_second * 12:
 		await t.step()
 		if car.telemetry.forward_speed_kmh >= 200.0:
 			break
 	car.boost.n2 = 0.0
 	car.set_drift(true)
 	car.set_controls(1.0, 0.0, 1.0, false)
-	for i in 36:
+	for i in Engine.physics_ticks_per_second * 3 / 10:
 		await t.step()
 	var beta_sum: float = 0.0
 	var samples: int = 0
-	for i in 120 * 3:
+	for i in Engine.physics_ticks_per_second * 3:
 		await t.step()
-		if i >= 120:
+		if i >= Engine.physics_ticks_per_second:
 			beta_sum += absf(car.telemetry.slip_angle_deg)
 			samples += 1
 	car.set_drift(false)
 	car.set_controls(1.0, 0.0, -1.0, false)
-	for i in 120 * 3:
+	for i in Engine.physics_ticks_per_second * 3:
 		await t.step()
 		if car.telemetry.drift_state == &"grip":
 			break

@@ -13,7 +13,8 @@ extends Node
 
 const T := preload("res://vehicle/tests/vehicle_test.gd")
 
-const DT := 1.0 / 120.0
+## s: the physics step of the engine (the tests wait its ticks)
+var DT: float = 1.0 / Engine.physics_ticks_per_second
 const SPEED_KMH := 72.0    ## 20 m/s
 const WALL_ANGLE := 25.0   ## deg: the angle of the wall to the path of the car
 const DROP := 0.75         ## the speed after the hit must be at most this part of the speed
@@ -60,7 +61,7 @@ func _run() -> void:
 	# The speed right after the crash is the answer of the arcade rule; the speed may not grow
 	# after it (the rule of a graze must not be applied to the crash).
 	var after: float = _speeds[hit]
-	var last: int = mini(hit + 120, _speeds.size())
+	var last: int = mini(hit + Engine.physics_ticks_per_second, _speeds.size())
 	var later := 0.0
 	for i in range(hit + 1, last):
 		later = maxf(later, _speeds[i])

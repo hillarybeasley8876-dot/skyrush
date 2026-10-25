@@ -40,7 +40,7 @@ func _run() -> void:
 	t.check("one boost_started", _started.size() == 1 and _started[0] == &"nitro",
 			"= %s" % str(_started))
 	# The nitro burns for 3 s, then it ends.
-	for i in 120 * 4:
+	for i in Engine.physics_ticks_per_second * 4:
 		await t.step()
 	t.check("the boost ended", _ended == 1, "= %d" % _ended)
 	t.check("the kind is empty", car.boost.kind == &"", "= %s" % car.boost.kind)
@@ -51,7 +51,7 @@ func _run() -> void:
 	var ended_before: int = _ended
 	car.boost.n2 = BoostTuning.N2_MAX
 	car.use_nitro()
-	for i in 120 * 5:
+	for i in Engine.physics_ticks_per_second * 5:
 		await t.step()
 	t.check("the blocked nitro ends once", _ended - ended_before == 1,
 			"= %d" % (_ended - ended_before))

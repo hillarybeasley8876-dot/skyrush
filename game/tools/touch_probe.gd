@@ -44,7 +44,7 @@ func _run() -> void:
 	var car := Game.player as ArcadeCar
 	car.reset_to(Transform3D(Basis(Vector3.UP, yaw), Vector3(float(at[0]), float(at[1]), float(at[2]))))
 	car.freeze = true
-	for i in 30:
+	for i in Engine.physics_ticks_per_second / 4:
 		await get_tree().physics_frame
 	var shape_node := car.get_node("Collision") as CollisionShape3D if car.has_node("Collision") else car.get_node("Body") as CollisionShape3D
 	var box := (shape_node.shape as BoxShape3D).duplicate() as BoxShape3D

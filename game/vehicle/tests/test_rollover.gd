@@ -87,11 +87,11 @@ func _upright(car: ArcadeCar) -> bool:
 func _drive(car: ArcadeCar, label: String, throttle: float, steer: float, drift: bool, seconds: float) -> void:
 	var peak := 0.0
 	car.set_controls(throttle, 0.0, steer, drift)
-	for i in int(seconds * 120.0):
+	for i in int(seconds * Engine.physics_ticks_per_second):
 		await _t.step()
 		peak = maxf(peak, _tilt(car))
 	car.set_controls(0.0, 0.0, 0.0, false)
-	for i in 240:
+	for i in Engine.physics_ticks_per_second * 2:
 		await _t.step()
 		peak = maxf(peak, _tilt(car))
 	var upright := _upright(car)

@@ -24,7 +24,7 @@ func _run() -> void:
 	flying.boost.n2 = 100.0
 	t.set_speed(flying, 150.0)
 	var flew: bool = false
-	for i in 120 * 6:
+	for i in Engine.physics_ticks_per_second * 6:
 		await t.step()
 		if flying.telemetry.flying:
 			flew = true
@@ -35,7 +35,7 @@ func _run() -> void:
 	await t.run(0.5)
 	t.check("the flight ended", not flying.telemetry.flying)
 	# The car stays where it was put (it may still bounce on the stiff suspension).
-	for i in 120 * 2:
+	for i in Engine.physics_ticks_per_second * 2:
 		await t.step()
 		if flying.telemetry.grounded_wheels >= 3:
 			break
@@ -50,11 +50,11 @@ func _run() -> void:
 	# car is upside down, and it must not be in the air (the auto level would turn it upright).
 	roof.global_transform = Transform3D(Basis(Vector3.FORWARD, PI), Vector3(120.0, 1.05, 0.0))
 	var respawned: float = -1.0
-	for i in 120 * 4:
+	for i in Engine.physics_ticks_per_second * 4:
 		await t.step()
 		var up_dot: float = roof.global_transform.basis.y.dot(Vector3.UP)
 		if up_dot > 0.5:
-			respawned = float(i) / 120.0
+			respawned = float(i) / Engine.physics_ticks_per_second
 			break
 	t.check("the car is upright again", respawned > 0.0, "= %.2f s" % respawned)
 	# the car turns itself back onto its wheels (BodyTuning.RIGHTING_*); the upside-down respawn after 1.5 s is the fallback

@@ -109,7 +109,7 @@ func _run() -> void:
 	_car.reset_to(Transform3D(Basis.looking_at(-across, Vector3.UP), from))
 	_car.linear_velocity = -across * 13.9
 	var lowest := 99.0
-	for i in 120 * 3:
+	for i in Engine.physics_ticks_per_second * 3:
 		await get_tree().physics_frame
 		lowest = minf(lowest, _car.global_position.y)
 	_check(lowest > -0.5, "a car that drives at the tube from the side does not fall into the ramp", "(lowest y %.2f)" % lowest)
@@ -160,7 +160,7 @@ func _drive(lane: LanePath, start: Transform3D, seconds: float) -> Array:
 	_car.linear_velocity = -start.basis.z * 14.0
 	var lowest := 99.0
 	var slowest := 99.0
-	for i in int(seconds * 120.0):
+	for i in int(seconds * Engine.physics_ticks_per_second):
 		_steer()
 		await get_tree().physics_frame
 		lowest = minf(lowest, _car.global_position.y)

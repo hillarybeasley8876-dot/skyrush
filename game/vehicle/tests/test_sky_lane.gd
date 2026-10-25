@@ -57,10 +57,10 @@ func _run() -> void:
 	var prev: Vector3 = car.global_position
 	var bank: float = 0.0
 	var pitch_error: float = 0.0
-	for i in 120 * 14:
+	for i in Engine.physics_ticks_per_second * 14:
 		car.set_controls(0.0, 0.0, 1.0, false)
 		await t.step()
-		_clock += 1.0 / 120.0
+		_clock += 1.0 / Engine.physics_ticks_per_second
 		max_jump = maxf(max_jump, car.global_position.distance_to(prev))
 		prev = car.global_position
 		if car.telemetry.flying:
@@ -95,7 +95,7 @@ func _run() -> void:
 	t.check("the bank leans into the move", bank < 0.0, "= %.1f deg" % bank)
 	t.check_range("the pitch against the lane slope", pitch_error, 0.0, 2.0)
 	# After the flight the car is back on the ground.
-	for i in 120 * 4:
+	for i in Engine.physics_ticks_per_second * 4:
 		await t.step()
 		if car.telemetry.grounded_wheels >= 3 and not car.telemetry.airborne:
 			break
@@ -110,9 +110,9 @@ func _run() -> void:
 	_car = car2
 	Game.player = car2
 	# The exit happens at the crest of the lane, high above the road.
-	for i in 120 * 6:
+	for i in Engine.physics_ticks_per_second * 6:
 		await t.step()
-		_clock += 1.0 / 120.0
+		_clock += 1.0 / Engine.physics_ticks_per_second
 		if car2.telemetry.flying and car2.telemetry.altitude_m > 15.0:
 			break
 	t.check("the car took off again", car2.telemetry.flying)
@@ -123,9 +123,9 @@ func _run() -> void:
 	await t.step()
 	Input.action_release(&"flight")
 	t.check("the car left the tube", car2.sky.gliding, "= %.1f m high" % altitude)
-	for i in 120 * 12:
+	for i in Engine.physics_ticks_per_second * 12:
 		await t.step()
-		_clock += 1.0 / 120.0
+		_clock += 1.0 / Engine.physics_ticks_per_second
 		if not car2.telemetry.flying:
 			break
 	t.check("the flight ended on the ground", not car2.telemetry.flying)
@@ -145,7 +145,7 @@ func _run() -> void:
 			hard += 1
 	t.check("no hard landing toast", hard == 0, "= %s" % str(_toasts))
 	# The landing window (落地喷) is open after the touchdown.
-	for i in 120:
+	for i in Engine.physics_ticks_per_second:
 		await t.step()
 		if car2.telemetry.mini_window:
 			break
@@ -158,17 +158,17 @@ func _run() -> void:
 	var car3: ArcadeCar = await _spawn_on_pad(t)
 	_car = car3
 	Game.player = car3
-	for i in 120 * 3:
+	for i in Engine.physics_ticks_per_second * 3:
 		await t.step()
-		_clock += 1.0 / 120.0
+		_clock += 1.0 / Engine.physics_ticks_per_second
 		if car3.telemetry.flying:
 			break
 	car3.boost.n2 = BoostTuning.N2_MAX
 	t.check("the nitro fires in the lane", car3.use_nitro())
 	var fired_at: float = _clock
-	for i in 120 * 6:
+	for i in Engine.physics_ticks_per_second * 6:
 		await t.step()
-		_clock += 1.0 / 120.0
+		_clock += 1.0 / Engine.physics_ticks_per_second
 		if _boost_ended.size() > 0:
 			break
 	t.check("the boost ended once", _boost_ended.size() == 1, "= %s" % str(_boost_ended))

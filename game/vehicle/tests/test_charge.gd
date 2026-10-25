@@ -23,7 +23,7 @@ func _run() -> void:
 	# 100 km/h towards +X.
 	t.set_speed(car, 100.0)
 	var charged: bool = false
-	for i in 120 * 4:
+	for i in Engine.physics_ticks_per_second * 4:
 		await t.step()
 		if car.boost.n2 >= BoostTuning.N2_MAX:
 			charged = true

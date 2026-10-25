@@ -26,13 +26,13 @@ func _hop(t: T, car: ArcadeCar, big: bool) -> Array:
 	await t.step()
 	car.thruster.hop_pressed = false
 	if big:
-		for i in 40:
+		for i in Engine.physics_ticks_per_second / 3:
 			await t.step()
 	car.thruster.hop_held = false
 	car.thruster.hop_released = true
 	await t.step()
 	car.thruster.hop_released = false
-	for i in 120 * 4:
+	for i in Engine.physics_ticks_per_second * 4:
 		await t.step()
 		apex = maxf(apex, car.global_position.y - ground)
 		if car.telemetry.airborne:

@@ -27,18 +27,18 @@ func _hop(t: T, car: ArcadeCar, big: bool) -> Array:
 	car.thruster.hop_pressed = false
 	if big:
 		# Hold the key for the Big Hop charge and release it.
-		for i in 40:
+		for i in Engine.physics_ticks_per_second / 3:
 			await t.step()
 	car.thruster.hop_held = false
 	car.thruster.hop_released = true
 	await t.step()
 	car.thruster.hop_released = false
-	for i in 120 * 3:
+	for i in Engine.physics_ticks_per_second * 3:
 		await t.step()
 		var height: float = car.global_position.y - ground
 		apex = maxf(apex, height)
 		if height > 7.0:
-			above += 1.0 / 120.0
+			above += 1.0 / Engine.physics_ticks_per_second
 		if car.telemetry.airborne:
 			flew = true
 		elif flew and car.telemetry.grounded_wheels >= 3:

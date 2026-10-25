@@ -218,7 +218,7 @@ func _on_toast(text: String, _style: StringName) -> void:
 
 ## Runs the physics for the given seconds.
 func _wait(seconds: float) -> void:
-	var steps := int(seconds * 120.0)
+	var steps := int(seconds * Engine.physics_ticks_per_second)
 	for i in steps:
 		await get_tree().physics_frame
 

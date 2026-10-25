@@ -109,7 +109,7 @@ func _run() -> void:
 		await t.step()
 		var landed := false
 		var bounce := 0.0
-		for i in 360:
+		for i in Engine.physics_ticks_per_second * 3:
 			await t.step()
 			if car.dynamics.grounded >= 2:
 				landed = true

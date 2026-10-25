@@ -51,14 +51,14 @@ func _test_timeline(host: Node) -> void:
 	_clock = 0.0
 	_helpers.setup(host)
 	Events.slowmo_request.connect(_on_slowmo_request)
-	await _helpers.tick(host, 60)
+	await _helpers.tick(host, Engine.physics_ticks_per_second / 2)
 	var victim := _helpers.new_car(host, Vector3(0, 0, 20), Vector3(0, 0, -15))
 	await _helpers.tick(host, 2)
 	Events.takedown.emit(victim, &"police")
 	var cut_at := -1.0
 	var cut_back := -1.0
 	var scales: Array[float] = []
-	for i in 600:
+	for i in Engine.physics_ticks_per_second * 5:
 		await _step(host)
 		for r in _requests:
 			scales.append(r.y)
@@ -93,7 +93,7 @@ func _test_tunnel(host: Node) -> void:
 	_helpers.box(host, Vector3(0.5, 6, 400), Vector3(TUNNEL_HALF, 3, 0))
 	_helpers.box(host, Vector3(TUNNEL_HALF * 2, 0.5, 400), Vector3(0, TUNNEL_CEILING + 0.25, 0))
 	var victim := _helpers.new_car(host, Vector3(0, 0.02, 0), Vector3(0, 0, -15))
-	await _helpers.tick(host, 30)
+	await _helpers.tick(host, Engine.physics_ticks_per_second / 4)
 	Events.takedown.emit(victim, &"police")
 	await _helpers.tick(host, 8)
 	var cam_pos := _helpers.cam.global_position
@@ -113,7 +113,7 @@ func _test_deck(host: Node) -> void:
 	_helpers.box(host, Vector3(0.4, DECK_PARAPET_HEIGHT, 400), Vector3(-DECK_PARAPET, 0.55, 0))
 	_helpers.box(host, Vector3(0.4, DECK_PARAPET_HEIGHT, 400), Vector3(DECK_PARAPET, 0.55, 0))
 	var victim := _helpers.new_car(host, Vector3(0, 0.02, 0), Vector3(0, 0, -15))
-	await _helpers.tick(host, 30)
+	await _helpers.tick(host, Engine.physics_ticks_per_second / 4)
 	Events.takedown.emit(victim, &"police")
 	await _helpers.tick(host, 8)
 	var cam_pos := _helpers.cam.global_position
@@ -149,10 +149,10 @@ func _test_focus_owns_no_slowmo(host: Node) -> void:
 	_requests.clear()
 	_helpers.setup(host)
 	Events.slowmo_request.connect(_on_slowmo_request)
-	await _helpers.tick(host, 30)
+	await _helpers.tick(host, Engine.physics_ticks_per_second / 4)
 	var target := _helpers.new_car(host, Vector3(0, 0, 20), Vector3(0, 0, -15))
 	Events.camera_focus.emit(target, 2.2)
-	await _helpers.tick(host, 120)
+	await _helpers.tick(host, Engine.physics_ticks_per_second)
 	_report.check("a focus shot never asks for a slow motion", _requests.is_empty(), str(_requests))
 	Events.slowmo_request.disconnect(_on_slowmo_request)
 	_helpers.cam_root.queue_free()

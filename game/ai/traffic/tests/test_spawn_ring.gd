@@ -53,7 +53,7 @@ func _run() -> void:
 	camera.global_position = player.global_position + Vector3.UP * 2.0
 	camera.look_at(player.global_position - Vector3.FORWARD * 100.0, Vector3.UP)
 	camera.current = true
-	for i in int(RUNTIME * 120.0):
+	for i in int(RUNTIME * Engine.physics_ticks_per_second):
 		await get_tree().physics_frame
 		_peak = maxi(_peak, _director.cars.size())
 	var live := _director.cars

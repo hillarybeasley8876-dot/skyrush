@@ -65,7 +65,7 @@ func _check_charge(t: T) -> void:
 	if cop == null:
 		return
 	var closest := 9999.0
-	for i in int(CHARGE_TIME * 120.0):
+	for i in int(CHARGE_TIME * Engine.physics_ticks_per_second):
 		await t.drive_frame(0.0, PLAYER_KMH)
 		closest = minf(closest, cop.global_position.distance_to(t.player.global_position))
 		if t.hits_of(cop) > 0:

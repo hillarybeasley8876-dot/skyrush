@@ -38,7 +38,7 @@ func _run() -> void:
 	await t.run(0.5)
 	t.set_speed(car, 100.0)
 	car.set_controls(0.0, 0.0, 0.0, false)
-	for i in 120 * 3:
+	for i in Engine.physics_ticks_per_second * 3:
 		await t.step()
 		if not _impulses.is_empty():
 			break
@@ -57,7 +57,7 @@ func _run() -> void:
 	t.set_speed(car2, 150.0)
 	car2.set_controls(1.0, 0.0, 0.0, false)
 	var kept: float = 1.0
-	for i in 120 * 3:
+	for i in Engine.physics_ticks_per_second * 3:
 		await t.step()
 		if not _impulses.is_empty():
 			kept = car2.telemetry.forward_speed_kmh / 150.0

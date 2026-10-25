@@ -39,7 +39,7 @@ func _run() -> void:
 	car.thruster.hop_released = true
 	await t.step()
 	car.thruster.hop_released = false
-	for i in 60:
+	for i in Engine.physics_ticks_per_second / 2:
 		await t.step()
 		if car.telemetry.airborne:
 			break
@@ -52,9 +52,9 @@ func _run() -> void:
 	var angle: float = 0.0
 	var duration: float = 0.0
 	var previous: float = _roll_angle(car)
-	for i in 120 * 2:
+	for i in Engine.physics_ticks_per_second * 2:
 		await t.step()
-		duration += 1.0 / 120.0
+		duration += 1.0 / Engine.physics_ticks_per_second
 		var now: float = _roll_angle(car)
 		angle += wrapf(now - previous, -180.0, 180.0)
 		previous = now
@@ -63,7 +63,7 @@ func _run() -> void:
 	t.check_range("the roll angle", angle, 355.0, 365.0)
 	t.check_range("the roll time", duration, 0.65, 0.75)
 	# The car lands upright.
-	for i in 120 * 3:
+	for i in Engine.physics_ticks_per_second * 3:
 		await t.step()
 		if car.telemetry.grounded_wheels >= 3 and not car.telemetry.airborne:
 			break

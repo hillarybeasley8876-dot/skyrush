@@ -45,9 +45,9 @@ func _ready() -> void:
 	var worst := 0
 	var frames_over := 0
 	var frames := 0
-	for i in int(CHASE_TIME * 120.0):
+	for i in int(CHASE_TIME * Engine.physics_ticks_per_second):
 		await t.drive_frame(0.0, CRUISE_KMH)
-		if float(i) / 120.0 < CHECK_AFTER:
+		if float(i) / Engine.physics_ticks_per_second < CHECK_AFTER:
 			continue
 		frames += 1
 		var close := _close_units(t)
@@ -60,10 +60,10 @@ func _ready() -> void:
 	var stopped := await t.brake_until_stopped(3.0, 0.0, 5.0)
 	t.check(stopped >= 0.0, "the player stops (%.1f s)" % stopped)
 	var busted_at := -1.0
-	for i in int(BUST_TIME * 120.0):
+	for i in int(BUST_TIME * Engine.physics_ticks_per_second):
 		await t.drive_frame(0.0, 0.0)
 		if t.director.pursuit_state == &"busted":
-			busted_at = float(i) / 120.0
+			busted_at = float(i) / Engine.physics_ticks_per_second
 			break
 	t.check(busted_at >= 0.0, "the player is busted after the stop (%.1f s)" % busted_at)
 	t.expect(3)

@@ -97,10 +97,10 @@ func _check_fade(t: T, left: PoliceCar, right: PoliceCar, front: PoliceCar) -> v
 
 ## Drives the player and keeps the busted meter low: a full meter ends the pursuit.
 func _drive(t: T, seconds: float, kmh: float) -> void:
-	var steps := int(seconds * 120.0)
+	var steps := int(seconds * Engine.physics_ticks_per_second)
 	for i in steps:
 		await t.drive_frame(0.0, kmh)
-		if i % 60 == 0:
+		if i % (Engine.physics_ticks_per_second / 2) == 0:
 			t.director.pursuit.busted = 0.0
 
 

@@ -88,4 +88,4 @@ func _update_telemetry(speed: float) -> void:
 	telemetry.steer = _steer
 	telemetry.airborne = global_position.y > 1.5 and absf(linear_velocity.y) > 0.5
 	telemetry.altitude_m = maxf(global_position.y - 0.0, 0.0)
-	telemetry.n2 = minf(telemetry.n2 + 3.0 / 120.0, 200.0)
+	telemetry.n2 = minf(telemetry.n2 + 3.0 / Engine.physics_ticks_per_second, 200.0)

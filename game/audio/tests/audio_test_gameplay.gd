@@ -90,7 +90,7 @@ func _test_impacts() -> void:
 	var other := (load("res://core/stubs/stub_car.tscn") as PackedScene).instantiate() as VehicleBase
 	host.add_child(other)
 	# one contact per physics frame for a second
-	for i in 120:
+	for i in Engine.physics_ticks_per_second:
 		Events.vehicle_collided.emit(other, player, 8000.0, Vector3.ZERO, Vector3.UP)
 		await host.get_tree().physics_frame
 	var impacts := 0
@@ -98,10 +98,10 @@ func _test_impacts() -> void:
 		if String(id).begins_with("impact"):
 			impacts += 1
 	_check(impacts >= 5 and impacts <= 8,
-		"120 contacts over a second play 6 or 7 impacts (%d)" % impacts)
+		"the contacts of a second (one a tick) play 6 or 7 impacts (%d)" % impacts)
 	# the player: the same contact rate
 	played.clear()
-	for i in 120:
+	for i in Engine.physics_ticks_per_second:
 		Events.vehicle_collided.emit(player, other, 8000.0, Vector3.ZERO, Vector3.UP)
 		await host.get_tree().physics_frame
 	impacts = 0
@@ -109,7 +109,7 @@ func _test_impacts() -> void:
 		if String(id).begins_with("impact"):
 			impacts += 1
 	_check(impacts >= 5 and impacts <= 8,
-		"120 contacts of the player over a second play 6 or 7 impacts (%d)" % impacts)
+		"the contacts of the player of a second (one a tick) play 6 or 7 impacts (%d)" % impacts)
 	other.free()
 
 
@@ -126,7 +126,7 @@ func _test_scrape_repeat() -> void:
 	_check(float(director.call("scrape_level_db")) <= Tuning.SILENT_DB + 1.0,
 		"a single impact does not start the scrape (%.1f dB)" % float(director.call("scrape_level_db")))
 	# a contact every physics frame for half a second: the scrape runs
-	for i in 60:
+	for i in Engine.physics_ticks_per_second / 2:
 		Events.vehicle_collided.emit(player, other, 8000.0, Vector3.ZERO, Vector3.UP)
 		await host.get_tree().physics_frame
 	_check(float(director.call("scrape_level_db")) > Tuning.SILENT_DB + 5.0,
@@ -326,7 +326,7 @@ func _test_hooks() -> void:
 	# heat 4: the wail and the yelp alternate
 	emitters.heat = 4
 	var switched := 0
-	for i in 40:
+	for i in Engine.physics_ticks_per_second / 3:
 		emitters.call("_update_sirens")
 		await host.get_tree().physics_frame
 		switched = int(emitters.call("yelp_count"))

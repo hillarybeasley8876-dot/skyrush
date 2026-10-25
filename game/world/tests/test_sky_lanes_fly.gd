@@ -68,7 +68,7 @@ func _fly(car: ArcadeCar, lane: SkyLane) -> void:
 	car.health = car.max_health
 	car.linear_velocity = flat * (ENTRY_KMH / 3.6)
 	var health_before := car.health
-	for i in int(APPROACH_SECONDS * 120.0):
+	for i in int(APPROACH_SECONDS * Engine.physics_ticks_per_second):
 		car.set_controls(1.0, 0.0, 0.0, false)
 		await get_tree().physics_frame
 		if car.telemetry.flying:
@@ -80,7 +80,7 @@ func _fly(car: ArcadeCar, lane: SkyLane) -> void:
 	var worst_at := ""
 	var previous := car.global_position
 	var end_offset := 0.0
-	var frames := int(SECONDS_PER_LANE * 120.0)
+	var frames := int(SECONDS_PER_LANE * Engine.physics_ticks_per_second)
 	var end_point := lane.curve.sample_baked(lane.length(), true)
 	var finished := false
 	for i in frames:
@@ -88,10 +88,10 @@ func _fly(car: ArcadeCar, lane: SkyLane) -> void:
 		await get_tree().physics_frame
 		var here := car.global_position
 		var step := here.distance_to(previous)
-		var allowed := JUMP_FACTOR * car.linear_velocity.length() / 120.0 + JUMP_MARGIN
+		var allowed := JUMP_FACTOR * car.linear_velocity.length() / Engine.physics_ticks_per_second + JUMP_MARGIN
 		if car.telemetry.flying:
 			flew = true
-			allowed = JUMP_FACTOR * car.sky.speed / 120.0 + JUMP_MARGIN
+			allowed = JUMP_FACTOR * car.sky.speed / Engine.physics_ticks_per_second + JUMP_MARGIN
 			end_offset = car.sky.offset
 		max_jump = maxf(max_jump, step)
 		if step / allowed > worst_ratio:
@@ -104,7 +104,7 @@ func _fly(car: ArcadeCar, lane: SkyLane) -> void:
 			break
 	var from_end := car.global_position.distance_to(end_point)
 	var landed := false
-	for i in int(LAND_SECONDS * 120.0):
+	for i in int(LAND_SECONDS * Engine.physics_ticks_per_second):
 		await get_tree().physics_frame
 		if car.telemetry.grounded_wheels >= 3 and not car.telemetry.airborne:
 			landed = true

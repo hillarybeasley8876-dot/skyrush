@@ -19,7 +19,7 @@ func _run() -> void:
 	# The base top speed.
 	car.set_controls(1.0, 0.0, 0.0, false)
 	var top: float = 0.0
-	for i in 120 * 13:
+	for i in Engine.physics_ticks_per_second * 13:
 		await t.step()
 		top = maxf(top, car.telemetry.forward_speed_kmh)
 		if i % 60 == 0:
@@ -29,7 +29,7 @@ func _run() -> void:
 	car.boost.n2 = BoostTuning.N2_MAX
 	t.check("the nitro fires", car.use_nitro())
 	var boosted: float = 0.0
-	for i in 120 * 4:
+	for i in Engine.physics_ticks_per_second * 4:
 		await t.step()
 		boosted = maxf(boosted, car.telemetry.forward_speed_kmh)
 		if i % 60 == 0:
@@ -37,7 +37,7 @@ func _run() -> void:
 	t.check_range("the N2 boost top speed", boosted, 292.0, 308.0)
 	t.check("the hard cap holds", boosted <= 331.0, "= %.1f km/h" % boosted)
 	# The nitro must not raise the top speed for good: 4 s later the car is back at 250.
-	for i in 120 * 4:
+	for i in Engine.physics_ticks_per_second * 4:
 		await t.step()
 		if i % 60 == 0:
 			t.keep_on_ground(car)

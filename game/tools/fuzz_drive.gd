@@ -31,7 +31,8 @@ extends Node
 const MAIN := "res://main.tscn"
 const SAMPLE := 0.1
 ## The physics rate of the game (frames per second).
-const FPS := 120.0
+## the physics ticks a second (the tool counts its frames in ticks)
+var FPS: float = float(Engine.physics_ticks_per_second)
 ## A car that moves faster than this between two samples is odd (km/h); one that moves more than TELEPORT_M was put there.
 const FAST_KMH := 350.0
 const TELEPORT_M := 30.0
@@ -273,7 +274,7 @@ func _run() -> void:
 		for frame in total:
 			await get_tree().physics_frame
 			_clock = float(frame + 1) * dt
-			if steer and frame % 12 == 0:
+			if steer and frame % (Engine.physics_ticks_per_second / 10) == 0:
 				Input.action_release(&"steer_left")
 				Input.action_release(&"steer_right")
 				for k in pulses.size():

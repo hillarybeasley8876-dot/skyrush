@@ -41,13 +41,13 @@ func _run() -> void:
 	await t.step()
 	car.thruster.hop_released = false
 	var hop_fire: float = 0.0
-	for i in 60:
+	for i in Engine.physics_ticks_per_second / 2:
 		await t.step()
 		hop_fire = maxf(hop_fire, _nozzles(car, &"Nozzle_P1"))
 	t.check("the hop fires the lift jets", hop_fire > 0.9, "= %.2f" % hop_fire)
 	# In the air the yaw jets follow the steer: right is P5.
 	var air_yaw: float = 0.0
-	for i in 50:
+	for i in Engine.physics_ticks_per_second * 5 / 12:
 		await t.step()
 		air_yaw = maxf(air_yaw, _nozzles(car, &"Nozzle_P5"))
 	t.check("the air yaw fires P5", air_yaw > 0.5, "= %.2f" % air_yaw)
@@ -56,7 +56,7 @@ func _run() -> void:
 	# The barrel roll to the right: P5 fires, P6 does not.
 	var roll_fire: float = 0.0
 	t.check("the roll starts", car.request_roll(1))
-	for i in 90:
+	for i in Engine.physics_ticks_per_second * 3 / 4:
 		await t.step()
 		roll_fire = maxf(roll_fire, _nozzles(car, &"Nozzle_P5"))
 	t.check("the roll fires P5", roll_fire > 0.9, "= %.2f" % roll_fire)
@@ -66,7 +66,7 @@ func _run() -> void:
 	var car2: ArcadeCar = await t.spawn_car(t.roadster(), Vector3(40.0, 0.35, 0.0), 0.0)
 	await t.run(1.0)
 	var cushion: float = 0.0
-	for i in 120:
+	for i in Engine.physics_ticks_per_second:
 		await t.step()
 		if car2.dynamics.landed:
 			cushion = _nozzles(car2, &"Nozzle_P1")
@@ -75,7 +75,7 @@ func _run() -> void:
 	# A real drop does.
 	var car3: ArcadeCar = await t.spawn_car(t.roadster(), Vector3(80.0, 8.0, 0.0), 0.0)
 	await t.run(0.2)
-	for i in 240:
+	for i in Engine.physics_ticks_per_second * 2:
 		await t.step()
 		if car3.dynamics.landed:
 			break

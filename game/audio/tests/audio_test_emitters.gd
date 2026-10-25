@@ -94,7 +94,7 @@ func _test_emitter_levels() -> void:
 	var sirens := int(emitters.call("emitter_count_for", &"siren_wail"))
 	_check(sirens == 1, "the patrol car carries a siren (%d)" % sirens)
 	# the fade has to bring the siren up to its mix trim
-	for i in 40:
+	for i in Engine.physics_ticks_per_second / 3:
 		await host.get_tree().physics_frame
 	var voice := _voice_of(&"siren_wail")
 	var unit := 0.0
@@ -118,7 +118,7 @@ func _test_emitter_fade() -> void:
 	_check(handle != null, "the emitter is attached")
 	var previous := handle.volume_db
 	var worst := 0.0
-	for i in 40:
+	for i in Engine.physics_ticks_per_second / 3:
 		await host.get_tree().physics_frame
 		if i > 0:
 			worst = maxf(worst, absf(handle.volume_db - previous))
@@ -132,7 +132,7 @@ func _test_emitter_fade() -> void:
 		voice.call("fade_out")
 		previous = handle.volume_db
 		worst = 0.0
-		for i in 40:
+		for i in Engine.physics_ticks_per_second / 3:
 			await host.get_tree().physics_frame
 			if not is_instance_valid(handle):
 				break

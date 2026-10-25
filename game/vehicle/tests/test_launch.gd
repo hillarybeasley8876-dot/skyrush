@@ -14,9 +14,9 @@ func _ready() -> void:
 func _time_to_100(car: ArcadeCar, t: T) -> float:
 	car.set_controls(1.0, 0.0, 0.0, false)
 	var clock: float = 0.0
-	for i in 120 * 8:
+	for i in Engine.physics_ticks_per_second * 8:
 		await t.step()
-		clock += 1.0 / 120.0
+		clock += 1.0 / Engine.physics_ticks_per_second
 		if car.telemetry.forward_speed_kmh >= 100.0:
 			return clock
 	return -1.0
@@ -45,9 +45,9 @@ func _run() -> void:
 			"= %s" % car2.telemetry.boost_kind)
 	var clock: float = 0.0
 	var launch: float = -1.0
-	for i in 120 * 8:
+	for i in Engine.physics_ticks_per_second * 8:
 		await t.step()
-		clock += 1.0 / 120.0
+		clock += 1.0 / Engine.physics_ticks_per_second
 		if launch < 0.0 and car2.telemetry.forward_speed_kmh >= 100.0:
 			launch = clock
 	t.check_range("0-100 with the launch", launch, 0.7, 1.1)

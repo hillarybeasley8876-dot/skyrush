@@ -161,7 +161,7 @@ func _drive_into_the_bank() -> void:
 	var lowest := INF
 	var reported := false
 	var last := car.global_position
-	for i in int(3.0 * 120.0):
+	for i in int(3.0 * Engine.physics_ticks_per_second):
 		await get_tree().physics_frame
 		lowest = minf(lowest, car.global_position.y)
 		if car.global_position.y < -0.5 and not reported:

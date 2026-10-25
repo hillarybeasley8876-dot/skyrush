@@ -93,7 +93,7 @@ func build(player_xform: Transform3D) -> void:
 ## The brake key of the car reverses below walking pace, so it is released at the end.
 func brake_until_stopped(seconds: float, yaw: float = 0.0,
 		stopped_kmh: float = 5.0) -> float:
-	var steps := int(seconds * 120.0)
+	var steps := int(seconds * Engine.physics_ticks_per_second)
 	Input.action_release(&"accelerate")
 	for i in steps:
 		_steer_along(Vector3(cos(yaw), 0.0, sin(yaw)))
@@ -104,7 +104,7 @@ func brake_until_stopped(seconds: float, yaw: float = 0.0,
 		await tree.physics_frame
 		_pin()
 		if player.get_speed_kmh() < stopped_kmh:
-			return float(i) / 120.0
+			return float(i) / Engine.physics_ticks_per_second
 	return -1.0
 
 
@@ -129,7 +129,7 @@ func straight_start(x: float) -> Transform3D:
 ## `yaw` is the heading of the straight in radians (0 = +X, -PI/2 = -Z). The player keeps the
 ## speed with the throttle and the brake.
 func drive(seconds: float, yaw: float, target_kmh: float = 90.0) -> void:
-	var steps := int(seconds * 120.0)
+	var steps := int(seconds * Engine.physics_ticks_per_second)
 	for i in steps:
 		await drive_frame(yaw, target_kmh)
 
@@ -175,7 +175,7 @@ func release_all() -> void:
 ##
 ## `blind` keeps the police from seeing the player (the flash charge of the dossier §3.4).
 func idle(seconds: float, blind: bool = false) -> void:
-	var steps := int(seconds * 120.0)
+	var steps := int(seconds * Engine.physics_ticks_per_second)
 	for i in steps:
 		if blind and director != null:
 			director.pursuit.sight_block = SIGHT_BLOCK
