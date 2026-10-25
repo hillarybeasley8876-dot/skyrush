@@ -15,7 +15,7 @@ extends Node
 ## the machine); start=x,z (the Bund) where it starts; ab=<switch>: a paired comparison in one drive, the switch is off (A) and on
 ## (B) in turns of 4 s and the frames of the two are reported apart. Switches: traffic (the traffic thinks every tick / every second
 ## tick), police (the police dispatcher thinks every tick / every second tick), rate (the physics at 120 Hz / 60 Hz), occlusion (the occlusion culling on / off), hud (the HUD shown / hidden), shadows (the shadow of the sun on / off), probes
-## (the wheel probes of the cars cast on their own as well / only when the car casts them), steps (up to 8 / 4 physics ticks a
+## (the wheel probes of the cars cast on their own as well / only when the car casts them), steps (up to 4 / 8 physics ticks a
 ## frame).
 ##
 ## Every frame is split: PHYSICS is the time from the start of the first physics tick of the frame to the process step (the ticks
@@ -696,8 +696,8 @@ func _ab_switch(ab: String, on: bool, director: Node) -> void:
 			for node in get_tree().root.find_children("*", "DirectionalLight3D", true, false):
 				(node as DirectionalLight3D).shadow_enabled = not on
 		"steps":
-			# A: up to 8 physics ticks a frame (the project), B: up to 4
-			Engine.max_physics_steps_per_frame = 4 if on else 8
+			# A: up to 4 physics ticks a frame (the project), B: up to 8 (the cap before 2026-10-25)
+			Engine.max_physics_steps_per_frame = 8 if on else 4
 		"police":
 			# A: the police dispatcher thinks every tick, B: every second tick (the game)
 			var dispatcher := get_tree().get_first_node_in_group(&"police_director")

@@ -118,7 +118,7 @@ seed-7 drive are a pile-up: the car of the follower boxed in by eight police uni
 follower holds the throttle, so it lasts 10 s; a player reverses). A frame of N ticks of c ms and 10 ms of the rest needs
 N = frame / 8.33 ms ticks, so it settles at 10 / (1 - c / 8.33) ms: 25 ms at 5 ms a tick (3 ticks), 62 ms at 7 ms (the cap of 8
 ticks). With the cap at 4 ticks (`--ab=steps`, the heat-4 chase) the mean frame was 23.9 -> 20.8 ms and the p95 94 -> 62 ms; the
-price is a game that runs slower than the clock below 30 fps (not changed: a decision of the brief, like 60 Hz). The frame probe
+price is a game that runs slower than the clock below 30 fps. The player chose it: `max_physics_steps_per_frame` is 4. The frame probe
 writes down what the ticks of every long frame spent (the units, the engine part, the cars' own physics) and the events of the
 drive with their time; `--heat=N` starts a pursuit with the record, `--ab=police|rate` are new switches. The run-to-run spread of
 the drives is also other work on the machine: a test run beside a drive made every unit 2-3 times slower.
