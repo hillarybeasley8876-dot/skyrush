@@ -94,7 +94,9 @@ func _run() -> void:
 		_check(deepest[1] > MIN_SPEED, "it does not stop on the way down", "(%.1f m/s)" % deepest[1])
 	for lane in tunnel_lanes:
 		var start := _lane_inside(lane)
-		var run := await _drive(lane, start, 10.0)
+		# 8 s at 25 m/s: the 200 m end on the lane (it starts 220 m before its end; 10 s drove on past it into the props of
+		# the street)
+		var run := await _drive(lane, start, 8.0)
 		_check(_car.global_position.y > -0.6, "a car comes up out of the tunnel near (%.0f, %.0f)" % [
 			_car.global_position.x, _car.global_position.z], "(y %.1f)" % _car.global_position.y)
 		_check(run[1] > MIN_SPEED, "it does not stop on the way up", "(slowest after 2 s %.1f m/s)" % run[1])
@@ -164,7 +166,7 @@ func _drive(lane: LanePath, start: Transform3D, seconds: float) -> Array:
 		_steer()
 		await get_tree().physics_frame
 		lowest = minf(lowest, _car.global_position.y)
-		if i > 240:
+		if i > Engine.physics_ticks_per_second * 2:
 			slowest = minf(slowest, _car.linear_velocity.length())
 	Input.action_release(&"accelerate")
 	return [lowest, slowest]

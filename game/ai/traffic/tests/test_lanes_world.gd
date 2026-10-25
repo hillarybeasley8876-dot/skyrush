@@ -14,7 +14,9 @@ extends Node
 
 const CARS := 70
 const SIM_SECONDS := 120.0
-const TIME_SCALE := 4.0
+## The game runs this much faster than the clock in the test: a tick covers 33 ms of game time (4x at 120 Hz, 2x at 60 Hz).
+## --time-scale=1 runs it as the game does (the ticks of the game, 120 s of the clock).
+var TIME_SCALE: float = float(Game.option("time-scale", str(4.0 * float(Engine.physics_ticks_per_second) / 120.0)))
 const BUDGET_MS := 0.5         ## ms per tick (the traffic, tick and physics together)
 const P99_BUDGET_MS := 2.0     ## ms: the slowest tick of the run
 const P10_BUDGET_MS := 0.25    ## ms: the fastest tenth of the ticks (a busy machine)

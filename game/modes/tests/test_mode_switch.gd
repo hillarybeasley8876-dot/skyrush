@@ -75,13 +75,15 @@ func _test_countdown_freeze() -> void:
 	await _test_perfect_start()
 
 
-## The perfect start: the throttle is pressed (an edge, not a hold) a frame before the light.
+## The perfect start: the throttle is pressed (an edge, not a hold) a tick before the light. The throttle is toggled every
+## physics tick (the car reads it there): toggled every frame of the test host (120 fps), a car at 60 Hz saw the same state in
+## every tick and never a press.
 func _test_perfect_start() -> void:
 	_modes.start_mode(&"race", {"route": "sandbox_loop", "laps": 1})
 	var session := _modes.session as RaceSession
 	var pressed := false
 	while session.state == RaceSession.State.COUNTDOWN:
-		await get_tree().process_frame
+		await get_tree().physics_frame
 		if pressed:
 			Input.action_release(&"accelerate")
 			pressed = false

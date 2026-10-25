@@ -24,6 +24,10 @@ func _initialize() -> void:
 			path = arg.trim_prefix("--test=")
 		elif arg.begins_with("--timeout="):
 			_deadline = float(arg.trim_prefix("--timeout="))
+		elif arg.begins_with("--hz="):
+			# the physics at another tick rate than the project's (before the test builds anything: the units take their
+			# periods from the rate when they are made)
+			Engine.physics_ticks_per_second = int(arg.trim_prefix("--hz="))
 	var script := load(path) as Script
 	if script == null:
 		push_error("test_host: cannot load test script " + path)

@@ -7,7 +7,10 @@ extends RefCounted
 ## The impulse that goes to the damage unit is mass * the change of the speed of the car in
 ## the step of the hit, so it is the real momentum change and not the closing speed of the two
 ## cars: a car that meets a slow car head-on only loses the part of the speed that the other
-## car did not take.
+## car did not take. A fast car is stopped by the continuous collision of Jolt at the time of the
+## impact, and the rest of its speed into the other body goes in the next step: that rest is
+## counted too (its share of it against a car), or a hit above 81 km/h at 60 Hz (162 km/h at
+## 120 Hz) would be reported with the first step only.
 
 const BodyTuning := preload("res://vehicle/tuning/body_tuning.gd")
 const ImpactTuning := preload("res://vehicle/tuning/impact_tuning.gd")
@@ -101,8 +104,14 @@ func tick(dt: float, car: VehicleBase, state: PhysicsDirectBodyState3D, mass: fl
 	# the change of the speed of the car in the step of the hit and not the closing speed of
 	# the two cars: a car that is pushed along keeps its speed, and the closing speed would
 	# score the hit like a head-on (a car that meets a slow car head-on would pay for the
-	# speed of the other car).
-	impulse = mass * dv.length()
+	# speed of the other car). The speed that still goes into the other body after this step is taken away in the
+	# next one (the continuous collision stops a fast car at the time of the impact): it is part
+	# of the hit, the share of this car of it against a car.
+	var still_in: float = maxf(0.0, -(velocity - other_v).dot(contact_normal))
+	if collider is RigidBody3D:
+		var other_mass: float = (collider as RigidBody3D).mass
+		still_in *= other_mass / maxf(other_mass + mass, 0.001)
+	impulse = mass * (dv.length() + still_in)
 	point = contact_point
 	normal = contact_normal
 	impact = ratio

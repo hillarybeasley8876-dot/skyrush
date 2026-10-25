@@ -86,7 +86,7 @@ func _run() -> void:
 	t.check("the rings refilled the tank", rings >= 1, "= %d rings" % rings)
 	t.check("the flight ended", not car.telemetry.flying)
 	# The flight never teleports: the per tick move stays close to the speed.
-	var limit: float = 1.5 * car.telemetry.speed_kmh / 3.6 / 120.0
+	var limit: float = 1.5 * car.telemetry.speed_kmh / 3.6 / Engine.physics_ticks_per_second
 	t.check("no teleport in the flight", max_jump <= limit + 0.05,
 			"= %.2f m (limit %.2f m)" % [max_jump, limit])
 	# The bank: the car leans into the move (the right side goes down), the pitch follows the

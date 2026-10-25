@@ -49,7 +49,7 @@ func _test_follow(host: Node) -> void:
 	await _helpers.tick(host, 2)
 	var car := _helpers.car
 	for i in Engine.physics_ticks_per_second * 2:
-		car.global_position += Vector3(0, 0, -CHASE_SPEED) / 120.0
+		car.global_position += Vector3(0, 0, -CHASE_SPEED) / Engine.physics_ticks_per_second
 		car.linear_velocity = Vector3(0, 0, -CHASE_SPEED)
 		car.telemetry.speed_kmh = CHASE_SPEED * 3.6
 		await host.get_tree().physics_frame

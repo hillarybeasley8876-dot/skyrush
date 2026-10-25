@@ -106,7 +106,8 @@ func _test_punch(host: Node) -> void:
 		last = punch
 	_report.check("the punch releases when the N2 ends mid-kick", absf(last) <= 0.01,
 			"%.4f m" % last)
-	_report.check("the punch never steps more than 0.05 m", worst_step <= 0.05, "%.4f m" % worst_step)
+	# 6 m/s: 0.05 m a tick at 120 Hz
+	_report.check("the punch never moves faster than 6 m/s", worst_step <= 6.0 / Engine.physics_ticks_per_second, "%.4f m a tick" % worst_step)
 	_helpers.cam_root.queue_free()
 	await host.get_tree().physics_frame
 

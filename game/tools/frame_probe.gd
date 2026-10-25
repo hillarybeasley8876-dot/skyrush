@@ -704,11 +704,14 @@ func _ab_switch(ab: String, on: bool, director: Node) -> void:
 			if dispatcher != null:
 				dispatcher.set("tick_period", 2 if on else 1)
 		"rate":
-			# A: the physics at 120 Hz (the project), B: at 60 Hz; the traffic thinks at 60 Hz in both (every second tick of A,
-			# every tick of B)
+			# A: the physics at 120 Hz, B: at 60 Hz (the project since 2026-10-25); the traffic and the police think at 60 Hz in
+			# both (every second tick of A, every tick of B)
 			Engine.physics_ticks_per_second = 60 if on else 120
 			if director != null:
 				director.set("tick_period", 1 if on else 2)
+			var dispatcher := get_tree().get_first_node_in_group(&"police_director")
+			if dispatcher != null:
+				dispatcher.set("tick_period", 1 if on else 2)
 		"probes":
 			# A: the wheel probes cast on their own as well (as before vehicle/modules/wheel.gd turned that off), B: they do not
 			for vehicle in get_tree().get_nodes_in_group(&"vehicles"):
