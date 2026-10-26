@@ -29,7 +29,7 @@ least 8 m ahead now; it weaved at a point a metre in front of its nose). The dro
 | street props had no collision at all | the shapes were freed with their builder | the body keeps the shapes; shapes turn with the prop; soft furniture (bollards, bins, signs ...) is not solid | `test_prop_collision_orientation.gd` |
 | bus shelters and noise walls across the road | heading mirrored in the roads generator; boxes put into world axes | generator fixed, shelters lie along the lanes, boxes that reach into a lane move away or go | `test_prop_alignment.gd` |
 | kerb and median walls, the edge of the world | none existed / the ground ended at the window | kerb colliders, 100 m of extra ground and four walls | `test_edge_walls.gd`, `fuzz_drive.gd` |
-| falls off the viaducts | open deck edges (903), low parapet collider with a chamfer | edge-fence job, `edgewalls.py` (237 walls), parapet collider 1.0 m with a vertical face | `fuzz_drive.gd --elevated=1`: 26 of 40 drives left the deck -> 0-2 |
+| falls off the viaducts | open deck edges (903), low parapet collider with a chamfer, open deck ends at two joints, wheel probes that reached past the box into the parapet | edge-fence job, `edgewalls.py` (237 walls), parapet collider 1.0 m with a vertical face, deck noses at the joints, probes cast from inside the box | `fuzz_drive.gd --elevated=1`: 26 of 40 drives left the deck -> 0 of 120 |
 | traffic cars of different lanes drove through each other, jammed on kerbs | the lane hash knew one lane only | `DriveContext.cells`, `_conflict_gap` (the younger car yields), box floor | `test_conflict_yield.gd`, `test_kerb_lane.gd`, `soak_traffic.gd` |
 | the Bund facades stood in the west lanes | the dossier line is up to 10 m east of the road of the city | `bund/data.py` follows the city road (status/bund.md) | `test_bund_lanes.gd` |
 | cross streets ran through the Bund buildings | the streets of the city run to the centre of the Bund | `roads/buildingcut.py` ends them at the buildings (status/roads.md) | `test_bund_lanes.gd`, the `check_*` oracles of tools/city |
@@ -317,6 +317,22 @@ a fall from where the car last stood (a hop on a deck that runs downhill was a "
 lifts a car: a wheel on something that is not flat road, a contact of the box that pushes it up. The viaduct drives (traffic off,
 seeds 11-13): 3 falls in 120, all three after scraping along a parapet for seconds (left for the next round).
 
+## The wheels of the Roadster stood in the parapet it scraped (the falls that were left)
+
+The three falls were one mechanism, seen tick by tick with the recorder (`fuzz_drive.gd --verbose=N --step=1 --contacts=1`: every
+probe that met something it cannot stand on, every contact of the box). The wheel probes were cast from the wheel mounts, 0.976 m
+out, and the box of the Roadster is 0.95 m a side since it was made 1.9 m wide (the car the oracles measure with): the probe spheres
+reached 9 cm past the box. A car that scraped a parapet had the probes of that side in the wall: they met its face (normal 0, no
+ground), so that side lost its springs and its grip, the car leaned into the wall and spun off it; once a bounce lifted it 0.3 m,
+the probes stood on the top of the parapet (normal 0.86) and the bump stops threw that side up and over (from 120-170 km/h, on the
+Nanpu spiral and the ramps of the North-South Elevated). A probe is cast from inside the box now (`WheelMod.probe_mount`,
+`SuspensionTuning.PROBE_INSET` 5 cm); what it finds is put back under the mount, where the force acts and the tyre is drawn. The
+viaduct drives: 0 falls in 120 (3 before); `parapet_probe.gd`: 0 of 192 runs over (1 before), the highest climb over the deck
+0.59 m (1.14 m), no run lifts the box to the top of a parapet (2 before). The handling does not move (`steer_report`: the turn rates
+within 0.2 deg/s, the g within 0.01). `vehicle/tests/test_probe_inside_box.gd`: the probes of all 12 cars inside their boxes, a car
+dropped beside a wall and one that scrapes it at 140 km/h keep their probes out of the wall (on the old code 126 and 114 probe ticks
+in the wall, the dropped car rolled 27 degrees; mutation-checked).
+
 ## Tools added (game/tools, tools/)
 
 `frame_probe.gd` (the frames of a whole-game drive, split; A/B switches), `spot_probe.gd` (what stands at a place, what the
@@ -332,9 +348,9 @@ traffic cars move on the screen), `fuzz_drive.gd --jumps=1` (a car moved by hand
 `tools/run_follow.py` (follow trials),
 `blender/city/roads/edgewalls.py`, `blender/city/roads/buildingcut.py`.
 
-## Test state (157 tests, `python tools/run_tests.py --jobs 3 --timeout 420`)
+## Test state (158 tests, `python tools/run_tests.py --jobs 3 --timeout 420`)
 
-The last full run (157 tests, the deck joints): 151 pass, 6 fail, the six of the baseline below (`roads/test_drive_collision`: 4332 bad
+The last full run (158 tests, the probes inside the box): 152 pass, 6 fail, the six of the baseline below. The run before (157 tests, the deck joints): 151 pass, 6 fail, the same six (`roads/test_drive_collision`: 4332 bad
 surface samples, 240 blocked). The run before (156 tests, 60 Hz with the interpolation): 149 pass, 7 fail: the six of the baseline below and `audio/test_audio`,
 which passes alone (3 of 3, 11 s) and hung at its exit in the suite with three jobs and a Blender build beside it.
 The run before (152 tests, before `test_respawn_direction`): 143 pass, 9 fail. Three of the nine are not baseline: `police/test_heat`

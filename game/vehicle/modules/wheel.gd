@@ -74,12 +74,19 @@ func setup(parent: Node3D, spec: CarSpec, wheel_index: int) -> void:
 	probe.collision_mask = PROBE_MASK
 	probe.exclude_parent = true
 	probe.max_results = 1
-	probe.position = mount
+	probe.position = probe_mount(mount, spec.body_size.x)
 	# The car casts the probe itself (update_probe, every physics tick): an enabled ShapeCast3D casts again on its own in the same
 	# tick, from the same place, for nothing (four casts of every car near the player, 120 times a second).
 	probe.enabled = false
 	parent.add_child(probe)
 	susp_length = _rest_len
+
+
+## Where the probe of a wheel at `mount` is cast from: the mount, moved in so the sphere stays inside the side of the
+## collision box (`box_width` wide) by SuspensionTuning.PROBE_INSET.
+static func probe_mount(at: Vector3, box_width: float) -> Vector3:
+	var reach: float = maxf(box_width * 0.5 - SuspensionTuning.PROBE_RADIUS - SuspensionTuning.PROBE_INSET, 0.0)
+	return Vector3(clampf(at.x, -reach, reach), at.y, at.z)
 
 
 ## Casts the probe and refreshes contact, compression and the wheel centre.
@@ -92,6 +99,9 @@ func update_probe(anchor_world: Vector3, body_up: Vector3) -> void:
 	if body != null:
 		probe.collision_mask = PROBE_MASK & body.collision_mask
 	probe.force_shapecast_update()
+	# The probe is cast from inside the box (probe_mount): what it finds is put back under the mount, where the tyre is drawn
+	# and the force acts.
+	var to_mount: Vector3 = probe.global_basis * (mount - probe.position)
 	# A wall, a ceiling or the back of a surface is not ground (SuspensionTuning.MIN_GROUND_NORMAL_Y).
 	var standing: bool = probe.is_colliding() \
 			and probe.get_collision_normal(0).y >= SuspensionTuning.MIN_GROUND_NORMAL_Y
@@ -100,10 +110,10 @@ func update_probe(anchor_world: Vector3, body_up: Vector3) -> void:
 		compression = 0.0
 		load = 0.0
 		susp_length = _rest_len
-		wheel_center = anchor_world - body_up * _rest_len
+		wheel_center = anchor_world + to_mount - body_up * _rest_len
 		return
 	contact = true
-	contact_point = probe.get_collision_point(0)
+	contact_point = probe.get_collision_point(0) + to_mount
 	contact_normal = probe.get_collision_normal(0)
 	var frac: float = probe.get_closest_collision_safe_fraction()
 	# Distance from the mount down to the probe sphere centre at the contact.

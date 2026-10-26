@@ -49,6 +49,12 @@ const PROBE_RADIUS := 0.06
 
 const PROBE_CAST := 0.90
 
+## How far inside the side of the collision box the probe sphere stays (m). A probe that reaches past the box meets what the
+## box leans on: the Roadster's mounts stood 0.976 m out with a box 0.95 m wide a side, so a car that scraped a parapet had
+## the probes of that side over the wall; lifted 0.3 m they stood on its top and the bump stop threw the car over it (the
+## random viaduct drives: every fall that was left came that way). The force still acts at the mount.
+const PROBE_INSET := 0.05
+
 ## The steepest surface a tyre can stand on: the contact normal has to point up at least this much
 ## (0.35 = a slope of 70 degrees). A wall, a ceiling or the back face of a surface is not ground. Without
 ## the rule a car that leans against a building has its wheels on the wall: the suspension pushes it

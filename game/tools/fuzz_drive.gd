@@ -13,7 +13,8 @@ extends Node
 ##   only          run only this drive (the random numbers of the others are still drawn, so the start is the same;
 ##                 the traffic is not, so a drive that hit a car does not repeat: stub traffic,police,rivals to cross
 ##                 the same place alone)
-##   verbose       print the flight recorder of this drive, whether it was odd or not
+##   verbose       print the flight recorder of this drive, whether it was odd or not; step=1 prints every tick of it (2),
+##                 contacts=1 every contact of the box (collider, normal, height over the origin of the car)
 ##   jumps         1 = every tick, a traffic or police car in sight of the game (visible, before and after) that moves
 ##                 more than JUMP_M in one tick, and more than twice its own speed, is printed once with its state before
 ##                 and after (a car put somewhere by hand where the player can see it)
@@ -57,6 +58,8 @@ const WINDOW_AFTER := 160
 const WINDOW_STEP := 2
 
 var _rng := RandomNumberGenerator.new()
+## contacts=1: the recorder prints every contact of the box, not only the ones that push it up
+var _all_contacts := false
 ## m: a move in one tick that is more than this (and more than twice the speed of the car) is a jump (jumps=1).
 const JUMP_M := 3.0
 var _jump_last: Dictionary = {}      ## instance id -> [position, mode, frozen, visible]
@@ -210,16 +213,27 @@ func _frame_line(car: ArcadeCar, rp: Vector2, speed: float) -> String:
 	var lifts := ""
 	for w in car.dynamics.wheels:
 		wheels += "%d" % (1 if w.contact else 0)
+		if not w.contact and w.probe.is_colliding():
+			# a probe that met something it cannot stand on (a wall, the inside of a parapet): what, its normal, how far down
+			var met := w.probe.get_collider(0) as Node
+			lifts += " x%d:%s/%.2f@%.3f" % [w.index, String(met.name).get_slice("_", 3) if met != null else "?",
+				w.probe.get_collision_normal(0).y, w.probe.get_closest_collision_safe_fraction()]
 		if w.contact:
 			var under := w.probe.get_collider(0) as Node
 			var what := String(under.name).get_slice("_", 3) if under != null else "?"
 			if w.contact_normal.y < 0.95 or not what.begins_with("surface"):
-				lifts += " w%d:%s/%.2f" % [w.index, what, w.contact_normal.y]
+				# the fraction of the cast where the probe met it: 0 is a probe that starts inside the thing
+				lifts += " w%d:%s/%.2f@%.3f" % [w.index, what, w.contact_normal.y, w.probe.get_closest_collision_safe_fraction()]
 	var state := PhysicsServer3D.body_get_direct_state(car.get_rid())
 	if state != null:
 		for c in state.get_contact_count():
 			var n := state.get_contact_local_normal(c)
-			if n.y > 0.3 and n.y < 0.95:
+			if _all_contacts:
+				# every contact of the box: what, its normal, its height over the origin of the car
+				var cp := state.get_contact_local_position(c)
+				lifts += " c:%s(%.2f %.2f %.2f)h%+.2f" % [String((state.get_contact_collider_object(c) as Node).name).get_slice("_", 3),
+					n.x, n.y, n.z, (cp - car.global_position).dot(car.global_transform.basis.y)]
+			elif n.y > 0.3 and n.y < 0.95:
 				lifts += " up:%s/%.2f" % [String((state.get_contact_collider_object(c) as Node).name).get_slice("_", 3), n.y]
 	return "t=%.2f pos=(%.1f %.2f %.1f) v=%.0f vy=%.1f roll=%.0f pitch=%.0f spin=%.1f wheels=%s%s air=%s hp=%.0f guard(contacts %d away %.1f hold %s spikes %d)%s%s" % [
 		_clock, car.global_position.x, car.global_position.y, car.global_position.z, speed, car.linear_velocity.y, rp.x, rp.y,
@@ -231,6 +245,7 @@ func _frame_line(car: ArcadeCar, rp: Vector2, speed: float) -> String:
 func _run() -> void:
 	var trials := int(Game.option("trials", "60"))
 	var seconds := float(Game.option("seconds", "8"))
+	_all_contacts = Game.option("contacts", "0") == "1"
 	var only := int(Game.option("only", "-1"))
 	var verbose := int(Game.option("verbose", "-1"))
 	var angle_max := float(Game.option("angle", "45"))
@@ -428,7 +443,7 @@ func _run() -> void:
 			var first := maxi(0, event_at - WINDOW_BEFORE)
 			var last := mini(frames.size(), event_at + WINDOW_AFTER)
 			print("   RECORDER %d: frames %d..%d of %d, the first event at frame %d" % [n, first, last, frames.size(), event_at])
-			for i in range(first, last, WINDOW_STEP):
+			for i in range(first, last, int(Game.option("step", str(WINDOW_STEP)))):
 				print("   R ", frames[i])
 			for h in _hits:
 				print("   HIT ", h)
