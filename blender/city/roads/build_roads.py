@@ -110,6 +110,11 @@ def main():
         build_road(city, road, tileset, records, paths)
     for junction in city.junctions:
         junctions.build(city, junction, tileset)
+    # The joints of the elevated chain: the wide deck of a road ends where the
+    # narrow deck of the next one starts, and the hole between the two end
+    # caps is closed with a nose and a fence before the edge walls are added
+    # (the edge walls must see the fence and not build a second wall there).
+    deck.build_joint_ends(city, tileset)
     only = None
     if args.only:
         parts = args.only.replace("_", ",").split(",")

@@ -10,7 +10,7 @@ import bmesh
 
 from mathutils import Vector
 
-from city.roads import collision, meshkit, planters, profiles, tiles
+from city.roads import collision, lane_links, meshkit, planters, profiles, tiles
 
 ASPHALT = "SH_wet_asphalt"
 STRUCT = "SH_concrete_pier"
@@ -584,3 +584,126 @@ def build(road, idx, builder, lay=None, gaps=None):
         build_led(road, idx, builder, lay)
     build_parapets(road, idx, builder, lay, gaps)
     build_median(road, idx, builder, lay, gaps)
+
+
+NOSE_LENGTH = 5.0     # how far the nose of the wide deck runs past the joint
+NOSE_GAP = 0.5        # the narrow deck must be this much narrower than the wide one
+NOSE_OVERLAP = 0.3    # the fence overlaps the parapet of the wide road by this much
+UP = Vector((0.0, 0.0, 1.0))
+
+
+def build_joint_ends(city, tileset):
+    """The nose and the fence at the joint of two elevated roads.
+
+    Two roads that meet end to end have not the same width: the deck of the
+    wide road ends where the deck of the narrow one starts, and the two end
+    caps stand at a small angle to each other (5 to 10 degrees).  Between them
+    there is a hole: the wedge between the caps (a car that drives straight on
+    falls into it) and the strip beside the narrow deck (the outer lane of the
+    wide road runs off there).
+
+    The nose is the piece of deck that closes the hole: it runs on from the cap
+    of the wide road, its inner edge follows the edge of the narrow deck and
+    its outer edge is the edge of the wide road.  A parapet stands on the
+    outer edge of the nose and closes its far end, so a car that drives
+    straight on meets a wall instead of the air.
+
+    The nose is long enough that the fence at its far end stands past the
+    merge curve of the outer lane: that curve starts at the same point as the
+    lane and would be walled off by a fence that stands right there.
+    """
+    for (road, here, parent, there) in lane_links._chain_joints(city):
+        wide, wide_at, narrow, narrow_at = _wide_and_narrow(road, here, parent, there)
+        if wide is None:
+            continue
+        _joint_nose(tileset, wide, wide_at, narrow, narrow_at)
+
+
+def _wide_and_narrow(road, here, parent, there):
+    """The wide road of a joint and the narrow one, with the end of each.
+
+    None when the two roads are of the same width or one of them is not a
+    deck: then there is no hole to close.
+    """
+    if not (road.elevated and parent.elevated):
+        return None, None, None, None
+    a = profiles.layout(road)["asphalt_half"]
+    b = profiles.layout(parent)["asphalt_half"]
+    if abs(a - b) < NOSE_GAP:
+        return None, None, None, None
+    if a > b:
+        return road, here, parent, there
+    return parent, there, road, here
+
+
+def _end_frame(road, at_end):
+    """(point, tangent, right) of the end of the path of a road."""
+    if at_end == "end":
+        return road.path[-1], road.frames[-1][0], road.frames[-1][1]
+    return road.path[0], road.frames[0][0], road.frames[0][1]
+
+
+def _joint_nose(tileset, wide, wide_at, narrow, narrow_at):
+    """The nose of the wide deck at a joint and the fence on its edge."""
+    point, tangent, _right = _end_frame(wide, wide_at)
+    _p, _tn, rn = _end_frame(narrow, narrow_at)
+    lay_w = profiles.layout(wide)
+    lay_n = profiles.layout(narrow)
+    # The traffic that leaves the joint on the wide road: the fwd lanes when
+    # the wide road ends there, the back lanes when it starts there.  That
+    # traffic runs off the wide deck where the narrow deck does not follow.
+    if wide_at == "end":
+        out = tangent
+        edge_w = lay_w["asphalt_fwd"]
+    else:
+        out = -tangent
+        edge_w = -lay_w["asphalt_back"]
+    side = out.cross(UP)
+    # the edge of the narrow deck that bounds the hole
+    edge_n = lay_n["asphalt_fwd"] if side.dot(rn) > 0.0 else lay_n["asphalt_back"]
+    # the edge points of the narrow road, from the joint on
+    idxs = (range(len(narrow.path)) if narrow_at == "start"
+            else range(len(narrow.path) - 1, -1, -1))
+    n_edge = [narrow.path[i] + narrow.frames[i][1] * edge_n for i in idxs]
+    # the sample where the nose ends: past the merge curve of the outer lane
+    close = len(n_edge) - 1
+    for i, q in enumerate(n_edge):
+        if (q - point).dot(out) >= NOSE_LENGTH:
+            close = i
+            break
+    w_cap = point + side * edge_w
+    w_edge = w_cap + out * NOSE_LENGTH
+    n_close = n_edge[close]
+    poly = [point, w_cap, w_edge, n_close] + list(reversed(n_edge[:close]))
+    builder = tileset.builder_at(point)
+    _nose(builder, poly)
+    _nose_fence(builder, [w_cap - out * NOSE_OVERLAP, w_edge, n_close])
+    print("JOINT %s -> %s: the nose of the wide deck runs %.1f m past the joint"
+          % (wide.id, narrow.id, NOSE_LENGTH))
+
+
+def _nose(builder, poly):
+    """The asphalt of the nose and the surface collider under it."""
+    builder.add(ASPHALT, _nose_mesh(poly, 0.0))
+    builder.add_named(collision.SURFACE_NAME, _nose_mesh(poly, collision.SURFACE_DROP),
+                      surface="asphalt")
+
+
+def _nose_mesh(poly, drop):
+    """The triangles of the nose: a fan from its first point."""
+    bm = bmesh.new()
+    verts = [bm.verts.new((p[0], p[1], p[2] - drop)) for p in poly]
+    for i in range(1, len(verts) - 1):
+        bm.faces.new((verts[0], verts[i], verts[i + 1]))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    return meshkit.face_up(bm)
+
+
+def _nose_fence(builder, path):
+    """The parapet on the edge of the nose and its collider.
+
+    The fence stands on the right of the path, so the traffic sees its face.
+    """
+    prof = profiles.parapet_profile()
+    builder.add(PARAPET, meshkit.sweep(bmesh.new(), prof, path, closed_profile=False))
+    collision.build_edge_barrier(builder, path, False)
