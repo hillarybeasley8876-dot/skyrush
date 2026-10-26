@@ -302,6 +302,21 @@ commits). The edge parapets: 0 of 192 runs over them at 60 Hz (16 places, 10-45 
 are open deck edges near the lanes (`check_open_edges.py`: 190 regular, 23 connector; the edge walls leave an edge alone where a
 lane runs within 1.45 m of it) and cars that climb a parapet under full throttle after a spin, not the median.
 
+## The deck ends where a wide elevated road meets a narrow one (the random viaduct drives)
+
+Where the North-South Elevated (3 + 3 lanes) runs into the Inner Ring (2 + 2) and the Nanpu Bridge (3 + 3) into the upper deck of
+the Nanpu spiral (2 + 2), the outer 4 m of the wide deck ended in the air, with no parapet across them, and the two end caps stood
+at 10 and 5 degrees to each other with a wedge of hole between them: a car on an outer lane that drove straight on fell 10 or 42 m
+(4 of 4 drives from the outer lane of the Nanpu Bridge at 140 km/h). `tools/city/check_joint_runoff.py` casts straight rays from every
+lane end at a deck joint: 5 of 14 ran off. An M3.1 worker (job roads-joint-ends, one round) built `deck.build_joint_ends`: a nose of
+deck that fills the hole between the two decks for 5 m and a parapet on its outer edge and across its far end, past the 3.5 m of the
+merge curve of the outer lane (a fence on the line of the cap walls the merge curve off, measured). Now 0 of 14 run off; the chain
+and attach paths, the lane blockers (32), the open edges (190/23) and the lane graph are unchanged, two road tiles change. The same
+starts in the game: the cars of the outer lane hit the new parapet instead of falling (at 140 and 190 km/h). `fuzz_drive.gd` measures
+a fall from where the car last stood (a hop on a deck that runs downhill was a "fall" from the height of the start) and prints what
+lifts a car: a wheel on something that is not flat road, a contact of the box that pushes it up. The viaduct drives (traffic off,
+seeds 11-13): 3 falls in 120, all three after scraping along a parapet for seconds (left for the next round).
+
 ## Tools added (game/tools, tools/)
 
 `frame_probe.gd` (the frames of a whole-game drive, split; A/B switches), `spot_probe.gd` (what stands at a place, what the
@@ -313,12 +328,14 @@ ticks a second; the vehicle tests count their ticks with the rate of the engine)
 places, followed for 4 s), `spawn_height_probe.gd` (the road height of every lane point), `flight_probe.gd` (every sky lane flown
 hands-off: the peaks of the turn, the bank, the g, the landing), `smooth_probe.gd` (how smoothly the car, the camera and the far
 traffic cars move on the screen), `fuzz_drive.gd --jumps=1` (a car moved by hand in sight), `parapet_probe.gd` (cars driven into the parapets and the medians of the elevated roads), `tools/city/restamp_blocks.py`,
+`tools/city/check_joint_runoff.py` (straight rays from the lane ends at the deck joints: fenced, road or open),
 `tools/run_follow.py` (follow trials),
 `blender/city/roads/edgewalls.py`, `blender/city/roads/buildingcut.py`.
 
 ## Test state (157 tests, `python tools/run_tests.py --jobs 3 --timeout 420`)
 
-The last full run (156 tests, 60 Hz with the interpolation): 149 pass, 7 fail: the six of the baseline below and `audio/test_audio`,
+The last full run (157 tests, the deck joints): 151 pass, 6 fail, the six of the baseline below (`roads/test_drive_collision`: 4332 bad
+surface samples, 240 blocked). The run before (156 tests, 60 Hz with the interpolation): 149 pass, 7 fail: the six of the baseline below and `audio/test_audio`,
 which passes alone (3 of 3, 11 s) and hung at its exit in the suite with three jobs and a Blender build beside it.
 The run before (152 tests, before `test_respawn_direction`): 143 pass, 9 fail. Three of the nine are not baseline: `police/test_heat`
 (the righting turned a police car off its roof before it counted as disabled: the righting is the player's now), `world/test_drive_lanes`

@@ -20,7 +20,8 @@ extends Node
 ##   lift          the height above the road a drive starts at (0.2); the spawns of the game are 0.6 m over the road, but a car
 ##                 that is thrown at 170 km/h from that height lands, rebounds and flies over a parapet that stops it when it
 ##                 lands calmly (the first viaduct runs counted 26 falls in 40 drives; most of the 13 that were left were this)
-##   at            x,z,heading_deg,kmh: every drive starts there (heading 0 = north = -Z, 90 = east), so a place that
+##   at            x,z,heading_deg,kmh[,y]: every drive starts there (heading 0 = north = -Z, 90 = east; y the height of the
+##                 road, for a deck: without it the drive starts on the ground under the deck), so a place that
 ##                 launched the car once is crossed again and again; jitter=m moves each start up to m metres sideways
 ##                 (the statistics of a place: a launch that happens in 3 of 40 passes is a bug, not bad luck)
 ##
@@ -205,13 +206,26 @@ func _frame_line(car: ArcadeCar, rp: Vector2, speed: float) -> String:
 	for i in mini(bodies.size(), 2):
 		touching += " " + _name_of(bodies[i])
 	var wheels := ""
+	# what lifts a car: a wheel that stands on something that is not flat road, and a contact of the box that pushes it up
+	var lifts := ""
 	for w in car.dynamics.wheels:
 		wheels += "%d" % (1 if w.contact else 0)
-	return "t=%.2f pos=(%.1f %.2f %.1f) v=%.0f vy=%.1f roll=%.0f pitch=%.0f spin=%.1f wheels=%s%s air=%s hp=%.0f guard(contacts %d away %.1f hold %s spikes %d)%s" % [
+		if w.contact:
+			var under := w.probe.get_collider(0) as Node
+			var what := String(under.name).get_slice("_", 3) if under != null else "?"
+			if w.contact_normal.y < 0.95 or not what.begins_with("surface"):
+				lifts += " w%d:%s/%.2f" % [w.index, what, w.contact_normal.y]
+	var state := PhysicsServer3D.body_get_direct_state(car.get_rid())
+	if state != null:
+		for c in state.get_contact_count():
+			var n := state.get_contact_local_normal(c)
+			if n.y > 0.3 and n.y < 0.95:
+				lifts += " up:%s/%.2f" % [String((state.get_contact_collider_object(c) as Node).name).get_slice("_", 3), n.y]
+	return "t=%.2f pos=(%.1f %.2f %.1f) v=%.0f vy=%.1f roll=%.0f pitch=%.0f spin=%.1f wheels=%s%s air=%s hp=%.0f guard(contacts %d away %.1f hold %s spikes %d)%s%s" % [
 		_clock, car.global_position.x, car.global_position.y, car.global_position.z, speed, car.linear_velocity.y, rp.x, rp.y,
 		car.angular_velocity.length(), wheels, "g" if car.dynamics.ground_normal() != Vector3.ZERO else "-",
 		str(car.thruster.airborne), car.health, car.impact.seen_contacts, car.impact.seen_away, str(car.impact.seen_holding),
-		car.impact.spikes, touching]
+		car.impact.spikes, touching, lifts]
 
 
 func _run() -> void:
@@ -274,7 +288,9 @@ func _run() -> void:
 		if at.size() >= 4:
 			var compass := deg_to_rad(float(at[2]))
 			heading = Vector3(sin(compass), 0.0, -cos(compass))
-			p = Vector3(float(at[0]), 0.0, float(at[1])) + heading.cross(Vector3.UP) * _rng.randf_range(-jitter, jitter)
+			# a fifth number is the height of the road there (an elevated deck); without it the drive starts on the ground
+			var at_y := float(at[4]) if at.size() >= 5 else 0.0
+			p = Vector3(float(at[0]), at_y, float(at[1])) + heading.cross(Vector3.UP) * _rng.randf_range(-jitter, jitter)
 			kmh = float(at[3])
 			angle = 0.0
 		if wrecked_before:
@@ -308,6 +324,11 @@ func _run() -> void:
 		var wrecked_at := -1.0
 		var fall_at := Vector3.ZERO
 		var fell := false
+		# a fall is measured from where the car last stood on something: on a deck that runs downhill a hop lands lower
+		# than the drive started, and the height of the start called it a fall (the spiral and the ramps of the viaducts)
+		var ground_y := p.y
+		var left_at := p
+		var drop := 0.0
 		var total := int(seconds * FPS)
 		var dt := 1.0 / FPS
 		var ticks_before := Engine.get_physics_frames()
@@ -345,9 +366,14 @@ func _run() -> void:
 			else:
 				still = 0.0
 			frames.append(_frame_line(car, rp, speed))
-			if not fell and y < start_y - EVENT_FALL and car.thruster.airborne:
+			if not car.thruster.airborne:
+				ground_y = y
+				left_at = car.global_position
+			else:
+				drop = maxf(drop, ground_y - y)
+			if not fell and drop > EVENT_FALL:
 				fell = true
-				fall_at = car.global_position
+				fall_at = left_at
 			if car.health <= 0.0:
 				wrecked_at = _clock
 				wrecked_before = true
@@ -355,7 +381,7 @@ func _run() -> void:
 					event_at = frame
 				break
 			if event_at < 0 and not car.telemetry.flying and (absf(rp.x) > EVENT_TILT or absf(rp.y) > EVENT_TILT
-					or y - start_y > EVENT_CLIMB or y < start_y - EVENT_FALL):
+					or y - start_y > EVENT_CLIMB or drop > EVENT_FALL):
 				event_at = frame
 			if frame % int(SAMPLE * FPS) == 0:
 				_scan_others(others, last_positions, stale)
@@ -374,12 +400,12 @@ func _run() -> void:
 			reasons.append("climbed %.1f m" % (max_y - start_y))
 		if vmax > 330.0 and not _hits.is_empty():
 			reasons.append("%.0f km/h" % vmax)
-		if fell and (min_y < start_y - 8.0 or elevated):
+		if fell and (drop > 8.0 or elevated):
 			if _near_edge(fall_at):
 				notes.append("fell off the edge of the city at (%.0f %.0f), to y %.0f" % [fall_at.x, fall_at.z, min_y])
 			else:
-				reasons.append("fell %s from y %.1f at (%.0f %.0f) to y %.0f" % [
-					"off the deck" if elevated else "", start_y, fall_at.x, fall_at.z, min_y])
+				reasons.append("fell %s%.1f m: left the road at (%.0f %.1f %.0f), down to y %.0f" % [
+					"off the deck " if elevated else "", drop, fall_at.x, fall_at.y, fall_at.z, min_y])
 		elif not lane_flight and air > 2.5:
 			reasons.append("airborne %.1f s" % air)
 		if longest_still >= 3.0:
