@@ -287,6 +287,21 @@ U-turns there were tried and dropped: their connectors swerved 15 m off the road
 counts its every-7th lane among the street lanes (counted among all lanes, the connectors that went away moved the sample), and a
 reset that walks along its own road to a clear spot (28 m on the Yan'an elevated road) stays on its street.
 
+## The median barrier of the elevated roads let every car through (the player: "there are still many bugs")
+
+`tools/parapet_probe.gd --median=1` drives a car into the median barrier of an elevated road from its inner lane (10 places,
+10-45 degrees, 30-150 km/h): 84 of 90 runs ended in the oncoming carriageway, from 10 degrees at 30 km/h. The barrier that is
+seen is 0.85 m high; its collider was the same profile pushed 0.6 m down (`collision.build_median_barrier`, like the parapet
+collider of the first build), so its top stood 0.23 m over the road, under the floor of the box of a car (0.34 m). The collider is
+a wall with vertical faces on the foot of the barrier now, 0.81 m high and 0.6 m deep into the deck: 0 of 90 runs cross, at 60 and
+at 120 Hz (a first version that kept the sloped faces of the barrier threw the car over: the wheel probes stood on the 55-degree
+faces, the lesson of the chamfer of the first parapet collider). 42 files of 21 road tiles of the four elevated roads change, the
+lanes and the minimap do not; road_furniture.json moves 5 piers of the Yan'an elevated road (it was built before the last road
+commits). The edge parapets: 0 of 192 runs over them at 60 Hz (16 places, 10-45 degrees, 20-170 km/h). The random viaduct drives
+(`fuzz_drive --elevated=1`, traffic off, seeds 11-13) fall 8 times in 120 drives with the new tiles and 7 with the old: the falls
+are open deck edges near the lanes (`check_open_edges.py`: 190 regular, 23 connector; the edge walls leave an edge alone where a
+lane runs within 1.45 m of it) and cars that climb a parapet under full throttle after a spin, not the median.
+
 ## Tools added (game/tools, tools/)
 
 `frame_probe.gd` (the frames of a whole-game drive, split; A/B switches), `spot_probe.gd` (what stands at a place, what the
@@ -297,7 +312,7 @@ and what the cast of a wheel probe costs there), `vehicle/tests/steer_report.gd`
 ticks a second; the vehicle tests count their ticks with the rate of the engine), `prop_lane_clearance.gd`, `respawn_probe.gd` (the wreck flow of the game at random
 places, followed for 4 s), `spawn_height_probe.gd` (the road height of every lane point), `flight_probe.gd` (every sky lane flown
 hands-off: the peaks of the turn, the bank, the g, the landing), `smooth_probe.gd` (how smoothly the car, the camera and the far
-traffic cars move on the screen), `fuzz_drive.gd --jumps=1` (a car moved by hand in sight), `tools/city/restamp_blocks.py`,
+traffic cars move on the screen), `fuzz_drive.gd --jumps=1` (a car moved by hand in sight), `parapet_probe.gd` (cars driven into the parapets and the medians of the elevated roads), `tools/city/restamp_blocks.py`,
 `tools/run_follow.py` (follow trials),
 `blender/city/roads/edgewalls.py`, `blender/city/roads/buildingcut.py`.
 
@@ -314,7 +329,7 @@ The baseline (147 tests): 140 pass, 7 fail. All 7 failed in the integration base
 0.35; `ai/rivals/test_race_flow`: 5 passes of 6 and 4 contacts over 800 N*s, the sandbox race now runs to its own thresholds;
 `ai/rivals/test_real_route`: passes alone in 100 s, the suite gives a test 120 s and runs it without the stubs; `ai/traffic/test_lanes_world`;
 `roads/test_lanes`: 5 lanes that end at a junction (6 before the connectors were cleaned); `roads/test_drive_collision`: the surface
-oracle is not a hole detector, the ground backs it (7604 -> 6425 -> 4364 bad samples, parapet or pier in the way 791 -> 276 -> 244: the
+oracle is not a hole detector, the ground backs it (7604 -> 6425 -> 4364 bad samples, parapet or pier in the way 791 -> 276 -> 240: the
 connectors that ran against the traffic and the ones that swerved crossed the kerbs); `world/test_world_api`: the `test_loop` route, 5 failing checks -> 2).
 Five tests of that baseline pass now (`police/test_perf`, `rivals/test_rival_driving`, `city/blocks/test_blocks`, `core/test_core_smoke`,
 `damage/test_budget`), and nothing that passed before fails.

@@ -21,6 +21,7 @@ SURFACE_DROP = 0.015     # the collider sits just under the visible asphalt
 BARRIER_INSET = 0.04     # inset so the collider never z-fights the render mesh
 BARRIER_TOP = 0.60       # how high the collider of a median barrier reaches above the deck (the parapet: profiles.PARAPET_H)
 BARRIER_DEPTH = 0.60     # how far it reaches below the deck
+MEDIAN_DEPTH = 0.60      # how far the collider of a median barrier reaches below the deck
 RIBBON_SHIFT = 1.0       # the connector strip is a step ahead of its lane
 CORRIDOR_MARGIN = 0.5    # a deck keeps its collider this far off the ramp's lane
 LANE_CLEAR = 1.2         # a deck keeps this much room from the lane under it
@@ -165,13 +166,23 @@ def build_median_barrier(road, idx, builder, lay):
     """Collider for the median barrier of an elevated deck.
 
     The median stands in the middle of the deck, so only the traffic of a ramp
-    attach that crosses it cuts it.
+    attach that crosses it cuts it.  The collider is a wall with vertical faces
+    on the foot of the visible barrier (inset by 4 cm), as high as the barrier
+    and reaching MEDIAN_DEPTH under the deck.  It was the whole profile pushed
+    0.6 m down: its top was 0.21 m over the road, under the floor of a car box,
+    and every car that drove into the median of an elevated road crossed it into
+    the other carriageway (tools/parapet_probe.gd --median=1: 48 of 48 runs,
+    from 10 degrees at 30 km/h).  The sloped faces of the visible barrier are
+    no collider: they lean 55 degrees, so the wheel probes stood on them and the
+    springs threw the car up and over (the same lesson as the chamfer of the
+    first parapet collider).
     """
     if not road.elevated or lay["median_half"] <= 0.0 or len(idx) < 2:
         return
     path = [road.path[i] for i in idx]
-    median = _inset(profiles.median_barrier_profile(lay["median_half"]), BARRIER_INSET,
-                    drop=-0.60)
+    half = lay["median_half"] - BARRIER_INSET
+    top = profiles.MEDIAN_H - BARRIER_INSET
+    median = [(-half, -MEDIAN_DEPTH), (half, -MEDIAN_DEPTH), (half, top), (-half, top)]
     bm = meshkit.sweep(bmesh.new(), median, path)
     _cap_ends(bm)
     builder.add_named(CONCRETE_NAME, bm)
