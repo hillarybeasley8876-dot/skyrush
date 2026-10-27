@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """check_route_loop — the grand loop comes back to its start, and nothing else of the routes moved (city.json only).
 
-    python tools/city/check_route_loop.py <new city.json> <reference city.json>
+    python tools/city/check_route_loop.py <new city.json> <reference city.json> [--loop-only]
 
 Passes when, in the new map:
   * grand_loop is a race whose itinerary ("segments") begins with the race up to the tunnel, in this order: the Yan'an
     elevated road, the dragon ramp, the N-S elevated road, the inner ring, the Nanpu spiral and bridge, the Pudong loop,
     Pudong South Rd, Century Ave and the tunnel (each with its direction);
   * its last checkpoint is within MAX_CLOSE metres (in plan) of its first one, and it has at least 20 checkpoints;
-  * every other route has exactly the checkpoints, the grid and the itinerary it has in the reference map.
+  * every other route has exactly the checkpoints, the grid and the itinerary it has in the reference map (not with --loop-only:
+    a job that places the gates of every route anew checks only the grand loop).
 Prints one line per failure and "ROUTE_LOOP OK" or "ROUTE_LOOP FAIL n"; exit 1 on a failure.
 """
 import json
@@ -21,7 +22,7 @@ MAX_CLOSE = 900.0
 MIN_CHECKPOINTS = 20
 
 
-def check(new, ref):
+def check(new, ref, loop_only=False):
     fails = []
     routes = {r["id"]: r for r in new["routes"]}
     loop = routes.get("grand_loop")
@@ -38,7 +39,7 @@ def check(new, ref):
     elif math.hypot(cps[-1][0] - cps[0][0], cps[-1][2] - cps[0][2]) > MAX_CLOSE:
         fails.append("grand_loop ends %.0f m from its start (at most %.0f): last checkpoint (%.0f, %.0f)"
                      % (math.hypot(cps[-1][0] - cps[0][0], cps[-1][2] - cps[0][2]), MAX_CLOSE, cps[-1][0], cps[-1][2]))
-    for old in ref["routes"]:
+    for old in ([] if loop_only else ref["routes"]):
         if old["id"] == "grand_loop":
             continue
         cur = routes.get(old["id"])
@@ -52,12 +53,13 @@ def check(new, ref):
 
 
 def main(argv):
-    if len(argv) != 3:
+    args = [a for a in argv[1:] if not a.startswith("--")]
+    if len(args) != 2:
         print(__doc__)
         return 2
-    new = json.load(open(argv[1], encoding="utf-8"))
-    ref = json.load(open(argv[2], encoding="utf-8"))
-    fails = check(new, ref)
+    new = json.load(open(args[0], encoding="utf-8"))
+    ref = json.load(open(args[1], encoding="utf-8"))
+    fails = check(new, ref, "--loop-only" in argv)
     for line in fails:
         print(line)
     print("ROUTE_LOOP OK" if not fails else "ROUTE_LOOP FAIL %d" % len(fails))

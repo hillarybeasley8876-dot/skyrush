@@ -1,0 +1,55 @@
+{
+  "id": "route-follow-itinerary",
+  "title": "Every race drives the roads of its itinerary (the gates follow the route, not the shortest way)",
+  "brief": "briefs/improve/route-follow-itinerary.md",
+  "isolation": "worktree",
+  "owns": [
+    "tools/city/city_marks_routes.py",
+    "data/city/city.json"
+  ],
+  "maxRounds": 5,
+  "maxTurns": 300,
+  "timeoutMin": 240,
+  "accept": [
+    {
+      "name": "the map builds",
+      "timeoutS": 600,
+      "cmd": "python tools/city/build_city.py --out data/city/city.json",
+      "must": ["json size"]
+    },
+    {
+      "name": "only the routes of the map change",
+      "cmd": "python -c \"import json,sys; a=json.load(open('data/city/city.json',encoding='utf-8')); b=json.load(open('F:/dev/skyrush-out/tmp/route-follow/ref_city.json',encoding='utf-8')); bad=sorted(k for k in set(a)|set(b) if k!='routes' and a.get(k)!=b.get(k)); print('ONLY_ROUTES' if not bad else 'CHANGED '+','.join(bad)); sys.exit(1 if bad else 0)\"",
+      "must": ["ONLY_ROUTES"]
+    },
+    {
+      "name": "every race drives its itinerary",
+      "timeoutS": 900,
+      "cmd": "python tools/city/check_route_itinerary.py data/city/city.json game/world/data/lanes.json",
+      "must": ["ROUTE_ITINERARY OK"]
+    },
+    {
+      "name": "every route is drivable",
+      "timeoutS": 900,
+      "cmd": "python tools/city/check_routes_drivable.py data/city/city.json game/world/data/lanes.json",
+      "must": ["ROUTES_DRIVABLE OK"]
+    },
+    {
+      "name": "the rules gate",
+      "timeoutS": 900,
+      "cmd": "python tools/city/accept_rules.py data/city/city.json --baseline tools/city/rules_baseline.json",
+      "must": ["ACCEPT_RULES OK"]
+    },
+    {
+      "name": "the grand loop keeps its race up to the tunnel and closes",
+      "cmd": "python tools/city/check_route_loop.py data/city/city.json F:/dev/skyrush-out/tmp/route-follow/ref_city.json --loop-only",
+      "must": ["ROUTE_LOOP OK"]
+    },
+    {
+      "name": "the game builds every route on its level, the gates face along the line",
+      "timeoutS": 1500,
+      "cmd": "python tools/gd.py test res://world/tests/test_route_layers.gd -- --timeout=420",
+      "must": ["ROUTE LAYERS TESTS OK"]
+    }
+  ]
+}
