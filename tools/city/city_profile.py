@@ -122,6 +122,9 @@ class Profile:
     def __init__(self, anchors, max_grade=MAX_GRADE, kink=KINK_RATE,
                  start_grade=0.0):
         self.max_grade = max_grade
+        # the steepest change of grade per 10 m: the vertical curves of a road are as long as this asks (the solver took the
+        # brief's 0.5 % for every road before; a tunnel portal is allowed a shorter curve, see city_roads_east.yanan_tunnel)
+        self.kink = kink
         self.anchors = [(float(a[0]), float(a[1]), float(a[2]) if len(a) > 2 else 0.0)
                         for a in anchors]
         self.anchors.sort(key=lambda a: a[0])
@@ -136,7 +139,7 @@ class Profile:
             s0, y0, g_out = self.anchors[i]
             s1, y1, _ = self.anchors[i + 1]
             g_mid, blend = solve_segment(g_in, g_out, s1 - s0, y1 - y0,
-                                         self.max_grade)
+                                         self.max_grade, self.kink)
             self.segments.append(Segment(s0, y0, s1, y1, g_in, g_mid, g_out, blend))
             g_in = g_out
         self.end_grade = g_in

@@ -50,18 +50,32 @@ def pudong_south_rd():
 
 
 def yanan_tunnel():
-    """Yan'an East Rd Tunnel: Puxi portal -> -28 m under the river -> Pudong."""
-    plan = [(-459.8, 184.4), (-353.6, 209.1), (-163.2, 118.1), (-37.4, 84.1),
+    """Yan'an East Rd Tunnel: Puxi portal -> -28 m under the river -> Pudong.
+
+    No street may cross the open trough of a ramp (between the ground and the
+    6 m a bore needs over its road): a street that did stood on a ramp only
+    0.2-1 m deep, and the walls of the ramp stood across the street.  So the
+    tunnel starts at the east end of Fujian Rd (the old first 106 m ran under
+    Fujian Rd and the Henan Rd link, at 0-1.3 m) and keeps 25 m off the centre
+    of the Yan'an Rd surface road until it is 6 m down; in Pudong it comes up
+    before the Lujiazui Ring Rd and crosses it at grade (it ran 0.2-0.6 m
+    under the ring road).  Lujiazui West Rd still crosses it 6 m over its road.
+    tools/city/check_tunnel_portals.py checks all of it.
+    Rising 28 m between those two points needs a vertical curve of 1 % per
+    10 m (radius ~1000 m, 0.1 g at 120 km/h) instead of the 0.5 % of a street.
+    """
+    plan = [(-360.0, 210.0), (-300.0, 198.0), (-225.0, 170.0), (-163.2, 118.1), (-37.4, 84.1),
             (1.7, 26.3), (150.0, -150.0), (255.9, -196.6), (410.6, -332.3),
             (617.1, -454.8), (759.0, -462.4)]
     anchors = [("start", 0.0, 0.0), ("p", 150.0, -150.0, -28.0, 0.0),
-               ("end", 0.0, 0.0)]
+               ("p", 715.0, -465.0, 0.0, 0.0), ("end", 0.0, 0.0)]
     return Road("yanan_tunnel", "延安东路隧道", "Yan'an E. Rd Tunnel", "tunnel",
                 plan, anchors, lanes_fwd=2, lanes_back=2, lane_width=3.5,
                 median=7.5, shoulder=0.5, speed_kmh=60,
                 style={"parapet": "barrier", "lamps": "side", "trees": "none"},
-                max_grade=0.048,
-                notes="Two 11 m bores 15 m apart, lowest road level Y=-28.0.")
+                max_grade=0.048, kink=0.010,
+                notes="Two 11 m bores 15 m apart, lowest road level Y=-28.0. "
+                      "At grade from the Lujiazui Ring Rd to the Pudong end.")
 
 
 def binjiang_ave():

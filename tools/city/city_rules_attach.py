@@ -209,6 +209,12 @@ def check_clearance(city):
                 if oi == ri:
                     continue
                 gap = p[1] - oy
+                if (tunnels[ri] and abs(oy) < 1.0) or (tunnels[oi] and abs(p[1]) < 1.0):
+                    # a tunnel under a road at street level is judged by the rule "tunnel portals open to the sky"
+                    # (check_tunnel_portals.py) on the real footprints: the carriageway over the bore needs 6 m, the open
+                    # trough no street at all; this rule's circles of the paved widths would ask 6 m under the corner of a
+                    # sidewalk that only touches the parapet of the trough
+                    continue
                 if abs(gap) < 1.0:
                     # two roads at the same level: an at-grade crossing
                     need = 0.0

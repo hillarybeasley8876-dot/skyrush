@@ -17,7 +17,7 @@ defaults to 0 (the road is flat there).
 import math
 
 import citylib
-from city_profile import MAX_GRADE, Profile, ProfileError
+from city_profile import KINK_RATE, MAX_GRADE, Profile, ProfileError
 
 CONTROL_STEP = 2.0              # metres between control points
 
@@ -30,7 +30,7 @@ class Road:
                  sidewalk=0.0, speed_kmh=60, style=None, attach_start=None,
                  attach_end=None, no_piers=None, pier_spacing=30.0,
                  spline="catmull", notes="", max_grade=MAX_GRADE,
-                 start_grade=0.0, one_way=False):
+                 start_grade=0.0, one_way=False, kink=KINK_RATE):
         self.id = rid
         self.name = name
         self.name_en = name_en
@@ -52,6 +52,7 @@ class Road:
         self.spline = spline
         self.notes = notes
         self.max_grade = max_grade
+        self.kink = kink
         self.start_grade = start_grade
         self.one_way = one_way
         self.points = []
@@ -72,7 +73,7 @@ class Road:
         self.points = stations
         self.dist = cum
         keys = self._resolve_anchors(stations, cum)
-        self.profile = Profile(keys, max_grade=self.max_grade,
+        self.profile = Profile(keys, max_grade=self.max_grade, kink=self.kink,
                                start_grade=self.start_grade)
         self.points = [[p[0], self.profile.y(s), p[2]] for p, s in zip(stations, cum)]
         return self

@@ -19,6 +19,13 @@ import city_rules   # noqa: E402
 import city_rules_attach  # noqa: E402
 import city_rules_map  # noqa: E402
 import city_rules_routes  # noqa: E402
+import check_tunnel_portals  # noqa: E402
+
+def _portals_rule(city):
+    _lines, fails, _notes = check_tunnel_portals.check(city)
+    return ["%s %s x %s: %d samples, s %.0f..%.0f, depth %.2f..%.2f m, at (%.0f, %.0f)"
+            % (k[0], k[1], k[2], v[6], v[0], v[1], v[2], v[3], v[4], v[5]) for k, v in sorted(fails.items())]
+
 
 def _decks_rule(city):
     fails, exempt = city_rules_map.check_decks(city)
@@ -30,6 +37,7 @@ RULES = [
     ("grades <= 5 % (spiral <= 4 %)", city_rules.check_grades),
     ("vertical curvature <= 0.5 %/10 m", city_rules.check_curvature),
     ("deck clearance >= 5.5 m", city_rules_attach.check_clearance),
+    ("tunnel portals open to the sky", _portals_rule),
     ("no road in the water", city_rules.check_water),
     ("ramps attach to their parent", city_rules_attach.check_attaches),
     ("junctions meet their roads", city_rules_attach.check_junctions),

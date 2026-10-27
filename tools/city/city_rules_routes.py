@@ -79,7 +79,9 @@ def _place_on_lane(route, index, cp, by_id):
         found = lane_at(road, (cp[0], cp[2]), cp[1], cp[3])
         if found is None:
             continue
-        key = (_angle_diff(found[3], cp[3]), abs(found[2][1] - cp[1]), found[0])
+        # a lane at the height of the checkpoint first: where the tunnel runs under a street with the same heading, the
+        # street's lane may match the heading better, and the gate is on the tunnel's lane
+        key = (abs(found[2][1] - cp[1]) > 0.5, _angle_diff(found[3], cp[3]), abs(found[2][1] - cp[1]), found[0])
         if best is None or key < best[0]:
             best = (key, found + (road["id"],))
     if best is None:

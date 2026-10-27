@@ -2,11 +2,8 @@
  "schema fields": [],
  "grades <= 5 % (spiral <= 4 %)": [],
  "vertical curvature <= 0.5 %/10 m": [],
- "deck clearance >= 5.5 m": [
-  "yanan_rd_surface x yanan_tunnel: # samples, worst # m (need #) at (#, #)",
-  "yanan_tunnel x st_henan_rd: # samples, worst # m (need #) at (#, #)",
-  "yanan_tunnel x yanan_rd_surface: # samples, worst # m (need #) at (#, #)"
- ],
+ "deck clearance >= 5.5 m": [],
+ "tunnel portals open to the sky": [],
  "no road in the water": [],
  "ramps attach to their parent": [],
  "junctions meet their roads": [],

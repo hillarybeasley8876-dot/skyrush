@@ -23,7 +23,7 @@ ROUTE_SPECS = [
         ("yanan_elevated", 1), ("ramp_rt_eb_sb", 1), ("ns_elevated", 1),
         ("inner_ring", 1), ("nanpu_spiral_upper", 1), ("nanpu_bridge", 1),
         ("nanpu_pudong_loop", 1), ("pudong_south_rd", -1),
-        ("century_ave", -1), ("yanan_tunnel", -1), ("st_henan_portal", -1),
+        ("century_ave", -1), ("yanan_tunnel", -1), ("st_fujian_portal", -1),
         ("st_henan_rd", 1), ("st_d2_ew_4", 1), ("st_nanjing_e_rd", -1),
         ("bund_zhongshan_e1", 1)]),
     # the elevated road, the dragon interchange, the N-S elevated road,
@@ -38,7 +38,7 @@ ROUTE_SPECS = [
     ("river_loop", "滨江环线", "pursuit", [
         ("pudong_south_rd", -1), ("century_ave", -1),
         ("lujiazui_ring_rd", -1), ("yincheng_rd", 1),
-        ("yanan_tunnel", -1), ("st_henan_portal", -1),
+        ("yanan_tunnel", -1), ("st_fujian_portal", -1),
         ("st_henan_rd", 1), ("st_d2_ew_4", 1), ("st_nanjing_e_rd", -1),
         ("bund_zhongshan_e1", 1)]),
     # the Bund, the Nanjing E. Rd, the Henan Rd and the tunnel
