@@ -220,8 +220,10 @@ func _test_hud_frames() -> void:
 	add_child(car)
 	car.add_to_group("player")
 	Game.player = car
-	# The override IS the object the HUD reads, so the values really reach the widgets.
-	var tele: CarTelemetry = hud.get("telemetry_override")
+	# The override IS the object the HUD reads, so the values really reach the widgets. The HUD has none of its own (null): the
+	# test read that null and set it back, and the first value it wrote stopped the test with a script error, so the frame cost of
+	# the whole HUD was never measured.
+	var tele := CarTelemetry.new()
 	hud.set("telemetry_override", tele)
 	tele.speed_kmh = 220.0
 	tele.n2 = 150.0
