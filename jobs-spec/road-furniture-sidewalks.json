@@ -1,0 +1,85 @@
+{
+  "id": "road-furniture-sidewalks",
+  "title": "The street furniture stands on the sidewalk, and none of it in a junction (the roads unit places it right)",
+  "brief": "briefs/improve/road-furniture-sidewalks.md",
+  "isolation": "worktree",
+  "owns": [
+    "blender/city/roads/furniture.py",
+    "game/world/data/road_furniture.json"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 300,
+  "timeoutMin": 240,
+  "accept": [
+    {
+      "name": "full Blender road build into the scratch directory",
+      "timeoutS": 1800,
+      "cmd": "python tools/gd.py blender run blender/city/roads/build_roads.py -- --out F:/dev/skyrush-out/tmp/road-furniture-sidewalks/tiles --data F:/dev/skyrush-out/tmp/road-furniture-sidewalks/full",
+      "must": [
+        "DONE in"
+      ]
+    },
+    {
+      "name": "the build places the furniture on the sidewalks (at most 600 on the asphalt, the city keeps its trees and lamps)",
+      "timeoutS": 900,
+      "cmd": "python tools/city/check_furniture_ground.py F:/dev/skyrush-out/tmp/road-furniture-sidewalks/tiles F:/dev/skyrush-out/tmp/road-furniture-sidewalks/full/road_furniture.json --max-asphalt 600 --min tree=16500,lamp=4300,bus_stop=480,traffic_light=300 --quiet",
+      "must": [
+        "FURNITURE_GROUND OK"
+      ]
+    },
+    {
+      "name": "the furniture of the build goes into the game",
+      "cmd": "python -c \"import shutil; shutil.copyfile('F:/dev/skyrush-out/tmp/road-furniture-sidewalks/full/road_furniture.json', 'game/world/data/road_furniture.json'); print('INSTALLED')\"",
+      "must": [
+        "INSTALLED"
+      ]
+    },
+    {
+      "name": "the game places the furniture (dump)",
+      "timeoutS": 1800,
+      "cmd": "python tools/gd.py test res://tools/furniture_dump.gd -- --dump=F:/dev/skyrush-out/tmp/road-furniture-sidewalks/dump.json --stub=audio,menu,hud,traffic,police,rivals",
+      "must": [
+        "FURNITURE DUMP OK"
+      ]
+    },
+    {
+      "name": "what the game places stands on the sidewalks (at most 100 on the asphalt, 841 today)",
+      "timeoutS": 900,
+      "cmd": "python tools/city/check_furniture_ground.py game/assets/city/roads F:/dev/skyrush-out/tmp/road-furniture-sidewalks/dump.json --max-asphalt 100 --min tree=16500,lamp=3900,bus_stop=480 --quiet",
+      "must": [
+        "FURNITURE_GROUND OK"
+      ]
+    },
+    {
+      "name": "no prop in the box of a junction, the city keeps its trees",
+      "timeoutS": 1800,
+      "cmd": "python tools/gd.py test res://world/tests/test_junction_mouths.gd -- --timeout=900",
+      "must": [
+        "PASS the city keeps its trees and lamps",
+        "PASS no tree, lamp or shelter stands in the box of a junction"
+      ],
+      "mustNot": [
+        "FAIL "
+      ]
+    },
+    {
+      "name": "the shelters lie along their road, out of the lanes",
+      "timeoutS": 1800,
+      "cmd": "python tools/gd.py test res://world/tests/test_prop_alignment.gd -- --timeout=900",
+      "must": [
+        "PASS the city keeps its bus shelters"
+      ],
+      "mustNot": [
+        "FAIL "
+      ]
+    },
+    {
+      "name": "the quality of the world",
+      "timeoutS": 1800,
+      "cmd": "python tools/gd.py test res://world/tests/test_world_quality.gd -- --timeout=900",
+      "must": [
+        "PASS all"
+      ]
+    }
+  ]
+}
