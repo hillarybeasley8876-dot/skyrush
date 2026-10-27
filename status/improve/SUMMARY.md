@@ -83,6 +83,15 @@ thrown up without a hop, the last 6 s of the car (position, speed, wheels, what 
 * `st_d7b_ew_11`: the right turn into it from `st_d7b_ns_7` goes to the far end of the lane of the other direction (92 m, over the
   river); `st_link_25/33` start 10-15 m out over the river (roads data; `tools/spawn_height_probe.gd` lists them).
 * 18,329 tree trunks (0.25 m) stop a car dead: they stand (a street tree is a tree), they cost 40 % of the damage of a wall.
+* The junction connectors: 1093 of 7261 loop, back up or turn a corner in one step (`tools/city/check_connector_shape.py`;
+  `lane_paths.clamp_to_fill` moves every sample outside the fill of a junction to the nearest point of its outline). Since the
+  duplicate connectors were removed (7b54859) `rivals/test_real_start` fails: of the two copies of the straight movement of
+  Lujiazui Ring Rd at the offset crossing st_d7_ew_16 / st_d7_ew_17 the first junction kept a 61.6 m loop (chord 24.2 m, 167
+  degrees of turning), the racing line turns off the ring onto the side streets and four rivals need the marshal at the start.
+  M3.1 job roads-connector-curves makes the curves smooth; which copy a movement keeps (`lane_links._add_movement`) waits for
+  roads-junction-stubs, which owns that file now.
+* About 830 trees, lamps and signs stand on the asphalt of a junction (808 of them within 25 m of its centre): the furniture
+  filter keeps a box of 8 m and the mouths free, a wide or offset junction is bigger than that.
 
 ## The frame rate (the player: "the frame rate is not stable")
 
