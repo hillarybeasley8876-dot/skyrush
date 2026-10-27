@@ -86,7 +86,7 @@ function prepareWorkdir(job) {
 function commitJob(job, cwd) {
   if (cwd === ROOT) return '';
   git(['add', '-A'], cwd);
-  git(['commit', '-q', '-m', `job ${job.id}: ${job.title}\n\nCo-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`], cwd);
+  git(['commit', '-q', '-m', `job ${job.id}: ${job.title}\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`], cwd);
   return git(['rev-parse', '--short', 'HEAD'], cwd).trim();
 }
 
@@ -410,7 +410,7 @@ async function main() {
     console.log(git(['diff', '--stat', `${base}...job/${rest[0]}`]));
   } else if (cmd === 'merge') {
     for (const id of rest) {
-      const r = spawnSync('git', ['merge', '--no-ff', '-m', `Merge job/${id}\n\nCo-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`, `job/${id}`], { cwd: ROOT, encoding: 'utf8' });
+      const r = spawnSync('git', ['merge', '--no-ff', '-m', `Merge job/${id}\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`, `job/${id}`], { cwd: ROOT, encoding: 'utf8' });
       console.log((r.stdout ?? '') + (r.stderr ?? ''));
       if (r.status !== 0) {
         // files Godot generates (.uid, .import) conflict when the lead committed them while the job generated its own:
