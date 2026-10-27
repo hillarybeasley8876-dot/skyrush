@@ -115,6 +115,12 @@ def _pulled(src, dst, centre, fan, straight, d0, d1):
     Every sample that leaves the fill is moved onto the outline of the fill, so
     the curve becomes a zigzag along the kerb.  It is kept where it drives
     well, and where the shape is searched for a better one.
+
+    A straight movement (`straight`, the two lanes in line) whose plain curve
+    leaves the fill keeps the plain curve: pulled to the centre and clamped to
+    the fill it swerved across the other lanes, 734 of 3306 more than 4 m and
+    up to 27 m (the outer lanes of Century Ave at its side streets: the fill of
+    a junction does not reach the far lanes of a wide road that passes it).
     """
     p0 = v3(src["points"][-1])
     p3 = v3(dst["points"][0])
