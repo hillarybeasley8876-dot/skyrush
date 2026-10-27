@@ -149,22 +149,32 @@ def check_curvature(city):
 
 
 def check_water(city):
-    """No road in the water except a bridge or a tunnel."""
+    """No road in the water except a bridge or a tunnel.
+
+    The water is the polygon of the Huangpu and the strip of the Suzhou Creek (its centre line and its width: the rule only
+    knew the polygons, and Beijing E Rd ran 178 m along the middle of the creek).  A deck high over the water is no road in it.
+    """
     fails = []
     polys = [w for w in city["water"] if "polygon" in w]
+    creeks = [w for w in city["water"] if "centerline" in w]
     for road in city["roads"]:
         if road["kind"] in ("bridge", "tunnel"):
             continue
         for p in road["points"]:
-            for w in polys:
-                if citylib.point_in_polygon((p[0], p[2]), w["polygon"]):
-                    fails.append("%s is in the water at (%.0f, %.0f)"
-                                 % (road["id"], p[0], p[2]))
-                    break
-            else:
+            if p[1] > 3.0:
                 continue
-            break
+            inside = any(citylib.point_in_polygon((p[0], p[2]), w["polygon"]) for w in polys)
+            inside = inside or any(_in_strip((p[0], p[2]), w["centerline"], w["width"] * 0.5) for w in creeks)
+            if inside:
+                fails.append("%s is in the water at (%.0f, %.0f)"
+                             % (road["id"], p[0], p[2]))
+                break
     return fails
+
+
+def _in_strip(point, line, half):
+    """True when the point is within `half` of the polyline (the strip of a creek)."""
+    return any(citylib.point_seg_distance(point, a, b) < half for a, b in zip(line, line[1:]))
 
 
 def _nearest_point(road, target):

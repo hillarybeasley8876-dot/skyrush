@@ -177,7 +177,12 @@ def _named_ew_streets(bund, add):
         limit = -350.0 if name == "nanjing_e_rd" else -900.0
         length = (limit - p[0]) / d[0] if d[0] < -1e-6 else 900.0
         end = (p[0] + d[0] * length, p[1] + d[1] * length)
-        add(name, cn, en, p, end, 2, 3.5 if name != "nanjing_e_rd" else 4.0, 30,
+        # the street ends where it meets the water: Beijing E Rd ran 178 m along the middle of the Suzhou Creek where the creek
+        # bends south (the cars on it drove over the water and fell into the creek off its edge)
+        runs = _split_by_water(p, end)
+        if not runs:
+            continue
+        add(name, cn, en, runs[0][0], runs[0][-1], 2, 3.5 if name != "nanjing_e_rd" else 4.0, 30,
             style={"parapet": "none", "lamps": "magnolia", "trees": "plane"})
 
 
