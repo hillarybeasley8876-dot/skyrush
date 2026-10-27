@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """check_route_itinerary — does the race drive the roads of its itinerary? (no Godot needed)
 
-    python tools/city/check_route_itinerary.py <city.json> <lanes.json> [--quiet] [--off M]
+    python tools/city/check_route_itinerary.py <city.json> <lanes.json> [--quiet] [--off M] [--routes a,b,...]
 
 The game builds the racing line of a route from the shortest lane path between each two gates (check_routes_drivable.py is
 the replica of that). The generator places the gates along the itinerary of the route (its "segments": the roads in order,
@@ -15,6 +15,7 @@ path is taken with check_routes_drivable.leg_report, the lanes are turned into r
 counted), and:
   OFF_ITINERARY  the leg drives more than --off metres (60) on roads that are not in the itinerary
   SKIPPED        a road of the itinerary is driven by no leg at all (the race does not go there)
+--routes checks only the routes named (the others are listed, not counted).
 Prints one line per failure and "ROUTE_ITINERARY OK" or "ROUTE_ITINERARY FAIL n"; exit 1 on a failure.
 """
 import json
@@ -81,6 +82,10 @@ def main(argv):
     off = float(argv[argv.index("--off") + 1]) if "--off" in argv else OFF
     if "--off" in argv:
         args.remove(argv[argv.index("--off") + 1])
+    only = None
+    if "--routes" in argv:
+        only = set(argv[argv.index("--routes") + 1].split(","))
+        args.remove(argv[argv.index("--routes") + 1])
     if len(args) != 2:
         print(__doc__)
         return 2
@@ -88,6 +93,9 @@ def main(argv):
     lanes = crd.Lanes(json.load(open(args[1], encoding="utf-8")))
     fails = []
     for route in city["routes"]:
+        if only is not None and route["id"] not in only:
+            print("route %-16s not checked" % route["id"])
+            continue
         got = check_route(route, lanes, off)
         if "--quiet" not in argv:
             print("route %-16s %2d gates, %2d itinerary roads: %s" % (route["id"], len(route["checkpoints"]),

@@ -8,6 +8,7 @@ Passes when, in the new map:
     elevated road, the dragon ramp, the N-S elevated road, the inner ring, the Nanpu spiral and bridge, the Pudong loop,
     Pudong South Rd, Century Ave and the tunnel (each with its direction);
   * its last checkpoint is within MAX_CLOSE metres (in plan) of its first one, and it has at least 20 checkpoints;
+  * its itinerary goes by the Bund (MUST_DRIVE: Nanjing E Rd and the Bund, the part of the race the loop is for);
   * every other route has exactly the checkpoints, the grid and the itinerary it has in the reference map (not with --loop-only:
     a job that places the gates of every route anew checks only the grand loop).
 Prints one line per failure and "ROUTE_LOOP OK" or "ROUTE_LOOP FAIL n"; exit 1 on a failure.
@@ -19,6 +20,7 @@ import sys
 HEAD = [["yanan_elevated", 1], ["ramp_rt_eb_sb", 1], ["ns_elevated", 1], ["inner_ring", 1], ["nanpu_spiral_upper", 1],
         ["nanpu_bridge", 1], ["nanpu_pudong_loop", 1], ["pudong_south_rd", -1], ["century_ave", -1], ["yanan_tunnel", -1]]
 MAX_CLOSE = 900.0
+MUST_DRIVE = ("st_nanjing_e_rd", "bund_zhongshan_e1")
 MIN_CHECKPOINTS = 20
 
 
@@ -33,6 +35,9 @@ def check(new, ref, loop_only=False):
     seg = loop.get("segments", [])
     if [list(s) for s in seg[:len(HEAD)]] != HEAD:
         fails.append("grand_loop does not begin with the race up to the tunnel: %s" % seg[:len(HEAD)])
+    for road in MUST_DRIVE:
+        if road not in [s[0] for s in seg]:
+            fails.append("grand_loop does not go by %s" % road)
     cps = loop.get("checkpoints", [])
     if len(cps) < MIN_CHECKPOINTS:
         fails.append("grand_loop has %d checkpoints (at least %d)" % (len(cps), MIN_CHECKPOINTS))

@@ -83,11 +83,30 @@ data/city/city.json` (the Godot test of the acceptance reads it). Everything els
 ## Acceptance (the runner executes these itself, in order)
 1. `python tools/city/build_city.py --out data/city/city.json` prints `json size`.
 2. Only the routes change: every key of the new city.json but `routes` is the same as in `F:/dev/skyrush-out/tmp/route-follow/ref_city.json`.
-3. `check_route_itinerary.py data/city/city.json game/world/data/lanes.json` prints `ROUTE_ITINERARY OK`.
-4. `check_routes_drivable.py data/city/city.json game/world/data/lanes.json` prints `ROUTES_DRIVABLE OK`.
+3. `check_route_itinerary.py data/city/city.json H:/dev/skyrush/game/world/data/lanes.json --routes grand_loop,elevated_sprint,river_loop,lujiazui_ring`
+   prints `ROUTE_ITINERARY OK` (bund_sprint is excused, see "Lead decisions").
+4. `check_routes_drivable.py data/city/city.json H:/dev/skyrush/game/world/data/lanes.json` prints `ROUTES_DRIVABLE OK`.
 5. `accept_rules.py data/city/city.json --baseline tools/city/rules_baseline.json` prints `ACCEPT_RULES OK`.
-6. `check_route_loop.py data/city/city.json F:/dev/skyrush-out/tmp/route-follow/ref_city.json --loop-only` prints `ROUTE_LOOP OK`.
+6. `check_route_loop.py data/city/city.json F:/dev/skyrush-out/tmp/route-follow/ref_city.json --loop-only` prints `ROUTE_LOOP OK`
+   (the grand loop keeps its race up to the tunnel, goes by Nanjing E Rd and the Bund, and closes).
 7. `python tools/gd.py test res://world/tests/test_route_layers.gd -- --timeout=420` prints `ROUTE LAYERS TESTS OK`.
+
+
+## Lead decisions (round 2, after your request)
+- **The map stays as it is** (acceptance 2 holds). The three routes whose roads `city_snap.py` protects (fewer than 10 gates) keep
+  their itineraries; of them only **bund_sprint** is excused from `check_route_itinerary.py` (its transition `st_d2_ew_4 -1 ->
+  st_henan_rd -1` has no way in the game: the roads unit does not split Henan Rd at that offset T-junction; that is a job of its
+  own). **lujiazui_ring** keeps its one road and must pass: its legs cut across the ring by side streets (leg 0->1 96 m, leg 3->4
+  210 m), which is a question of where the gates stand, not of the itinerary.
+- **grand_loop** has 34 gates: city_snap does not protect it, so its itinerary may change freely without changing the map. It must
+  go by Nanjing E Rd and the Bund (`check_route_loop.py` checks the itinerary holds both) and the race must really drive them. The
+  game has no turn from Henan Rd onto `st_d2_ew_4`: reach Nanjing E Rd another way (look at what lanes.json joins to the west end of
+  Nanjing E Rd and to its junctions).
+- **river_loop** has 11 gates: not protected either; its transitions `lujiazui_ring_rd -1 -> yincheng_rd +1` and `st_henan_rd +1 ->
+  st_d2_ew_4 +1` have no way in the game: change its itinerary where needed, keeping Pudong South Rd, Century Ave, the tunnel and the
+  Bund.
+- The lane graph of the game changed under you (the duplicate connectors are gone, job roads-lane-dupes): the checks read
+  `H:/dev/skyrush/game/world/data/lanes.json` now (the lead's current one), not the copy in your worktree.
 
 ## Pitfalls
 - The rule "route checkpoints on the lanes" wants 300-500 m of driving between two gates, measured with the shortest path of the
