@@ -1,0 +1,57 @@
+{
+  "id": "rivals-race-flow",
+  "title": "The rivals pass each other in a race, and do not crash into each other (test_race_flow)",
+  "brief": "briefs/improve/rivals-race-flow.md",
+  "isolation": "worktree",
+  "owns": [
+    "game/ai/rivals/rival_avoid.gd",
+    "game/ai/rivals/rival_brain.gd",
+    "game/ai/rivals/rival_speed.gd",
+    "game/ai/rivals/rival_pass.gd"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 300,
+  "timeoutMin": 240,
+  "accept": [
+    {
+      "name": "the race flow: at least 6 real passes, no crash between rivals",
+      "timeoutS": 1500,
+      "cmd": "python tools/gd.py test res://ai/rivals/tests/test_race_flow.gd -- --timeout=900",
+      "must": [
+        "RACE FLOW TESTS OK (0 failures)"
+      ]
+    },
+    {
+      "name": "the rivals still drive",
+      "timeoutS": 1500,
+      "cmd": "python tools/gd.py test res://ai/rivals/tests/test_rival_driving.gd -- --timeout=900",
+      "must": [
+        "RIVAL DRIVING TESTS OK (0 failures)"
+      ]
+    },
+    {
+      "name": "the start grid",
+      "timeoutS": 1500,
+      "cmd": "python tools/gd.py test res://ai/rivals/tests/test_start_grid.gd -- --timeout=900",
+      "must": [
+        "START GRID TESTS OK (0 failures)"
+      ]
+    },
+    {
+      "name": "the rubber band",
+      "timeoutS": 1500,
+      "cmd": "python tools/gd.py test res://ai/rivals/tests/test_rubber_band.gd -- --timeout=900",
+      "must": [
+        "RUBBER BAND TESTS OK (0 failures)"
+      ]
+    },
+    {
+      "name": "a race on the real map",
+      "timeoutS": 2400,
+      "cmd": "python tools/gd.py test res://ai/rivals/tests/test_real_route.gd -- --timeout=900",
+      "must": [
+        "REAL ROUTE TESTS OK (0 failures)"
+      ]
+    }
+  ]
+}
