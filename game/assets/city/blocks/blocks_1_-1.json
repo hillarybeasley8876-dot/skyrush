@@ -8,10 +8,134 @@
   -512.0
  ],
  "size_m": 512.0,
- "city_sha256": "24dc29827a85816c7c6ad496252410e3495e41f68287da1175410f600740626e",
+ "city_sha256": "a9fb115d554898fb5e4a4d8af7c34044a66b4aee104572fb3ba5351a188feca3",
  "buildings": [
   {
-   "id": "b_d7_043_p0_0",
+   "id": "b_d7_042_s1_p0_0",
+   "style": "office_tower",
+   "seed": 1989,
+   "building_seed": 0.3927,
+   "lit_ratio": 0.263,
+   "band_ratio": 0.242,
+   "cool_mix": 0.729,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     618.0,
+     -390.06
+    ],
+    [
+     602.0,
+     -390.06
+    ],
+    [
+     602.0,
+     -399.26
+    ],
+    [
+     618.0,
+     -399.26
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_042_s1_p1_1",
+   "style": "office_tower",
+   "seed": 1864,
+   "building_seed": 0.184,
+   "lit_ratio": 0.29,
+   "band_ratio": 0.255,
+   "cool_mix": 0.762,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     580.06,
+     -420.0
+    ],
+    [
+     580.06,
+     -430.0
+    ],
+    [
+     589.26,
+     -430.0
+    ],
+    [
+     589.26,
+     -420.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_042_s1_p2_2",
+   "style": "office_tower",
+   "seed": 6468,
+   "building_seed": 0.1175,
+   "lit_ratio": 0.274,
+   "band_ratio": 0.247,
+   "cool_mix": 0.743,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     590.06,
+     -410.0
+    ],
+    [
+     590.06,
+     -420.0
+    ],
+    [
+     599.26,
+     -420.0
+    ],
+    [
+     599.26,
+     -410.0
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_042_s1_p3_3",
+   "style": "office_tower",
+   "seed": 9535,
+   "building_seed": 0.4995,
+   "lit_ratio": 0.247,
+   "band_ratio": 0.234,
+   "cool_mix": 0.709,
+   "height": 40.7,
+   "floors": 8,
+   "poly": [
+    [
+     610.0,
+     -400.06
+    ],
+    [
+     600.0,
+     -400.06
+    ],
+    [
+     600.0,
+     -409.26
+    ],
+    [
+     610.0,
+     -409.26
+    ]
+   ],
+   "near_road": true,
+   "ground": false
+  },
+  {
+   "id": "b_d7_043_p0_4",
    "style": "office_tower",
    "seed": 5809,
    "building_seed": 0.1929,
@@ -42,7 +166,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_043_p1_1",
+   "id": "b_d7_043_p1_5",
    "style": "office_tower",
    "seed": 4780,
    "building_seed": 0.9958,
@@ -73,7 +197,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_043_p2_2",
+   "id": "b_d7_043_p2_6",
    "style": "office_tower",
    "seed": 3016,
    "building_seed": 0.5884,
@@ -104,7 +228,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_043_p3_3",
+   "id": "b_d7_043_p3_7",
    "style": "office_tower",
    "seed": 9030,
    "building_seed": 0.6486,
@@ -135,7 +259,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_043_p4_4",
+   "id": "b_d7_043_p4_8",
    "style": "office_tower",
    "seed": 8107,
    "building_seed": 0.8204,
@@ -166,7 +290,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_043_p5_5",
+   "id": "b_d7_043_p5_9",
    "style": "office_tower",
    "seed": 8749,
    "building_seed": 0.9365,
@@ -197,7 +321,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_043_p6_6",
+   "id": "b_d7_043_p6_10",
    "style": "office_tower",
    "seed": 6889,
    "building_seed": 0.0016,
@@ -228,7 +352,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_046_p0_7",
+   "id": "b_d7_046_p0_11",
    "style": "office_tower",
    "seed": 5809,
    "building_seed": 0.1929,
@@ -259,7 +383,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_046_p1_8",
+   "id": "b_d7_046_p1_12",
    "style": "office_tower",
    "seed": 4780,
    "building_seed": 0.9958,
@@ -290,7 +414,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_046_p2_9",
+   "id": "b_d7_046_p2_13",
    "style": "office_tower",
    "seed": 3016,
    "building_seed": 0.5884,
@@ -321,7 +445,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_046_p3_10",
+   "id": "b_d7_046_p3_14",
    "style": "office_tower",
    "seed": 9030,
    "building_seed": 0.6486,
@@ -352,7 +476,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_046_p4_11",
+   "id": "b_d7_046_p4_15",
    "style": "office_tower",
    "seed": 8107,
    "building_seed": 0.8204,
@@ -383,7 +507,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_046_p5_12",
+   "id": "b_d7_046_p5_16",
    "style": "office_tower",
    "seed": 8749,
    "building_seed": 0.9365,
@@ -414,7 +538,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_046_p6_13",
+   "id": "b_d7_046_p6_17",
    "style": "office_tower",
    "seed": 6889,
    "building_seed": 0.0016,
@@ -445,7 +569,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_046_p7_14",
+   "id": "b_d7_046_p7_18",
    "style": "office_tower",
    "seed": 6301,
    "building_seed": 0.2639,
@@ -476,7 +600,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_048_p0_15",
+   "id": "b_d7_048_p0_19",
    "style": "office_tower",
    "seed": 1845,
    "building_seed": 0.3393,
@@ -507,7 +631,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_048_p1_16",
+   "id": "b_d7_048_p1_20",
    "style": "office_tower",
    "seed": 3670,
    "building_seed": 0.6825,
@@ -538,7 +662,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_048_p2_17",
+   "id": "b_d7_048_p2_21",
    "style": "office_tower",
    "seed": 8634,
    "building_seed": 0.7234,
@@ -569,7 +693,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_048_p3_18",
+   "id": "b_d7_048_p3_22",
    "style": "office_tower",
    "seed": 7877,
    "building_seed": 0.4994,
@@ -600,7 +724,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_048_p4_19",
+   "id": "b_d7_048_p4_23",
    "style": "office_tower",
    "seed": 8131,
    "building_seed": 0.7586,
@@ -631,7 +755,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_048_p5_20",
+   "id": "b_d7_048_p5_24",
    "style": "office_tower",
    "seed": 6725,
    "building_seed": 0.2027,
@@ -662,7 +786,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_048_p6_21",
+   "id": "b_d7_048_p6_25",
    "style": "office_tower",
    "seed": 5182,
    "building_seed": 0.3491,
@@ -693,7 +817,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_048_p7_22",
+   "id": "b_d7_048_p7_26",
    "style": "office_tower",
    "seed": 1585,
    "building_seed": 0.8859,
@@ -724,7 +848,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_048_p8_23",
+   "id": "b_d7_048_p8_27",
    "style": "office_tower",
    "seed": 6682,
    "building_seed": 0.5358,
@@ -755,7 +879,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_048_p9_24",
+   "id": "b_d7_048_p9_28",
    "style": "office_tower",
    "seed": 1506,
    "building_seed": 0.4903,
@@ -786,7 +910,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_048_p10_25",
+   "id": "b_d7_048_p10_29",
    "style": "office_tower",
    "seed": 4854,
    "building_seed": 0.5736,
@@ -817,7 +941,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_048_p11_26",
+   "id": "b_d7_048_p11_30",
    "style": "office_tower",
    "seed": 8582,
    "building_seed": 0.8105,
@@ -848,7 +972,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_048_p12_27",
+   "id": "b_d7_048_p12_31",
    "style": "office_tower",
    "seed": 8043,
    "building_seed": 0.7698,
@@ -879,7 +1003,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_048_p13_28",
+   "id": "b_d7_048_p13_32",
    "style": "office_tower",
    "seed": 8152,
    "building_seed": 0.4624,
@@ -910,7 +1034,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_048_p14_29",
+   "id": "b_d7_048_p14_33",
    "style": "office_tower",
    "seed": 8677,
    "building_seed": 0.1584,
@@ -941,7 +1065,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_051_p0_30",
+   "id": "b_d7_051_p0_34",
    "style": "office_tower",
    "seed": 7243,
    "building_seed": 0.7296,
@@ -972,7 +1096,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_051_p1_31",
+   "id": "b_d7_051_p1_35",
    "style": "office_tower",
    "seed": 4564,
    "building_seed": 0.8743,
@@ -1003,7 +1127,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_051_p2_32",
+   "id": "b_d7_051_p2_36",
    "style": "office_tower",
    "seed": 86,
    "building_seed": 0.3809,
@@ -1034,7 +1158,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_051_p3_33",
+   "id": "b_d7_051_p3_37",
    "style": "office_tower",
    "seed": 9403,
    "building_seed": 0.1055,
@@ -1065,7 +1189,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_051_p4_34",
+   "id": "b_d7_051_p4_38",
    "style": "office_tower",
    "seed": 6586,
    "building_seed": 0.8043,
@@ -1096,7 +1220,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_051_p5_35",
+   "id": "b_d7_051_p5_39",
    "style": "office_tower",
    "seed": 3343,
    "building_seed": 0.2321,
@@ -1127,7 +1251,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_051_p6_36",
+   "id": "b_d7_051_p6_40",
    "style": "office_tower",
    "seed": 5390,
    "building_seed": 0.68,
@@ -1158,7 +1282,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_051_p7_37",
+   "id": "b_d7_051_p7_41",
    "style": "office_tower",
    "seed": 2755,
    "building_seed": 0.2372,
@@ -1189,7 +1313,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_051_p8_38",
+   "id": "b_d7_051_p8_42",
    "style": "office_tower",
    "seed": 6693,
    "building_seed": 0.7024,
@@ -1220,7 +1344,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_051_p9_39",
+   "id": "b_d7_051_p9_43",
    "style": "office_tower",
    "seed": 9859,
    "building_seed": 0.9237,
@@ -1251,7 +1375,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_051_p10_40",
+   "id": "b_d7_051_p10_44",
    "style": "office_tower",
    "seed": 4848,
    "building_seed": 0.3688,
@@ -1282,7 +1406,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_051_p11_41",
+   "id": "b_d7_051_p11_45",
    "style": "office_tower",
    "seed": 4706,
    "building_seed": 0.1052,
@@ -1313,7 +1437,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_051_p12_42",
+   "id": "b_d7_051_p12_46",
    "style": "office_tower",
    "seed": 8343,
    "building_seed": 0.8997,
@@ -1344,7 +1468,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_051_p13_43",
+   "id": "b_d7_051_p13_47",
    "style": "office_tower",
    "seed": 4889,
    "building_seed": 0.6099,
@@ -1375,7 +1499,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_051_p14_44",
+   "id": "b_d7_051_p14_48",
    "style": "office_tower",
    "seed": 9198,
    "building_seed": 0.1138,
@@ -1406,7 +1530,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_054_p0_45",
+   "id": "b_d7_054_p0_49",
    "style": "office_tower",
    "seed": 940,
    "building_seed": 0.4041,
@@ -1437,7 +1561,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_054_p1_46",
+   "id": "b_d7_054_p1_50",
    "style": "office_tower",
    "seed": 1244,
    "building_seed": 0.6351,
@@ -1468,7 +1592,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_054_p2_47",
+   "id": "b_d7_054_p2_51",
    "style": "office_tower",
    "seed": 1728,
    "building_seed": 0.8918,
@@ -1499,7 +1623,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_054_p3_48",
+   "id": "b_d7_054_p3_52",
    "style": "office_tower",
    "seed": 7866,
    "building_seed": 0.5176,
@@ -1530,7 +1654,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_054_p4_49",
+   "id": "b_d7_054_p4_53",
    "style": "office_tower",
    "seed": 1526,
    "building_seed": 0.791,
@@ -1561,7 +1685,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_054_p5_50",
+   "id": "b_d7_054_p5_54",
    "style": "office_tower",
    "seed": 9393,
    "building_seed": 0.748,
@@ -1592,7 +1716,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_054_p6_51",
+   "id": "b_d7_054_p6_55",
    "style": "office_tower",
    "seed": 5103,
    "building_seed": 0.0961,
@@ -1623,7 +1747,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_055_p0_52",
+   "id": "b_d7_055_p0_56",
    "style": "office_tower",
    "seed": 8240,
    "building_seed": 0.917,
@@ -1654,7 +1778,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_055_p1_53",
+   "id": "b_d7_055_p1_57",
    "style": "office_tower",
    "seed": 7886,
    "building_seed": 0.9584,
@@ -1685,7 +1809,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_055_p2_54",
+   "id": "b_d7_055_p2_58",
    "style": "office_tower",
    "seed": 6472,
    "building_seed": 0.0592,
@@ -1716,7 +1840,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_055_p3_55",
+   "id": "b_d7_055_p3_59",
    "style": "office_tower",
    "seed": 4719,
    "building_seed": 0.0166,
@@ -1747,7 +1871,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_055_p4_56",
+   "id": "b_d7_055_p4_60",
    "style": "office_tower",
    "seed": 3184,
    "building_seed": 0.1795,
@@ -1778,7 +1902,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_055_p5_57",
+   "id": "b_d7_055_p5_61",
    "style": "office_tower",
    "seed": 2457,
    "building_seed": 0.5527,
@@ -1809,7 +1933,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_055_p6_58",
+   "id": "b_d7_055_p6_62",
    "style": "office_tower",
    "seed": 9015,
    "building_seed": 0.2777,
@@ -1840,7 +1964,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_055_p7_59",
+   "id": "b_d7_055_p7_63",
    "style": "office_tower",
    "seed": 9301,
    "building_seed": 0.7641,
@@ -1871,7 +1995,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_055_p8_60",
+   "id": "b_d7_055_p8_64",
    "style": "office_tower",
    "seed": 262,
    "building_seed": 0.972,
@@ -1902,7 +2026,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_055_p9_61",
+   "id": "b_d7_055_p9_65",
    "style": "office_tower",
    "seed": 1571,
    "building_seed": 0.9044,
@@ -1933,7 +2057,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_055_p10_62",
+   "id": "b_d7_055_p10_66",
    "style": "office_tower",
    "seed": 1084,
    "building_seed": 0.9161,
@@ -1964,7 +2088,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_055_p11_63",
+   "id": "b_d7_055_p11_67",
    "style": "office_tower",
    "seed": 4853,
    "building_seed": 0.1951,
@@ -1995,7 +2119,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_055_p12_64",
+   "id": "b_d7_055_p12_68",
    "style": "office_tower",
    "seed": 1204,
    "building_seed": 0.7055,
@@ -2026,7 +2150,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_055_p13_65",
+   "id": "b_d7_055_p13_69",
    "style": "office_tower",
    "seed": 9058,
    "building_seed": 0.8699,
@@ -2057,7 +2181,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_055_p14_66",
+   "id": "b_d7_055_p14_70",
    "style": "office_tower",
    "seed": 8507,
    "building_seed": 0.3355,
@@ -2088,7 +2212,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_055_p15_67",
+   "id": "b_d7_055_p15_71",
    "style": "office_tower",
    "seed": 6786,
    "building_seed": 0.3542,
@@ -2119,7 +2243,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_055_p16_68",
+   "id": "b_d7_055_p16_72",
    "style": "office_tower",
    "seed": 4946,
    "building_seed": 0.7509,
@@ -2150,7 +2274,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_058_p0_69",
+   "id": "b_d7_058_p0_73",
    "style": "office_tower",
    "seed": 8479,
    "building_seed": 0.1038,
@@ -2181,7 +2305,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_058_p1_70",
+   "id": "b_d7_058_p1_74",
    "style": "office_tower",
    "seed": 1814,
    "building_seed": 0.013,
@@ -2212,7 +2336,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_058_p2_71",
+   "id": "b_d7_058_p2_75",
    "style": "office_tower",
    "seed": 9321,
    "building_seed": 0.4065,
@@ -2243,7 +2367,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_058_p3_72",
+   "id": "b_d7_058_p3_76",
    "style": "office_tower",
    "seed": 2261,
    "building_seed": 0.0121,
@@ -2274,7 +2398,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_058_p4_73",
+   "id": "b_d7_058_p4_77",
    "style": "office_tower",
    "seed": 1949,
    "building_seed": 0.7211,
@@ -2305,7 +2429,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_058_p5_74",
+   "id": "b_d7_058_p5_78",
    "style": "office_tower",
    "seed": 7491,
    "building_seed": 0.7162,
@@ -2336,7 +2460,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_058_p6_75",
+   "id": "b_d7_058_p6_79",
    "style": "office_tower",
    "seed": 5839,
    "building_seed": 0.7173,
@@ -2367,7 +2491,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_058_p7_76",
+   "id": "b_d7_058_p7_80",
    "style": "office_tower",
    "seed": 2196,
    "building_seed": 0.2755,
@@ -2398,7 +2522,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_058_p8_77",
+   "id": "b_d7_058_p8_81",
    "style": "office_tower",
    "seed": 8774,
    "building_seed": 0.0913,
@@ -2429,7 +2553,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_058_p9_78",
+   "id": "b_d7_058_p9_82",
    "style": "office_tower",
    "seed": 2036,
    "building_seed": 0.6855,
@@ -2460,7 +2584,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_058_p10_79",
+   "id": "b_d7_058_p10_83",
    "style": "office_tower",
    "seed": 5194,
    "building_seed": 0.2607,
@@ -2491,7 +2615,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_058_p11_80",
+   "id": "b_d7_058_p11_84",
    "style": "office_tower",
    "seed": 9655,
    "building_seed": 0.0171,
@@ -2522,7 +2646,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_058_p12_81",
+   "id": "b_d7_058_p12_85",
    "style": "office_tower",
    "seed": 4116,
    "building_seed": 0.1406,
@@ -2553,7 +2677,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_059_p0_82",
+   "id": "b_d7_059_p0_86",
    "style": "office_tower",
    "seed": 9910,
    "building_seed": 0.7885,
@@ -2584,7 +2708,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_059_p1_83",
+   "id": "b_d7_059_p1_87",
    "style": "office_tower",
    "seed": 1754,
    "building_seed": 0.3585,
@@ -2615,7 +2739,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_059_p2_84",
+   "id": "b_d7_059_p2_88",
    "style": "office_tower",
    "seed": 3655,
    "building_seed": 0.421,
@@ -2646,7 +2770,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_059_p3_85",
+   "id": "b_d7_059_p3_89",
    "style": "office_tower",
    "seed": 2660,
    "building_seed": 0.9082,
@@ -2677,7 +2801,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_059_p4_86",
+   "id": "b_d7_059_p4_90",
    "style": "office_tower",
    "seed": 8939,
    "building_seed": 0.2185,
@@ -2708,7 +2832,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_059_p5_87",
+   "id": "b_d7_059_p5_91",
    "style": "office_tower",
    "seed": 7191,
    "building_seed": 0.3641,
@@ -2739,7 +2863,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_059_p6_88",
+   "id": "b_d7_059_p6_92",
    "style": "office_tower",
    "seed": 8390,
    "building_seed": 0.5426,
@@ -2770,7 +2894,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_059_p7_89",
+   "id": "b_d7_059_p7_93",
    "style": "office_tower",
    "seed": 9905,
    "building_seed": 0.989,
@@ -2801,7 +2925,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_059_p8_90",
+   "id": "b_d7_059_p8_94",
    "style": "office_tower",
    "seed": 6800,
    "building_seed": 0.0326,
@@ -2832,7 +2956,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_059_p9_91",
+   "id": "b_d7_059_p9_95",
    "style": "office_tower",
    "seed": 4971,
    "building_seed": 0.2346,
@@ -2863,7 +2987,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_059_p10_92",
+   "id": "b_d7_059_p10_96",
    "style": "office_tower",
    "seed": 4832,
    "building_seed": 0.9567,
@@ -2894,7 +3018,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_059_p11_93",
+   "id": "b_d7_059_p11_97",
    "style": "office_tower",
    "seed": 7065,
    "building_seed": 0.8864,
@@ -2925,7 +3049,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_059_p12_94",
+   "id": "b_d7_059_p12_98",
    "style": "office_tower",
    "seed": 8287,
    "building_seed": 0.6005,
@@ -2956,7 +3080,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_059_p13_95",
+   "id": "b_d7_059_p13_99",
    "style": "office_tower",
    "seed": 8709,
    "building_seed": 0.0095,
@@ -2987,7 +3111,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_059_p14_96",
+   "id": "b_d7_059_p14_100",
    "style": "office_tower",
    "seed": 3126,
    "building_seed": 0.722,
@@ -3018,7 +3142,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_059_p15_97",
+   "id": "b_d7_059_p15_101",
    "style": "office_tower",
    "seed": 3002,
    "building_seed": 0.6496,
@@ -3049,7 +3173,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_062_p0_98",
+   "id": "b_d7_062_p0_102",
    "style": "office_tower",
    "seed": 1845,
    "building_seed": 0.3393,
@@ -3080,7 +3204,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_062_p1_99",
+   "id": "b_d7_062_p1_103",
    "style": "office_tower",
    "seed": 3670,
    "building_seed": 0.6825,
@@ -3111,7 +3235,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_062_p2_100",
+   "id": "b_d7_062_p2_104",
    "style": "office_tower",
    "seed": 8634,
    "building_seed": 0.7234,
@@ -3142,7 +3266,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_062_p3_101",
+   "id": "b_d7_062_p3_105",
    "style": "office_tower",
    "seed": 7877,
    "building_seed": 0.4994,
@@ -3173,7 +3297,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_062_p4_102",
+   "id": "b_d7_062_p4_106",
    "style": "office_tower",
    "seed": 8131,
    "building_seed": 0.7586,
@@ -3204,7 +3328,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_062_p5_103",
+   "id": "b_d7_062_p5_107",
    "style": "office_tower",
    "seed": 6725,
    "building_seed": 0.2027,
@@ -3235,7 +3359,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_062_p6_104",
+   "id": "b_d7_062_p6_108",
    "style": "office_tower",
    "seed": 5182,
    "building_seed": 0.3491,
@@ -3266,7 +3390,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_062_p7_105",
+   "id": "b_d7_062_p7_109",
    "style": "office_tower",
    "seed": 1585,
    "building_seed": 0.8859,
@@ -3297,7 +3421,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_062_p8_106",
+   "id": "b_d7_062_p8_110",
    "style": "office_tower",
    "seed": 6682,
    "building_seed": 0.5358,
@@ -3328,7 +3452,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_062_p9_107",
+   "id": "b_d7_062_p9_111",
    "style": "office_tower",
    "seed": 1506,
    "building_seed": 0.4903,
@@ -3359,7 +3483,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_062_p10_108",
+   "id": "b_d7_062_p10_112",
    "style": "office_tower",
    "seed": 4854,
    "building_seed": 0.5736,
@@ -3390,7 +3514,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_062_p11_109",
+   "id": "b_d7_062_p11_113",
    "style": "office_tower",
    "seed": 8582,
    "building_seed": 0.8105,
@@ -3421,7 +3545,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_062_p12_110",
+   "id": "b_d7_062_p12_114",
    "style": "office_tower",
    "seed": 8043,
    "building_seed": 0.7698,
@@ -3452,7 +3576,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_062_p13_111",
+   "id": "b_d7_062_p13_115",
    "style": "office_tower",
    "seed": 8152,
    "building_seed": 0.4624,
@@ -3483,7 +3607,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_062_p14_112",
+   "id": "b_d7_062_p14_116",
    "style": "office_tower",
    "seed": 8677,
    "building_seed": 0.1584,
@@ -3514,7 +3638,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_062_p15_113",
+   "id": "b_d7_062_p15_117",
    "style": "office_tower",
    "seed": 1640,
    "building_seed": 0.6107,
@@ -3545,7 +3669,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_066_p0_114",
+   "id": "b_d7_066_p0_118",
    "style": "office_tower",
    "seed": 7301,
    "building_seed": 0.9354,
@@ -3576,7 +3700,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_066_p1_115",
+   "id": "b_d7_066_p1_119",
    "style": "office_tower",
    "seed": 1475,
    "building_seed": 0.664,
@@ -3607,7 +3731,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_066_p2_116",
+   "id": "b_d7_066_p2_120",
    "style": "office_tower",
    "seed": 5291,
    "building_seed": 0.439,
@@ -3638,7 +3762,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_066_p3_117",
+   "id": "b_d7_066_p3_121",
    "style": "office_tower",
    "seed": 464,
    "building_seed": 0.7007,
@@ -3669,7 +3793,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_066_p4_118",
+   "id": "b_d7_066_p4_122",
    "style": "office_tower",
    "seed": 4395,
    "building_seed": 0.2815,
@@ -3700,7 +3824,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_066_p5_119",
+   "id": "b_d7_066_p5_123",
    "style": "office_tower",
    "seed": 8186,
    "building_seed": 0.4298,
@@ -3731,7 +3855,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_066_p6_120",
+   "id": "b_d7_066_p6_124",
    "style": "office_tower",
    "seed": 7547,
    "building_seed": 0.5376,
@@ -3762,7 +3886,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_066_p7_121",
+   "id": "b_d7_066_p7_125",
    "style": "office_tower",
    "seed": 185,
    "building_seed": 0.5565,
@@ -3793,7 +3917,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_066_p8_122",
+   "id": "b_d7_066_p8_126",
    "style": "office_tower",
    "seed": 7016,
    "building_seed": 0.9356,
@@ -3824,7 +3948,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_069_p0_123",
+   "id": "b_d7_069_p0_127",
    "style": "office_tower",
    "seed": 4951,
    "building_seed": 0.8952,
@@ -3855,7 +3979,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_069_p1_124",
+   "id": "b_d7_069_p1_128",
    "style": "office_tower",
    "seed": 1497,
    "building_seed": 0.5236,
@@ -3886,7 +4010,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_069_p2_125",
+   "id": "b_d7_069_p2_129",
    "style": "office_tower",
    "seed": 7003,
    "building_seed": 0.1285,
@@ -3917,7 +4041,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_069_p3_126",
+   "id": "b_d7_069_p3_130",
    "style": "office_tower",
    "seed": 3800,
    "building_seed": 0.7367,
@@ -3948,7 +4072,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_069_p4_127",
+   "id": "b_d7_069_p4_131",
    "style": "office_tower",
    "seed": 9739,
    "building_seed": 0.9526,
@@ -3979,7 +4103,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_069_p5_128",
+   "id": "b_d7_069_p5_132",
    "style": "office_tower",
    "seed": 9707,
    "building_seed": 0.0919,
@@ -4010,7 +4134,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_069_p6_129",
+   "id": "b_d7_069_p6_133",
    "style": "office_tower",
    "seed": 6323,
    "building_seed": 0.3067,
@@ -4041,7 +4165,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_069_p7_130",
+   "id": "b_d7_069_p7_134",
    "style": "office_tower",
    "seed": 7985,
    "building_seed": 0.9249,
@@ -4072,7 +4196,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_069_p8_131",
+   "id": "b_d7_069_p8_135",
    "style": "office_tower",
    "seed": 727,
    "building_seed": 0.8196,
@@ -4103,7 +4227,7 @@
    "ground": false
   },
   {
-   "id": "b_d7_069_p9_132",
+   "id": "b_d7_069_p9_136",
    "style": "office_tower",
    "seed": 9522,
    "building_seed": 0.1009,
@@ -4134,7 +4258,7 @@
    "ground": false
   },
   {
-   "id": "park_lujiazui_green_s1_133",
+   "id": "park_lujiazui_green_s1_137",
    "style": "park",
    "seed": 2934,
    "building_seed": 0.3844,
@@ -4165,7 +4289,7 @@
    "ground": true
   },
   {
-   "id": "park_century_ave_north_134",
+   "id": "park_century_ave_north_138",
    "style": "park",
    "seed": 5457,
    "building_seed": 0.0779,
@@ -4208,7 +4332,7 @@
    "ground": true
   },
   {
-   "id": "park_century_ave_north_1_135",
+   "id": "park_century_ave_north_1_139",
    "style": "park",
    "seed": 6281,
    "building_seed": 0.7711,
@@ -4263,7 +4387,7 @@
    "ground": true
   },
   {
-   "id": "park_century_ave_north_2_136",
+   "id": "park_century_ave_north_2_140",
    "style": "park",
    "seed": 1841,
    "building_seed": 0.0846,
@@ -4314,7 +4438,7 @@
    "ground": true
   },
   {
-   "id": "park_century_ave_south_1_137",
+   "id": "park_century_ave_south_1_141",
    "style": "park",
    "seed": 1841,
    "building_seed": 0.0846,
@@ -4710,6 +4834,34 @@
   }
  ],
  "occluders": [
+  [
+   98.0,
+   117.34,
+   16.0,
+   9.2,
+   40.7
+  ],
+  [
+   72.66,
+   87.0,
+   9.2,
+   10.0,
+   40.7
+  ],
+  [
+   82.66,
+   97.0,
+   9.2,
+   10.0,
+   40.7
+  ],
+  [
+   93.0,
+   107.34,
+   10.0,
+   9.2,
+   40.7
+  ],
   [
    323.66,
    7.0,
@@ -5643,12 +5795,20 @@
   ]
  ],
  "stats": {
-  "blocks": 16,
-  "buildings": 138,
-  "tris": 113748,
+  "blocks": 17,
+  "buildings": 142,
+  "tris": 115976,
   "empty_blocks": {}
  },
  "blocks": [
+  {
+   "id": "b_d7_042_s1",
+   "style": "office_tower",
+   "area": 416.6,
+   "built": 423.2,
+   "buildings": 4,
+   "coverage": 1.016
+  },
   {
    "id": "b_d7_043",
    "style": "office_tower",

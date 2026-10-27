@@ -1,20 +1,22 @@
 extends RefCounted
-## The open ramps of the tunnels. A tunnel lane goes down from the street into its bore; the bore (roads unit, blender/city/roads/
-## tunnel.py: a wall of 3.75 m either side of the middle of its carriageway, an arch whose crown is 6.0 m over the road) shows over
-## the ground until its crown is under it. The ground of the city is built from the water outlines only, and it lay over both
-## ramps of the Yan'an tunnel: from Pudong a car drove over the portal on the flat ground, through the walls of the bores (they
-## have no collision over the ground), and a car that came up the Puxi ramp stopped dead at the edge of the ground
-## (tools/tunnel_probe.gd).
+## The open ramps of the tunnels. A tunnel lane goes down from the street into its bore. Where the bore is under the ground (its
+## crown 5.98 m over its road) the roads unit draws the bore; between the street and there the ramp is an open trough
+## (blender/city/roads/tunnel.py: a wall either side of each carriageway from under the road up to the ground, a parapet 1.0 m over
+## the ground on the outer walls, a fence across the trough where it meets the bore). The ground of the city is built from the
+## water outlines only, and it lay over both ramps of the Yan'an tunnel: from Pudong a car drove over the portal on the flat ground,
+## and a car that came up the Puxi ramp stopped dead at the edge of the ground (tools/tunnel_probe.gd).
 ##
 ## Built from the lanes of the data (the ground is built before the lane graph):
 ##   * the cut: the ground is cut out between the walls of a bore where its lanes are TOP to BOTTOM under the ground,
-##   * the tube: the walls of the bore from its road to its crown and the roof under the crown, wherever the crown is over the
-##     ground: the tube that is drawn is the tube a car meets (from the outside it is a wall, from the inside a tube),
 ##   * the road surfaces of the tiles that lie over a ramp lose their collision there (clear_roads_over): the plate of the
 ##     junction at the Pudong portal reaches over the ramp at the street level, and a car that came up the ramp drove its nose
 ##     into the edge of it and stopped from 145 km/h in one tick,
 ##   * and they are not drawn there (clear_meshes_over): a car that drove down the ramp disappeared under the plate. Only the
-##     surface materials of the roads (ROAD_SURFACES) are cut; the bores are over the ramp on purpose.
+##     surface materials of the roads (ROAD_SURFACES) are cut.
+## Until 10-27 this script also stood the bore up as solid boxes wherever its crown was over the ground: they stood across the
+## Lujiazui Ring Rd, which ran 0.2-0.6 m over the Pudong ramp (the traffic of the ring road in a deadlock, the player's car into
+## the wall at 133 km/h). The map keeps the streets off the troughs now (tools/city/check_tunnel_portals.py) and the roads unit
+## fences them (tools/city/check_tunnel_build.py).
 
 const Spline := preload("res://world/api/spline_util.gd")
 
@@ -24,12 +26,7 @@ const TOP := -0.03
 const BOTTOM := -6.0
 ## m: the inner face of a wall from the middle of the carriageway (tunnel.py: the half roadway 3.75, the wall 0.35 + 0.3 wide).
 const HALF := 3.8
-## m: the thickness of a wall and of the roof.
-const WALL := 0.3
-const ROOF := 0.4
-## m: the crown of the bore over its road (tunnel.py bore_crown: the clearance 4.5, the arch of radius 5.5).
-const CROWN := 6.0
-## m: the length of a piece of the tube, and the step of the walk along the lanes.
+## m: the step of the walk along the lanes.
 const STEP := 4.0
 ## m: a road surface this far over the road of a ramp is over it, not the ramp (its collision goes).
 const CLEAR_ABOVE := 0.3
@@ -39,12 +36,9 @@ const ROAD_SURFACES: Array[String] = ["SH_wet_asphalt", "SH_road_marking", "SH_k
 ## m: the road tiles (blender/city/roads/tiles.py TILE) and how far a vertex may be outside its tile.
 const ROAD_TILE := 512.0
 const ROAD_TILE_MARGIN := 64.0
-## The layer of the tube (the world).
-const LAYER := 1
 
-## The cut outlines (for the ground builder) and the pieces of the tube: {"centre": Vector3, "basis": Basis, "size": Vector3}.
+## The cut outlines (for the ground builder).
 var cuts: Array[PackedVector2Array] = []
-var pieces: Array[Dictionary] = []
 ## The middle line of the bore of every cut (x, the height of its road, z), for the height of the ramp under a point.
 var _lines: Array[PackedVector3Array] = []
 
@@ -52,7 +46,6 @@ var _lines: Array[PackedVector3Array] = []
 ## Finds the bores in the lane dictionaries of the data (the lanes of a road whose id says "tunnel", by carriageway).
 func build(lane_dicts: Array[Dictionary]) -> void:
 	cuts.clear()
-	pieces.clear()
 	_lines.clear()
 	var ways := {}
 	for entry in lane_dicts:
@@ -111,9 +104,6 @@ func _bore(lanes: Array) -> void:
 			left.clear()
 			right.clear()
 			line.clear()
-		# the tube: wherever its crown is over the ground
-		if centre.y + CROWN > 0.0 and centre.y < 0.5:
-			_tube_piece(centre, flat)
 	if left.size() >= 2:
 		cuts.append(_strip(left, right))
 		_lines.append(line)
@@ -286,44 +276,6 @@ func _tile_reaches(name: String, bounds: Rect2) -> bool:
 		return true
 	var tile := Rect2(float(int(parts[1])) * ROAD_TILE, float(int(parts[2])) * ROAD_TILE, ROAD_TILE, ROAD_TILE)
 	return tile.grow(ROAD_TILE_MARGIN).intersects(bounds)
-
-
-## The walls and the roof of the bore over one STEP of its middle line.
-func _tube_piece(centre: Vector3, flat: Vector2) -> void:
-	var forward := Vector3(flat.x, 0.0, flat.y)
-	var basis := Basis.looking_at(forward, Vector3.UP)
-	var across := basis.x
-	# the walls stand from the road to the crown, the roof hangs under the crown (its top is the crown: where the crown meets the
-	# ground the roof is flush with it, no step for a car on the street over the tunnel)
-	for sign: float in [-1.0, 1.0]:
-		pieces.append({"centre": centre + across * sign * (HALF + WALL * 0.5) + Vector3.UP * CROWN * 0.5, "basis": basis,
-			"size": Vector3(WALL, CROWN, STEP + 0.2)})
-	pieces.append({"centre": centre + Vector3.UP * (CROWN - ROOF * 0.5), "basis": basis,
-		"size": Vector3((HALF + WALL) * 2.0, ROOF, STEP + 0.2)})
-
-
-## Adds the tube as one static body of boxes under `parent`.
-func add_tube(parent: Node3D) -> StaticBody3D:
-	if pieces.is_empty():
-		return null
-	var body := StaticBody3D.new()
-	body.name = "TunnelTubes"
-	body.collision_layer = LAYER
-	body.collision_mask = 0
-	var shapes: Dictionary = {}
-	for piece in pieces:
-		var size: Vector3 = piece["size"]
-		var key := str(size.snapped(Vector3.ONE * 0.01))
-		if not shapes.has(key):
-			var box := BoxShape3D.new()
-			box.size = size
-			shapes[key] = box
-		var node := CollisionShape3D.new()
-		node.shape = shapes[key]
-		node.transform = Transform3D(piece["basis"], piece["centre"])
-		body.add_child(node)
-	parent.add_child(body)
-	return body
 
 
 ## The outline of a strip: the left side forwards, the right side back.

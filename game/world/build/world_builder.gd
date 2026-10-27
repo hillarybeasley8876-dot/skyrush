@@ -181,16 +181,15 @@ func _build_terrain() -> void:
 	var ground := _group("Terrain")
 	# The ground goes on past the window and the walls close the world (TerrainBuilder.EDGE_RING).
 	var area := window.grow(TerrainBuilder.EDGE_RING)
-	# The open ramps of the tunnels: the ground is cut over them like over the water, and their bores are solid where they stand
-	# out of the ground (world/build/tunnel_trench.gd).
+	# The open ramps of the tunnels: the ground is cut over them like over the water (world/build/tunnel_trench.gd; the walls and
+	# the parapets of the troughs are the roads unit's).
 	var trench := TunnelTrench.new()
 	_trench = trench
 	trench.build(data.lanes)
 	var cuts: Array[PackedVector2Array] = terrain.water_polygons().duplicate()
 	cuts.append_array(trench.cuts)
 	GroundBuilder.new().build(ground, area, cuts)
-	trench.add_tube(ground)
-	print("[world] tunnel ramps: %d cut outlines, %d pieces of tube" % [trench.cuts.size(), trench.pieces.size()])
+	print("[world] tunnel ramps: %d cut outlines" % trench.cuts.size())
 	terrain.build_water(ground, bodies)
 	terrain.build_kill_floor(ground, window)
 	terrain.build_edge_walls(ground, area)
