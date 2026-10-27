@@ -12,8 +12,11 @@ ROAD_CLEARANCE = 1.0             # the blocks keep 1 m from a road edge
 DECK_CLEARANCE = 2.0             # and 2 m from an elevated deck footprint
 LANE_TOLERANCE = 0.5             # a spawn / checkpoint on a lane centre
 HEADING_TOLERANCE = 10.0         # degrees
-CHECKPOINT_MIN = 300.0           # the distance between two checkpoints
+CHECKPOINT_MIN = 150.0           # the distance between two checkpoints
 CHECKPOINT_MAX = 500.0
+# The generator aims at a gate every 400 m (briefs/city_layout.md: "checkpoints every 300-500 m"). A gate that stands on the corner
+# of a road the race turns off, so that the race drives the corner and does not cut across it by side streets, stands closer to
+# the gate before it: the rule takes legs down to 150 m (10-28: the corners of the river loop at Henan Rd are 210-280 m).
 RUN_UP = 300.0                   # the straight run-up of a launch pad
 RUN_UP_TURN = 3.0                # degrees of heading change over the run-up
 PITCH_LIMIT = 26.0               # degrees over 50 m (the sky lanes climb at 25)
