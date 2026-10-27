@@ -32,6 +32,10 @@ var follower: LaneFollower = null
 var on_road: bool = false
 
 var _rng := RandomNumberGenerator.new()
+## The place of every lane on the point of the last search (m along the lane, -1 when the
+## lane was not measured): the search measures the place of every lane, and the road of
+## the point needs the places again.
+var _lane_offsets: PackedFloat64Array = PackedFloat64Array()
 
 
 ## Drives the rival on the road. Returns true when it drives on the road.
@@ -82,13 +86,18 @@ func _nearest_lane(pos: Vector3, direction: Vector3 = Vector3.ZERO, skip_connect
 	var best_distance := INF
 	var against := -1
 	var against_distance := INF
-	for i in graph.lane_count():
+	var count := graph.lane_count()
+	if _lane_offsets.size() != count:
+		_lane_offsets.resize(count)
+	_lane_offsets.fill(-1.0)
+	for i in count:
 		var length := graph.lane_length(i)
 		if length <= 0.0:
 			continue
 		if skip_connectors and graph.lanes[i].get_meta("connector", false):
 			continue
 		var offset := graph.closest_offset(i, pos)
+		_lane_offsets[i] = offset
 		var point := graph.position_at(i, offset)
 		var distance := point.distance_squared_to(pos)
 		if direction.length_squared() > 0.0 and graph.tangent_at(i, offset).dot(direction) < 0.0:
@@ -145,13 +154,16 @@ func road_frame(point: Vector3, line: RivalLine, offset: float) -> Vector3:
 	var line_dir := line.tangent_at(offset)
 	var lo := INF
 	var hi := -INF
-	var centres: Array[float] = []
 	var lats: Array[float] = []
 	var has_offset := false
 	for i in graph.lane_count():
 		if graph.lanes[i].road_id != road or graph.lanes[i].get_meta("connector", false):
 			continue
-		var o := graph.closest_offset(i, point)
+		# The place of the lane on the point was measured by the search of the nearest
+		# lane: it is measured again only for a lane the search did not measure.
+		var o := _lane_offsets[i]
+		if o < 0.0:
+			o = graph.closest_offset(i, point)
 		var p := graph.position_at(i, o)
 		if p.distance_to(point) > LANE_NEAR:
 			# The lane is not beside the point: the road bends away from it here.
@@ -162,7 +174,6 @@ func road_frame(point: Vector3, line: RivalLine, offset: float) -> Vector3:
 		hi = maxf(hi, lat + w)
 		lats.append(lat)
 		has_offset = has_offset or graph.lanes[i].has_meta("offset")
-		centres.append(_centre_of_road(i, p, point, right, line_dir))
 	if lo == INF:
 		return Vector3(-INF, INF, 0.0)
 	# The middle of the road is the middle of the estimates of the lanes: the estimate of
@@ -174,8 +185,29 @@ func road_frame(point: Vector3, line: RivalLine, offset: float) -> Vector3:
 	# the middle of the road itself: the middle of the lanes is the middle of the road,
 	# and with two lanes the middle is the half way between them, not the outer one.
 	if has_offset:
-		return Vector3(lo, hi, _median(centres))
+		return Vector3(lo, hi, _median(_centres_of_road(road, point, right, line_dir)))
 	return Vector3(lo, hi, _median(lats))
+
+
+## The middle of the road, seen from the lanes of the road (m, in the frame of the racing
+## line).
+##
+## Only the roads of the city know where the middle of their road is: the estimate of a
+## lane is a walk over the lanes of the road, and it is only needed for them.
+func _centres_of_road(road: StringName, point: Vector3, right: Vector3,
+		line_dir: Vector3) -> Array[float]:
+	var centres: Array[float] = []
+	for i in graph.lane_count():
+		if graph.lanes[i].road_id != road or graph.lanes[i].get_meta("connector", false):
+			continue
+		var o := _lane_offsets[i]
+		if o < 0.0:
+			o = graph.closest_offset(i, point)
+		var p := graph.position_at(i, o)
+		if p.distance_to(point) > LANE_NEAR:
+			continue
+		centres.append(_centre_of_road(i, p, point, right, line_dir))
+	return centres
 
 
 ## The middle of a list of values (the half way between the two middle ones when the

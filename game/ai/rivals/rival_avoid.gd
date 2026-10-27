@@ -67,6 +67,33 @@ var _pass_side: float = 0.0
 var _pass_target: float = 0.0
 var _pass_time: float = 0.0
 var _stopped_time: float = 0.0
+## The frame of the line at the place of the rival (the brain measures it once per tick).
+var frame: RivalFrame = null
+## The cars near the rival (the list of the tick, read once and not once per helper).
+var near: Array[Node3D] = []
+## True when the brain gave the list of the cars around the rival.
+var near_ready: bool = false
+## Where the rival stands now (m): the cars around it are measured from there.
+var _my_pos: Vector3 = Vector3.ZERO
+
+
+## The frame of the line at the place of the rival.
+##
+## The brain measures the frame once per tick and the helpers read it. A helper that is
+## used on its own (a test) measures the frame of the line itself.
+func _frame(line: RivalLine, offset: float) -> RivalFrame:
+	if frame == null or frame.offset != offset:
+		frame = RivalFrame.new()
+		frame.measure(line, offset)
+	return frame
+
+
+## The cars near the rival (the list of the tick, or a fresh one when the brain did not
+## give it).
+func _near_list(car: ArcadeCar, ctx: RivalContext) -> Array[Node3D]:
+	if near_ready:
+		return near
+	return ctx.near_of(car)
 
 
 ## The sideways shift the rival aims for: the car in front is avoided or passed.
@@ -95,7 +122,9 @@ func update_blocker(car: ArcadeCar, ctx: RivalContext, offset: float, line: Riva
 	block_distance = INF
 	pass_speed = INF
 	pass_distance = INF
-	for node in ctx.near_of(car):
+	_my_pos = car.global_position
+	_frame(line, offset)
+	for node in _near_list(car, ctx):
 		if not is_instance_valid(node):
 			continue
 		if node == pass_node and pass_shift >= AVOID_CLEARANCE:
@@ -105,7 +134,8 @@ func update_blocker(car: ArcadeCar, ctx: RivalContext, offset: float, line: Riva
 			# passes drives into the back of it.
 			var passed := node as VehicleBase
 			pass_speed = passed.linear_velocity.length() if passed != null else INF
-			pass_distance = _relation(node, car, ctx, line, offset, lane_offset).x
+			pass_distance = _relation(node, car, ctx, line, offset, lane_offset,
+				_on_line(node, ctx)).x
 			continue
 		_consider(node, car, ctx, line, offset, lane_offset)
 	if is_instance_valid(ctx.player):
@@ -124,17 +154,56 @@ func _consider(node: Node3D, car: ArcadeCar, ctx: RivalContext, line: RivalLine,
 	if vehicle == null:
 		return
 	# Only the cars on the level of the rival are in its way: a car on the street under the
-	# deck the rival drives on is not a car in front of it.
-	if not RivalContext.on_my_level(car, node):
+	# deck the rival drives on is not a car in front of it. The test is inline: it is the
+	# first test of every car of the near list.
+	if absf(_my_pos.y - node.global_position.y) > RivalContext.LEVEL:
 		return
-	var rel := _relation(node, car, ctx, line, offset, lane_offset)
+	# The cars that drive on the racing line (a rival or the player) are measured on the
+	# line, the traffic in the frame of the rival. The test is inline: it runs for every
+	# car of the near list.
+	var on_line := node is RivalCar or node == ctx.player
+	# The relation of the car to the rival: x = how far ahead it is (m), y = how far to
+	# the side it stands (m, positive = to the right of the rival's own line).
+	#
+	# The relation is a vector: its numbers are single precision, and the side of a car
+	# is only measured for the cars that are in front of the rival (it is the expensive
+	# half of the relation).
+	var rel := Vector2.ZERO
+	var other_offset := 0.0
+	if on_line:
+		# The offset of the other car on the line: the rivals keep theirs and the player
+		# is measured by the director.
+		var rival := node as RivalCar
+		if rival != null:
+			other_offset = rival.brain.offset if rival.brain != null else 0.0
+		else:
+			other_offset = ctx.player_offset
+		var ahead := other_offset - offset
+		if line.closed and line.length > 1.0:
+			# The distance is measured on the closed line and not on the distance the cars
+			# have covered: a car that stands still is in front of the field in every lap.
+			ahead = fposmod(ahead, line.length)
+		rel.x = ahead
+	else:
+		rel.x = (node.global_position - _my_pos).dot(frame.tangent)
 	if rel.x < MIN_AHEAD:
 		return
-	var reach := FOLLOW_DISTANCE if _on_line(node, ctx) else AVOID_DISTANCE
+	var reach := FOLLOW_DISTANCE if on_line else AVOID_DISTANCE
 	if rel.x > reach:
 		return
-	# The player may be anywhere on the road: it is a car of the race and it is not on
-	# the racing line, so the band around it is wider.
+	# The side of the car: the player may be anywhere on the road (it is a car of the
+	# race and it is not on the racing line, so the band around it is wider).
+	if on_line:
+		# The frame of the place of the car on the line: the brain of a rival measured it
+		# in its last tick, and the context keeps the frame of the player.
+		var rival := node as RivalCar
+		if rival != null and rival.brain != null:
+			var other := rival.brain.frame
+			rel.y = (node.global_position - other.point).dot(other.right) - lane_offset
+		else:
+			rel.y = ctx.lateral_of(node, line, other_offset) - lane_offset
+	else:
+		rel.y = (node.global_position - _my_pos).dot(frame.right)
 	var band := PLAYER_BAND if node == ctx.player else AVOID_BAND
 	# The band follows the lane the rival drives and the lane it moves into: a car in
 	# the lane of the pass is a car it has to keep its distance to from the start.
@@ -147,19 +216,45 @@ func _consider(node: Node3D, car: ArcadeCar, ctx: RivalContext, line: RivalLine,
 	block_speed = vehicle.linear_velocity.length()
 
 
+## The side of a car that drives on the racing line (m, positive = to the right).
+##
+## The side of a car on the line is the same for every rival of the field: it is measured
+## from the frame of the place of the car on the line. The frame of a rival is the one its
+## own brain measured in its last tick (the brain of a rival measures the frame of its own
+## place on the line in every tick), and the frame of the player is kept by the context.
+func _side_on_line(node: Node3D, ctx: RivalContext, line: RivalLine, offset: float) -> float:
+	var rival := node as RivalCar
+	if rival != null and rival.brain != null:
+		var other := rival.brain.frame
+		return (node.global_position - other.point).dot(other.right)
+	return ctx.lateral_of(node, line, offset)
+
+
 ## The relation of another car to the rival: x = how far ahead it is (m), y = how far to the
 ## side it stands (m, positive = to the right of the rival's own line).
+##
+## The car that stands on the line is measured on the line (its side is the side of the
+## ribbon of the line), the traffic is measured in the frame of the rival.
 func _relation(node: Node3D, car: ArcadeCar, ctx: RivalContext, line: RivalLine,
-		offset: float, lane_offset: float) -> Vector2:
-	if _on_line(node, ctx):
-		var other_offset := _offset_of(node, ctx)
-		var other_right := line.right_at(other_offset)
-		var other_lateral := (node.global_position - line.point_at(other_offset)).dot(other_right)
-		return Vector2(_forward(offset, other_offset, line), other_lateral - lane_offset)
+		offset: float, lane_offset: float, on_line: bool) -> Vector2:
+	if on_line:
+		# The car stands on the line: its side is measured from the line, and the column
+		# the rival drives in comes off it. The side of a car on the line is the same for
+		# every rival of the field: the context measures it once per tick.
+		var rival := node as RivalCar
+		var other_offset := ctx.player_offset
+		if rival != null:
+			other_offset = rival.brain.offset if rival.brain != null else 0.0
+		var lateral := _side_on_line(node, ctx, line, other_offset)
+		# The forward distance on the closed line (the distance the cars have covered is
+		# not the distance on the line: a car that stands still is in front of the field
+		# in every lap).
+		var ahead := other_offset - offset
+		if line.closed and line.length > 1.0:
+			ahead = fposmod(ahead, line.length)
+		return Vector2(ahead, lateral - lane_offset)
 	var rel := node.global_position - car.global_position
-	var tangent := line.tangent_at(offset)
-	var right := line.right_at(offset)
-	return Vector2(rel.dot(tangent), rel.dot(right))
+	return Vector2(rel.dot(frame.tangent), rel.dot(frame.right))
 
 
 ## The forward distance from one offset of the line to the other (m).
@@ -230,18 +325,23 @@ func _avoid_offset(car: ArcadeCar, ctx: RivalContext, offset: float, line: Rival
 		lane_offset: float) -> float:
 	var left_block := INF
 	var right_block := INF
-	for node in ctx.near_of(car):
+	var my_pos := car.global_position
+	var own := _frame(line, offset)
+	var tangent := own.tangent
+	var right := own.right
+	for node in _near_list(car, ctx):
 		if not is_instance_valid(node):
 			continue
 		# Only the cars on the level of the rival take its space: a car on the street under
-		# the deck it drives on does not make it swerve.
-		if not RivalContext.on_my_level(car, node):
+		# the deck it drives on does not make it swerve. The test is inline: it runs for
+		# every car of the near list.
+		if absf(my_pos.y - node.global_position.y) > RivalContext.LEVEL:
 			continue
-		var rel := node.global_position - car.global_position
+		var rel := node.global_position - my_pos
 		# The cheap test first: the square of the distance rejects most of the cars.
 		if rel.length_squared() > RIVAL_AVOID_DISTANCE * RIVAL_AVOID_DISTANCE:
 			continue
-		var ahead := rel.dot(line.tangent_at(offset))
+		var ahead := rel.dot(tangent)
 		# The cars that stand beside the rival are avoided as well: two cars that drive
 		# side by side need the room between them.
 		if ahead < -AVOID_LEVEL_BAND:
@@ -252,7 +352,7 @@ func _avoid_offset(car: ArcadeCar, ctx: RivalContext, offset: float, line: Rival
 			continue
 		# The real distance between the two cars: a car that is off its own line still
 		# takes the space it stands on.
-		var side := rel.dot(line.right_at(offset))
+		var side := rel.dot(right)
 		if absf(side) < 0.5:
 			# The car is in the same column: it does not take the side away.
 			continue
@@ -370,6 +470,7 @@ func _pass_blocker(car: ArcadeCar, ctx: RivalContext, offset: float, speed: floa
 		return null
 	var best: Node3D = null
 	var best_distance := INF
+	var my_pos := car.global_position
 	for node in ctx.rivals:
 		if not is_instance_valid(node) or node == car:
 			continue
@@ -380,12 +481,20 @@ func _pass_blocker(car: ArcadeCar, ctx: RivalContext, offset: float, speed: floa
 			# The car is passing me: two cars that change the lane at the same time meet
 			# in the middle of the road.
 			continue
+		# The distance ahead is the first test of the pass: it is the same test the
+		# helper makes, and it is made here so that the helper is called for the cars
+		# that are in front of the rival only.
+		var ahead := (node.global_position - my_pos).dot(frame.tangent)
+		if ahead < PASS_MIN_GAP or ahead > PASS_DISTANCE or ahead > best_distance:
+			continue
 		if _is_slower_ahead(node, car, ctx, offset, line, potential, best_distance):
 			best = node
-			best_distance = node.global_position.distance_to(car.global_position)
+			best_distance = node.global_position.distance_to(my_pos)
 	if is_instance_valid(ctx.player):
-		if _is_slower_ahead(ctx.player, car, ctx, offset, line, potential, best_distance):
-			best = ctx.player
+		var ahead := (ctx.player.global_position - my_pos).dot(frame.tangent)
+		if ahead >= PASS_MIN_GAP and ahead <= PASS_DISTANCE and ahead <= best_distance:
+			if _is_slower_ahead(ctx.player, car, ctx, offset, line, potential, best_distance):
+				best = ctx.player
 	return best
 
 
@@ -395,12 +504,13 @@ func _pass_blocker(car: ArcadeCar, ctx: RivalContext, offset: float, speed: floa
 ## again, and the pass is what gets the rival out of the way.
 func _is_slower_ahead(node: VehicleBase, car: ArcadeCar, ctx: RivalContext, offset: float,
 		line: RivalLine, potential: float, best_distance: float) -> bool:
-	var rel := node.global_position - car.global_position
-	var ahead := rel.dot(line.tangent_at(offset))
+	var my_pos := car.global_position
+	var rel := node.global_position - my_pos
+	var ahead := rel.dot(frame.tangent)
 	if ahead < PASS_MIN_GAP or ahead > PASS_DISTANCE or ahead > best_distance:
 		return false
 	# The car has to be in the lane of the rival: a car in the other lane is not in the way.
-	var side := _ribbon_lateral(node, ctx, line, offset) - _lane_of(car, ctx, line, offset)
+	var side := _ribbon_lateral(node, my_pos, ctx, line, offset) - _lane_of(car, my_pos, ctx, line, offset)
 	if absf(side) > AVOID_BAND:
 		return false
 	var other := node.linear_velocity.length()
@@ -413,20 +523,18 @@ func _is_slower_ahead(node: VehicleBase, car: ArcadeCar, ctx: RivalContext, offs
 ##
 ## The distance is measured in the frame of the line at the place of the car, so the cars
 ## that drive on a curve are compared on the same ribbon.
-func _ribbon_lateral(node: Node3D, ctx: RivalContext, line: RivalLine,
+func _ribbon_lateral(node: Node3D, my_pos: Vector3, ctx: RivalContext, line: RivalLine,
 		offset: float) -> float:
 	if _on_line(node, ctx):
-		var other_offset := _offset_of(node, ctx)
-		var right := line.right_at(other_offset)
-		return (node.global_position - line.point_at(other_offset)).dot(right)
-	var right := line.right_at(offset)
-	return (node.global_position - line.point_at(offset)).dot(right)
+		# The car stands on the line: its side is the side of the ribbon of the line.
+		return ctx.lateral_of(node, line, _offset_of(node, ctx))
+	return (node.global_position - frame.point).dot(frame.right)
 
 
 ## The cars the rival has to keep clear of (the rivals, the traffic and the player).
 func _others(car: ArcadeCar, ctx: RivalContext) -> Array[Node3D]:
 	var out: Array[Node3D] = []
-	for node in ctx.near_of(car):
+	for node in _near_list(car, ctx):
 		out.append(node)
 	if is_instance_valid(ctx.player):
 		out.append(ctx.player)
@@ -436,13 +544,14 @@ func _others(car: ArcadeCar, ctx: RivalContext) -> Array[Node3D]:
 ## The lane a car drives on (m from the racing line).
 ##
 ## The lane of a rival is the line it drives, the lane of the player is where it stands.
-func _lane_of(node: Node3D, ctx: RivalContext, line: RivalLine, offset: float) -> float:
+func _lane_of(node: Node3D, my_pos: Vector3, ctx: RivalContext, line: RivalLine,
+		offset: float) -> float:
 	if node is RivalCar:
 		var rival := node as RivalCar
 		if rival.brain != null:
 			return rival.brain.lane_offset
 		return 0.0
-	return _ribbon_lateral(node, ctx, line, offset)
+	return _ribbon_lateral(node, my_pos, ctx, line, offset)
 
 
 ## The lane a pass drives into (m from the racing line).
@@ -458,7 +567,7 @@ func _pass_lane(road: Vector3) -> float:
 ## The side of the pass (-1 = to the left, 1 = to the right, 0 = no clean pass is possible).
 func _pass_side_of(car: ArcadeCar, ctx: RivalContext, blocker: Node3D, offset: float,
 		line: RivalLine, lane_offset: float, road: Vector3) -> float:
-	var mine := _lane_of(car, ctx, line, offset)
+	var mine := _lane_of(car, car.global_position, ctx, line, offset)
 	var target := _pass_lane(road)
 	if not _pass_fits(car, ctx, blocker, offset, line, road, target):
 		return 0.0
@@ -473,7 +582,7 @@ func _pass_target_of(car: ArcadeCar, ctx: RivalContext, blocker: Node3D, offset:
 		line: RivalLine, lane_offset: float, road: Vector3) -> float:
 	if _pass_side == 0.0:
 		return 0.0
-	var mine := _lane_of(car, ctx, line, offset)
+	var mine := _lane_of(car, car.global_position, ctx, line, offset)
 	var target := _pass_lane(road)
 	if not _pass_fits(car, ctx, blocker, offset, line, road, target):
 		return 0.0
@@ -488,10 +597,11 @@ func _pass_fits(car: ArcadeCar, ctx: RivalContext, blocker: Node3D, offset: floa
 		line: RivalLine, road: Vector3, target: float) -> bool:
 	if target < road.x or target > road.y:
 		return false
+	var my_pos := car.global_position
 	for node in _others(car, ctx):
 		if node == blocker or not is_instance_valid(node):
 			continue
-		var rel := _relation(node, car, ctx, line, offset, 0.0)
+		var rel := _relation(node, car, ctx, line, offset, 0.0, _on_line(node, ctx))
 		# The lane change sweeps over the cars beside the rival and the ones right
 		# behind it. The cars ahead count as well: the rival catches them while it
 		# passes, and a pass into a lane with a car in it ends in a side swipe.
@@ -499,7 +609,7 @@ func _pass_fits(car: ArcadeCar, ctx: RivalContext, blocker: Node3D, offset: floa
 			continue
 		# A car that is changing lanes is heading for its own target: the lane it
 		# goes to is the one the pass may not use.
-		var lateral := _aim_lateral(node, ctx, line, offset)
+		var lateral := _aim_lateral(node, my_pos, ctx, line, offset)
 		if absf(target - lateral) < CAR_WIDTH + PASS_ERROR:
 			return false
 	return true
@@ -509,8 +619,9 @@ func _pass_fits(car: ArcadeCar, ctx: RivalContext, blocker: Node3D, offset: floa
 ##
 ## A car that is changing lanes drives for its own target: the pass may not use the
 ## lane the car is going to, or the two cars meet in the middle of the road.
-func _aim_lateral(node: Node3D, ctx: RivalContext, line: RivalLine, offset: float) -> float:
-	var lane := _lane_of(node, ctx, line, offset)
+func _aim_lateral(node: Node3D, my_pos: Vector3, ctx: RivalContext, line: RivalLine,
+		offset: float) -> float:
+	var lane := _lane_of(node, my_pos, ctx, line, offset)
 	var rival := node as RivalCar
 	if rival != null and rival.brain != null:
 		lane += rival.brain.avoid.pass_shift
@@ -521,7 +632,6 @@ func _aim_lateral(node: Node3D, ctx: RivalContext, line: RivalLine, offset: floa
 func _distance_behind(car: ArcadeCar, node: Node3D, offset: float, line: RivalLine) -> float:
 	if not is_instance_valid(node):
 		return PASS_HOLD
-	var tangent := line.tangent_at(offset)
-	return (car.global_position - node.global_position).dot(tangent)
+	return (car.global_position - node.global_position).dot(frame.tangent)
 
 

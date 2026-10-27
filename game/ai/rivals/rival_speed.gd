@@ -83,6 +83,24 @@ var throttle: float = 0.0
 var brake: float = 0.0
 
 var _n2_cooldown: float = 0.0
+## The frame of the line at the place of the rival (the brain measures it once per tick).
+var frame: RivalFrame = null
+## The speed profile of the route for the grip of this rival (it is built once: the grip of
+## a rival does not change while it drives).
+var _profile: PackedFloat32Array = PackedFloat32Array()
+var _profile_grip: float = -1.0
+var _profile_brake: float = -1.0
+
+
+## The frame of the line at the place of the rival.
+##
+## The brain measures the frame once per tick and the helpers read it. A helper that is
+## used on its own (a test) measures the frame of the line itself.
+func _frame(line: RivalLine, offset: float) -> RivalFrame:
+	if frame == null or frame.offset != offset:
+		frame = RivalFrame.new()
+		frame.measure(line, offset)
+	return frame
 
 
 ## Sets the speed helper up from a difficulty preset.
@@ -110,6 +128,19 @@ func set_physical_grip(a_physical: float) -> void:
 	grip = a_physical * grip_ratio
 
 
+## The speed profile of the route for the grip of this rival.
+##
+## The profile is built once per rival and not once per tick: the grip of a rival does not
+## change while it drives, and the profile of the line is keyed by a string, which is slow
+## to build.
+func _profile_of() -> PackedFloat32Array:
+	if _profile.is_empty() or _profile_grip != grip or _profile_brake != brake_accel:
+		_profile = line.profile(grip, brake_accel)
+		_profile_grip = grip
+		_profile_brake = brake_accel
+	return _profile
+
+
 ## The rubber band of the clone (dossier 6.2): a rival that leads the player is slowed down,
 ## a rival that trails is sped up. It is off in the last 10 % of the race.
 func rubber_factor(gap: float, race_fraction: float) -> float:
@@ -129,7 +160,7 @@ func update(delta: float, car: ArcadeCar, ctx: RivalContext, offset: float, spee
 	rubber = rubber_factor(travelled - ctx.player_travelled, ctx.race_fraction)
 	var top := car.spec.top_speed * top_factor * rubber * cruise_factor
 	top *= _slipstream(car, ctx, offset)
-	var limit := line.speed_limit(offset, grip, brake_accel) * CORNER_MARGIN
+	var limit := line.limit_of(_profile_of(), offset) * CORNER_MARGIN
 	# The corner speed belongs to the path of the car: a car that drives in the inner
 	# column of a corner drives a tighter path than the line of the route, and it has to
 	# be slower or it slides out of the corner into the column of its neighbour.
@@ -227,13 +258,23 @@ func _closing_allowance(gap: float) -> float:
 func _slipstream(car: ArcadeCar, ctx: RivalContext, offset: float) -> float:
 	if line == null:
 		return 1.0
-	var tangent := line.tangent_at(offset)
-	var right := line.right_at(offset)
+	var own := _frame(line, offset)
+	var tangent := own.tangent
+	var right := own.right
 	var pos := car.global_position
 	for node in ctx.rivals:
 		if not is_instance_valid(node) or node == car:
 			continue
-		if _in_wake(node, pos, tangent, right):
+		# The wake of a car on another level is no wake: a car on the street under the
+		# deck the rival drives on does not give it a slipstream. The test is inline: it
+		# runs for every car of the field, every tick.
+		var rel := node.global_position - pos
+		if absf(rel.y) > RivalContext.LEVEL:
+			continue
+		var ahead := rel.dot(tangent)
+		if ahead <= 0.0 or ahead > SLIPSTREAM_DISTANCE:
+			continue
+		if absf(rel.dot(right)) <= SLIPSTREAM_LATERAL:
 			return 1.0 + SLIPSTREAM_BONUS
 	if is_instance_valid(ctx.player) and _in_wake(ctx.player, pos, tangent, right):
 		return 1.0 + SLIPSTREAM_BONUS
@@ -245,9 +286,11 @@ func _slipstream(car: ArcadeCar, ctx: RivalContext, offset: float) -> float:
 ## The wake of a car on another level is no wake: a car on the street under the deck the
 ## rival drives on does not give it a slipstream.
 func _in_wake(node: Node3D, pos: Vector3, tangent: Vector3, right: Vector3) -> bool:
-	if not RivalContext.same_level(pos.y, node.global_position.y):
-		return false
 	var rel := node.global_position - pos
+	# The level test is inline: it runs for every car of the field, every tick. The
+	# height of the car is the height of the vector between the two cars.
+	if absf(rel.y) > RivalContext.LEVEL:
+		return false
 	var ahead := rel.dot(tangent)
 	if ahead <= 0.0 or ahead > SLIPSTREAM_DISTANCE:
 		return false
@@ -303,7 +346,7 @@ func _drive_inputs(speed: float, plan: float) -> void:
 func _plan_deceleration(offset: float, limit: float, speed: float) -> float:
 	if line == null:
 		return 0.0
-	var ahead := line.speed_limit(offset + PLAN_STEP, grip, brake_accel) * CORNER_MARGIN
+	var ahead := line.limit_of(_profile_of(), offset + PLAN_STEP) * CORNER_MARGIN
 	# The plan falls while the car drives: the car has to brake at that rate. The rate is
 	# the slope of the plan and not the difference to the limit of the next step: the
 	# difference of the speeds would brake the car for its own error as well, and the
