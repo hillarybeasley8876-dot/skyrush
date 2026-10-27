@@ -129,7 +129,9 @@ def tunnel_lights(city, road, items):
     """The ceiling lights of a tunnel: one record every 12 m per bore.
 
     The world unit puts them in its light pool: a tunnel without them is a
-    black hole in the night city.
+    black hole in the night city.  They hang under the crown of the bore, so
+    they only exist where the ground covers the tunnel: in the open trough
+    they would hang in the air.
     """
     if road.kind != "tunnel":
         return
@@ -137,12 +139,15 @@ def tunnel_lights(city, road, items):
     lay = profiles.layout(road)
     s = 6.0
     while s < road.length:
+        i = road.index_at(s)
+        covered = tunnel.kind_at(road, i, 0.2) == "COVERED"
         p, t, r, u, _ = road.at(s)
-        for index, offset in enumerate(tunnel.bore_offsets(lay)):
-            pos = p + r * offset + u * (tunnel.CLEARANCE - 0.2)
-            items.append(_item("tunnel_light", road, pos, t, {
-                "bore": index, "height_m": tunnel.CLEARANCE - 0.2,
-                "energy": 2.4, "distance_m": round(s, 1)}))
+        if covered:
+            for index, offset in enumerate(tunnel.bore_offsets(lay)):
+                pos = p + r * offset + u * (tunnel.CLEARANCE - 0.2)
+                items.append(_item("tunnel_light", road, pos, t, {
+                    "bore": index, "height_m": tunnel.CLEARANCE - 0.2,
+                    "energy": 2.4, "distance_m": round(s, 1)}))
         s += TUNNEL_LIGHT_SPACING
 
 

@@ -49,7 +49,7 @@ def build_road(city, road, tileset, records, paths=()):
         if road.elevated:
             deck.build(road, run, builder, lay, gaps)
         elif road.kind == "tunnel":
-            tunnel.build(road, run, builder, lay)
+            tunnel.build(road, run, builder, lay, excluded)
         else:
             surface.build_asphalt(road, run, builder, lay)
         for sub in tiles.split_runs(run, excluded):
@@ -66,9 +66,11 @@ def build_road(city, road, tileset, records, paths=()):
         # other: it gets a parapet like the deck's own edge
         deck.build_strip_parapets(city, road, tileset, lay)
     if road.kind == "tunnel":
-        for at_end in (True, False):
-            builder = tileset.builder_at(road.path[0 if at_end else -1])
-            tunnel.build_portal(road, builder, lay, at_end)
+        # the gantry and the face of a portal stand where the trough meets the
+        # bore: the two ends of the road are junctions at grade now
+        for face in tunnel.portal_faces(road):
+            builder = tileset.builder_at(face["point"])
+            tunnel.build_portal(road, builder, lay, face)
     if road.elevated:
         piers.build(city, road, tileset, records["piers"], paths)
     if road.kind == "ramp":
