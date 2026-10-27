@@ -30,6 +30,24 @@ CHAIN_SPAN = 4.0      # the handle of the curve that joins the two roads
 CHAIN_STEP = 0.5      # how finely a chain curve is sampled
 CHAIN_MIN = 0.3       # two points of a chain curve are at least this far apart
 
+# The (from lane, to lane) pairs a connector joins already.  A connector lane
+# stands between the lane the traffic leaves and the lane it drives into, so the
+# movement it joins is the pair of the two lanes around it.
+#
+# Two junctions close together (a staggered crossing: two T-junctions 28 m
+# apart on Chongqing Rd) both take the lane that passes between them as an
+# approach and both build the same movement: two connectors in the same place
+# for the same pair of lanes.  The traffic cars on them keep their distance to
+# the cars of their own lane only, so they do not see each other, they drive
+# into each other and stop.  The first junction that builds a movement keeps
+# it; the junctions are visited in the order of city.junctions, so the build
+# is the same every time.
+MOVEMENTS = {}
+
+# the movements a second junction did not build again: {pair: the junction that
+# lost it}
+DROPPED = {}
+
 
 def attach_stations(city, road):
     """The ramps that attach to this road: [(parent path index, ramp, at_end)].
@@ -118,6 +136,8 @@ def movements(src, options):
 
 def link_junctions(city, lanes, links):
     """Connector lanes for the movements through every junction."""
+    MOVEMENTS.clear()
+    DROPPED.clear()
     by_road = {}
     for lane in lanes:
         by_road.setdefault(lane["road"], []).append(lane)
@@ -142,6 +162,8 @@ def link_junctions(city, lanes, links):
                         continue
                     _add_movement(lanes, links, seen_ids, junction, src, dst, kind,
                                   centre, fan)
+    if DROPPED:
+        print("LANES %d movements built twice: the first junction keeps them" % len(DROPPED))
 
 
 def _arm_lanes(arms, by_road, centre, jid):
@@ -239,7 +261,15 @@ def _nearest_lanes(arm, by_road, centre, count=3):
 
 
 def _add_movement(lanes, links, seen_ids, junction, src, dst, kind, centre, fan):
-    """Add the connector lane of one movement and its two links."""
+    """Add the connector lane of one movement and its two links.
+
+    A movement that a connector joins already keeps the connector it has: the
+    first junction that builds it keeps it, the second one builds nothing.
+    """
+    pair = (src["id"], dst["id"])
+    if pair in MOVEMENTS:
+        DROPPED[pair] = junction["id"]
+        return
     pts = lane_paths.connector_points(src, dst, centre, fan, straight=kind == "straight")
     if len(pts) < 2:
         gap = (lane_paths.v3(dst["points"][0]) - lane_paths.v3(src["points"][-1])).length
@@ -269,6 +299,7 @@ def _add_movement(lanes, links, seen_ids, junction, src, dst, kind, centre, fan)
         "next": [dst["id"]],
     })
     seen_ids.add(cid)
+    MOVEMENTS[pair] = cid
     links.append({"from": src["id"], "to": cid, "turn": kind})
     links.append({"from": cid, "to": dst["id"], "turn": kind})
 
@@ -461,6 +492,11 @@ def _after(segs, seg):
 
 def _link_attach(first, second, road, lanes, links):
     """Link the end of one lane to the start of the other."""
+    pair = (first["id"], second["id"])
+    if pair in MOVEMENTS:
+        # a connector joins this pair already: the movement is built, and a
+        # second one for it would be a second lane in the same place
+        return
     a = lane_paths.v3(first["points"][-1])
     b = lane_paths.v3(second["points"][0])
     if (a - b).length <= DIRECT_LINK:
@@ -474,6 +510,7 @@ def _link_attach(first, second, road, lanes, links):
     lane = _connector_lane(cid, first, road.id, pts, second)
     lane["attach"] = True
     lanes.append(lane)
+    MOVEMENTS[pair] = cid
     links.append({"from": first["id"], "to": cid, "turn": "straight"})
     links.append({"from": cid, "to": second["id"], "turn": "straight"})
 
@@ -637,6 +674,11 @@ def _chain_link(first, second, lanes, links, succ, fed):
         return 0
     if len(succ.get(first["id"], ())) >= CHAIN_MAX:
         return 0
+    pair = (first["id"], second["id"])
+    if pair in MOVEMENTS:
+        # a connector joins this pair already: the movement is built, and a
+        # second one for it would be a second lane in the same place
+        return 0
     a = lane_paths.v3(first["points"][-1])
     b = lane_paths.v3(second["points"][0])
     if (a - b).length <= DIRECT_LINK:
@@ -652,6 +694,7 @@ def _chain_link(first, second, lanes, links, succ, fed):
     lane = _connector_lane(cid, first, first["road"], pts, second)
     lane["chain"] = True
     lanes.append(lane)
+    MOVEMENTS[pair] = cid
     links.append({"from": first["id"], "to": cid, "turn": "straight"})
     links.append({"from": cid, "to": second["id"], "turn": "straight"})
     succ.setdefault(first["id"], set()).add(cid)
