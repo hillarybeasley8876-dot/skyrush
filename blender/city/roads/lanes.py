@@ -9,7 +9,7 @@ geometry of a movement in lane_paths.py.
 import math
 
 from city.roads import junctions as jn
-from city.roads import buildingcut, lane_links, lane_paths, profiles
+from city.roads import buildingcut, lane_links, lane_paths, lane_stubs, profiles
 
 SAMPLE = 2.0
 CUT_GAP = 8.0     # an attach closer than this to another cut shares that cut
@@ -279,6 +279,9 @@ def build_lanes(city):
     if "bund_zhongshan_e1" in city.by_id:
         report, at_buildings = buildingcut.apply(lanes, links)
         print("LANES at the buildings of the Bund: %s" % report)
+    # a lane that leaves a junction that nothing leads into cannot be driven onto (lane_stubs)
+    if lane_stubs.feed_exits(city, lanes, links):
+        lanes.sort(key=lambda l: l["id"])
     _mark_termini(city, lanes)
     if lane_links.SKIPPED:
         top = sorted(lane_links.SKIPPED.items(), key=lambda kv: -kv[1])[:8]

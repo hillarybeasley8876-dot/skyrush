@@ -15,6 +15,7 @@ import math
 from mathutils import Vector
 
 from city.roads import junctions as jn
+from city.roads import junction_holes
 from city.roads import lane_paths
 
 CROSS_TOLERANCE = 15.0  # how far a lane end may be from the kerb return
@@ -148,7 +149,7 @@ def link_junctions(city, lanes, links):
             continue
         merge = jn.is_merge(arms)
         fan = None if merge else jn.fan(arms, centre)
-        exits, approaches = _arm_lanes(arms, by_road, centre, junction["id"])
+        exits, approaches = _arm_lanes(arms, by_road, centre, junction["id"], city)
         for a in arms:
             options = _options(a, arms, exits, by_road, centre)
             for src in approaches.get(id(a), []):
@@ -166,36 +167,79 @@ def link_junctions(city, lanes, links):
         print("LANES %d movements built twice: the first junction keeps them" % len(DROPPED))
 
 
-def _arm_lanes(arms, by_road, centre, jid):
+def _arm_lanes(arms, by_road, centre, jid, city):
     """The lanes that leave a junction along an arm and the ones that arrive.
 
     A lane belongs to the arm it is travelled along: it leaves the junction
     when its start is the end that is near the junction, and it arrives when
     its end is.
+
+    A road that the junction cuts is cut once: the lanes that leave it are the
+    ones that start at that cut and the lanes that arrive are the ones that end
+    there.  Two junctions that stand close together share that cut, so both of
+    them use the same lanes, and a movement never reaches across another lane
+    of the road (the 60 m connector of the Lujiazui ring road, that jumped
+    over the lane of the stretch between two junctions).
     """
     exits, approaches = {}, {}
     for a in arms:
         road = a["road"]
-        # the lane ends at the kerb return, one sample beyond the cut: a wide
-        # road has its lanes 60 m away from the middle of the crossing
-        reach = max(jn.road_radius(arms, road.id), 40.0) + CROSS_TOLERANCE
-        for lane in by_road.get(road.id, []):
-            if lane.get("connector"):
+        group = junction_holes.cut_group(city, road, jid)
+        if group:
+            _cut_lanes(a, by_road, group, exits, approaches)
+            if exits.get(id(a)) or approaches.get(id(a)):
                 continue
-            pts = lane["points"]
-            if len(pts) < 2:
-                continue
-            df = math.hypot(pts[0][0] - centre.x, pts[0][2] + centre.y)
-            dl = math.hypot(pts[-1][0] - centre.x, pts[-1][2] + centre.y)
-            if travels_along(lane, a):
-                # the lane starts at the junction: it leaves along this arm
-                if df <= reach and df <= dl:
-                    exits.setdefault(id(a), []).append(lane)
-            else:
-                # the lane ends at the junction: it arrives along this arm
-                if dl <= reach and dl <= df:
-                    approaches.setdefault(id(a), []).append(lane)
+        _near_lanes(a, arms, by_road, centre, exits, approaches)
     return exits, approaches
+
+
+def _near_lanes(a, arms, by_road, centre, exits, approaches):
+    """The lanes of a road that leave a junction along an arm and that arrive.
+
+    The road is not cut at the junction (it runs through it, or it lies in it
+    whole), so the lanes are found by their distance to the centre of the
+    junction: a lane leaves the junction when it starts near the centre and
+    nearer than it ends, and it arrives when it ends near the centre.
+    """
+    road = a["road"]
+    # the lane ends at the kerb return, one sample beyond the cut: a wide
+    # road has its lanes 60 m away from the middle of the crossing
+    reach = max(jn.road_radius(arms, road.id), 40.0) + CROSS_TOLERANCE
+    for lane in by_road.get(road.id, []):
+        if lane.get("connector"):
+            continue
+        pts = lane["points"]
+        if len(pts) < 2:
+            continue
+        df = math.hypot(pts[0][0] - centre.x, pts[0][2] + centre.y)
+        dl = math.hypot(pts[-1][0] - centre.x, pts[-1][2] + centre.y)
+        if travels_along(lane, a):
+            # the lane starts at the junction: it leaves along this arm
+            if df <= reach and df <= dl:
+                exits.setdefault(id(a), []).append(lane)
+        else:
+            # the lane ends at the junction: it arrives along this arm
+            if dl <= reach and dl <= df:
+                approaches.setdefault(id(a), []).append(lane)
+
+
+def _cut_lanes(a, by_road, group, exits, approaches):
+    """The lanes of a road that leave a cut and the ones that arrive at it.
+
+    A lane of the cut leaves the junction when it starts at the cut and
+    arrives when it ends there: the label of the lane says which junction of
+    the cut it belongs to.
+    """
+    for lane in by_road.get(a["road"].id, []):
+        if lane.get("connector"):
+            continue
+        if len(lane["points"]) < 2:
+            continue
+        if travels_along(lane, a):
+            if lane.get("start_junction") in group:
+                exits.setdefault(id(a), []).append(lane)
+        elif lane.get("end_junction") in group:
+            approaches.setdefault(id(a), []).append(lane)
 
 
 def _options(a, arms, exits, by_road=None, centre=None):
@@ -302,6 +346,24 @@ def _add_movement(lanes, links, seen_ids, junction, src, dst, kind, centre, fan)
     MOVEMENTS[pair] = cid
     links.append({"from": src["id"], "to": cid, "turn": kind})
     links.append({"from": cid, "to": dst["id"], "turn": kind})
+
+
+def arm_lanes(arms, by_road, centre, jid, city):
+    """The lanes that leave a junction along an arm and the ones that arrive.
+
+    The helper of the movement builder, for the module that feeds the lanes
+    that leave a junction (lane_stubs).
+    """
+    return _arm_lanes(arms, by_road, centre, jid, city)
+
+
+def add_movement(lanes, links, seen_ids, junction, src, dst, kind, centre, fan):
+    """Add the connector lane of one movement and its two links.
+
+    The helper of the movement builder, for the module that feeds the lanes
+    that leave a junction (lane_stubs).
+    """
+    return _add_movement(lanes, links, seen_ids, junction, src, dst, kind, centre, fan)
 
 
 def _of(by_road, road, seg, direction):
