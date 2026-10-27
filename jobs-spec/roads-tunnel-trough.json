@@ -1,0 +1,65 @@
+{
+  "id": "roads-tunnel-trough",
+  "title": "The tunnel is a bore only where it is covered: an open trough with walls and parapets near its ends, a street at grade",
+  "brief": "briefs/improve/roads-tunnel-trough.md",
+  "isolation": "worktree",
+  "sparse": [
+    "tools/",
+    "data/",
+    "ref/",
+    "briefs/",
+    "blender/",
+    "game/assets/textures/",
+    "game/assets/city/_tex/",
+    "game/world/data/",
+    "SPEC.md",
+    "ART.md",
+    "CONTRACTS.md",
+    "README.md"
+  ],
+  "owns": [
+    "blender/city/roads/tunnel.py",
+    "blender/city/roads/build_roads.py",
+    "blender/city/roads/furniture.py"
+  ],
+  "maxRounds": 5,
+  "maxTurns": 300,
+  "timeoutMin": 240,
+  "accept": [
+    {
+      "name": "full Blender road build into the scratch directory",
+      "timeoutS": 1500,
+      "cmd": "python tools/gd.py blender run blender/city/roads/build_roads.py -- --out F:/dev/skyrush-out/tmp/roads-tunnel-trough/tiles --data F:/dev/skyrush-out/tmp/roads-tunnel-trough/data",
+      "must": ["DONE in"]
+    },
+    {
+      "name": "the tunnel is drawn and fenced the way its depth asks",
+      "timeoutS": 900,
+      "cmd": "python tools/city/check_tunnel_build.py F:/dev/skyrush-out/tmp/roads-tunnel-trough/tiles F:/dev/skyrush-out/tmp/roads-tunnel-trough/data data/city/city.json --quiet",
+      "must": ["TUNNEL_BUILD OK"]
+    },
+    {
+      "name": "no lane of the city is walled off",
+      "timeoutS": 900,
+      "cmd": "python tools/city/check_path_blockers.py F:/dev/skyrush-out/tmp/roads-tunnel-trough/tiles --lanes F:/dev/skyrush-out/tmp/roads-tunnel-trough/data/lanes.json --max-bad 25 --max-barrier-area 395000",
+      "must": ["PATH_BLOCKERS OK"]
+    },
+    {
+      "name": "the open deck edges do not grow",
+      "timeoutS": 900,
+      "cmd": "python tools/city/check_open_edges.py F:/dev/skyrush-out/tmp/roads-tunnel-trough/tiles F:/dev/skyrush-out/tmp/roads-tunnel-trough/data/lanes.json --max-regular 181 --max-connector 14 --top 0",
+      "must": ["OPEN_EDGES OK"]
+    },
+    {
+      "name": "the road surface does not lose coverage",
+      "timeoutS": 900,
+      "cmd": "python tools/city/check_surface_coverage.py F:/dev/skyrush-out/tmp/roads-tunnel-trough/tiles F:/dev/skyrush-out/tmp/roads-tunnel-trough/data/lanes.json --max-bad 4187",
+      "must": ["SURFACE_COVERAGE bad samples"]
+    },
+    {
+      "name": "the lanes are untouched",
+      "cmd": "python -c \"import filecmp,sys; ok = filecmp.cmp('F:/dev/skyrush-out/tmp/roads-tunnel-trough/data/lanes.json','F:/dev/skyrush-out/tmp/portal-base/data/lanes.json',shallow=False); print('LANES_SAME' if ok else 'LANES_CHANGED'); sys.exit(0 if ok else 1)\"",
+      "must": ["LANES_SAME"]
+    }
+  ]
+}

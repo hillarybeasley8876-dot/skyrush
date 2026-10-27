@@ -1,0 +1,56 @@
+{
+  "id": "route-grand-loop",
+  "title": "The grand loop comes back to its start (a race is a circuit)",
+  "brief": "briefs/improve/route-grand-loop.md",
+  "isolation": "worktree",
+  "sparse": [
+    "tools/",
+    "data/",
+    "ref/",
+    "briefs/",
+    "blender/",
+    "game/world/data/",
+    "game/world/api/",
+    "SPEC.md",
+    "ART.md",
+    "CONTRACTS.md",
+    "README.md"
+  ],
+  "owns": [
+    "tools/city/city_marks_routes.py"
+  ],
+  "maxRounds": 5,
+  "maxTurns": 300,
+  "timeoutMin": 180,
+  "accept": [
+    {
+      "name": "the map builds into the scratch directory",
+      "timeoutS": 600,
+      "cmd": "python tools/city/build_city.py --out F:/dev/skyrush-out/tmp/route-grand-loop/city.json",
+      "must": ["json size"]
+    },
+    {
+      "name": "the lane graph of that map builds",
+      "timeoutS": 900,
+      "cmd": "python tools/gd.py blender run blender/city/roads/build_roads.py -- --lanes-only --city F:/dev/skyrush-out/tmp/route-grand-loop/city.json --data F:/dev/skyrush-out/tmp/route-grand-loop/data",
+      "must": ["DONE in"]
+    },
+    {
+      "name": "every route is drivable",
+      "timeoutS": 600,
+      "cmd": "python tools/city/check_routes_drivable.py F:/dev/skyrush-out/tmp/route-grand-loop/city.json F:/dev/skyrush-out/tmp/route-grand-loop/data/lanes.json",
+      "must": ["ROUTES_DRIVABLE OK"]
+    },
+    {
+      "name": "the rules gate",
+      "timeoutS": 900,
+      "cmd": "python tools/city/accept_rules.py F:/dev/skyrush-out/tmp/route-grand-loop/city.json --baseline tools/city/rules_baseline.json",
+      "must": ["ACCEPT_RULES OK"]
+    },
+    {
+      "name": "the grand loop closes, the other routes did not move",
+      "cmd": "python tools/city/check_route_loop.py F:/dev/skyrush-out/tmp/route-grand-loop/city.json data/city/city.json",
+      "must": ["ROUTE_LOOP OK"]
+    }
+  ]
+}
