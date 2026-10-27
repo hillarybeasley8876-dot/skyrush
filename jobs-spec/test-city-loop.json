@@ -1,0 +1,33 @@
+{
+  "id": "test-city-loop",
+  "title": "The circuit of the test city can be driven (test_world_api: the route test_loop)",
+  "brief": "briefs/improve/test-city-loop.md",
+  "isolation": "worktree",
+  "owns": [
+    "data/city/test_city.json"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 200,
+  "timeoutMin": 150,
+  "accept": [
+    {
+      "name": "test_world_api passes, every leg of test_loop has a way",
+      "timeoutS": 1500,
+      "cmd": "python tools/gd.py test res://world/tests/test_world_api.gd -- --timeout=900",
+      "must": [
+        "PASS all"
+      ],
+      "mustNot": [
+        "no forward path",
+        "cannot reach"
+      ]
+    },
+    {
+      "name": "test_loop stays a 2-lap race with a gate on the elevated road and its grid",
+      "cmd": "python -c \"import json; c=json.load(open('data/city/test_city.json',encoding='utf-8')); r=[x for x in c['routes'] if x['id']=='test_loop'][0]; ok=r['kind']=='race' and r['laps']==2 and len(r['checkpoints'])>=4 and any(p[1]>=8 for p in r['checkpoints']) and r['grid']==[-450,0,-5,90]; print('TEST_LOOP_SHAPE OK' if ok else 'TEST_LOOP_SHAPE FAIL')\"",
+      "must": [
+        "TEST_LOOP_SHAPE OK"
+      ]
+    }
+  ]
+}
