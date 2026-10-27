@@ -210,7 +210,9 @@ async function runAccept(job, cwd = ROOT) {
     for (let k = 0; k < tries; k++) {
       r = await runCmd(a.cmd, a.timeoutS ?? 900, cwd);
       why = [];
-      if ((a.exit ?? 0) !== null && r.code !== (a.exit ?? 0)) why.push(`exit code ${r.code}, expected ${a.exit ?? 0}`);
+      // "exit": null in a spec = any exit code (a test that prints its known failures and exits 1); `??` turned null into 0
+      const want = a.exit === undefined ? 0 : a.exit;
+      if (want !== null && r.code !== want) why.push(`exit code ${r.code}, expected ${want}`);
       for (const m of a.must ?? []) if (!has(r.out, m)) why.push(`output lacks: ${m}`);
       for (const m of a.mustNot ?? []) if (has(r.out, m)) why.push(`output must not contain: ${m}`);
       if (why.length === 0) break;
@@ -252,7 +254,7 @@ function firstPrompt(job) {
   const acc = (job.accept ?? []).map((a, i) => `${i + 1}. **${a.name}** — run \`${a.cmd}\`` +
     `${(a.must ?? []).length ? ` and the output must contain: ${a.must.map((m) => `\`${m}\``).join(', ')}` : ''}` +
     `${(a.mustNot ?? []).length ? `; it must NOT contain: ${a.mustNot.map((m) => `\`${m}\``).join(', ')}` : ''}` +
-    `${(a.exit ?? 0) === null ? '' : ` (exit code ${a.exit ?? 0})`}`).join('\n');
+    `${a.exit === null ? '' : ` (exit code ${a.exit === undefined ? 0 : a.exit})`}`).join('\n');
   return `${preamble}\n\n# YOUR BRIEF — ${job.title}\n\n${brief}\n\n## Files you own (the only paths you may edit)\n${owns}\n\n## Acceptance (the runner executes these itself after you finish)\n${acc}\n`;
 }
 
