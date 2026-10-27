@@ -140,6 +140,13 @@ var _road_timer: float = 0.0
 var _rng := RandomNumberGenerator.new()
 ## The context of the last tick (the traffic around the rival).
 var _ctx: RivalContext = null
+## The frame of the line at the place of the car: the brain measures it once per tick and
+## the helpers read it (the helpers used to measure it again for every car they looked at).
+var frame: RivalFrame = RivalFrame.new()
+## The forward axis of the car (it is read once per tick).
+var car_forward: Vector3 = Vector3.FORWARD
+## The cars near the rival (the list of the tick, read once and not once per helper).
+var _near: Array[Node3D] = []
 
 
 ## Sets the brain up from a difficulty preset.
@@ -153,6 +160,8 @@ func setup(preset: Dictionary, skill_offset: float, factor: float, source_line: 
 	mistake_timer = _rng.randf_range(float(preset.get("mistake_min", 45.0)),
 		float(preset.get("mistake_max", 70.0)))
 	speed_helper.setup(preset, skill_offset, factor, source_line)
+	speed_helper.frame = frame
+	avoid.frame = frame
 
 
 ## The grip budget for a car of this spec (the Roadster's mu decides the real limit).
@@ -171,9 +180,19 @@ func tick(delta: float, car: ArcadeCar, ctx: RivalContext) -> void:
 		car.set_controls(0.0, 0.0, 0.0, false)
 		return
 	_update_position(car, delta)
+	# The frame of the line at the place of the car: it is measured once per tick and
+	# every helper reads it from here on.
+	frame.measure(line, offset)
 	_ctx = ctx
+	# The list of the cars around the rival (the drift and the avoidance look at it).
+	_near = ctx.near_of(car)
+	avoid.near = _near
+	avoid.near_ready = true
 	car_position = car.global_position
-	var forward := car.get_forward().dot(car.linear_velocity)
+	# The forward axis of the car: it is read once per tick (the car does not turn
+	# while the tick runs).
+	car_forward = car.get_forward()
+	var forward := car_forward.dot(car.linear_velocity)
 	speed = maxf(forward, 0.0)
 	distance += speed * delta
 	if ctx.on_grid:
@@ -265,13 +284,13 @@ func _steering(car: ArcadeCar, shift: float) -> float:
 		# in, so the pack does not fold into one line in front of it.
 		aim = aim.lerp(gate_positions[next_gate] + aim_right * (lane_offset + shift), blend)
 	# The cross-track term: the car is pulled back onto its own line.
-	var right_here := line.right_at(offset)
-	var here := line.point_at(offset) + right_here * lane
+	var right_here := frame.right
+	var here := frame.point + right_here * lane
 	var cross := (car.global_position - here).dot(right_here)
 	# The aim point is pulled towards the line: the pure pursuit cuts the corner, and the
 	# aim has to be pulled back with it.
 	aim += right_here * (-cross * CROSS_AIM_GAIN)
-	var err := -AISteering.heading_error(car.get_forward(), aim - car.global_position)
+	var err := -AISteering.heading_error(car_forward, aim - car.global_position)
 	err += clampf(-atan(STANLEY_K * cross / maxf(speed, CROSS_TRACK_MIN_SPEED)),
 		-STANLEY_LIMIT, STANLEY_LIMIT)
 	err += mistake_bias
@@ -388,10 +407,10 @@ func _update_road(delta: float, car: ArcadeCar) -> void:
 	_road_timer = ROAD_HALF_REFRESH
 	# The carriageway is measured at the line and not at the car: a measurement at the car
 	# follows the car out of its lane, and the rival drives further out with every tick.
-	var frame := road.road_frame(line.point_at(offset), line, offset)
-	_road_lo = frame.x
-	_road_hi = frame.y
-	_road_mid = frame.z
+	var road_frame := road.road_frame(frame.point, line, offset)
+	_road_lo = road_frame.x
+	_road_hi = road_frame.y
+	_road_mid = road_frame.z
 	if not _grid_column_ready and _road_lo > -INF:
 		# The column of the grid slot, counted in the road.
 		_grid_column = grid_lane - _road_mid
@@ -417,9 +436,9 @@ func _watchdog(delta: float, car: ArcadeCar, ctx: RivalContext) -> bool:
 func cross_track(car: ArcadeCar) -> float:
 	if line == null:
 		return 0.0
-	var right := line.right_at(offset)
+	var right := frame.right
 	var lane := lane_offset + avoid.pass_shift
-	return (car.global_position - line.point_at(offset) - right * lane).dot(right)
+	return (car.global_position - frame.point - right * lane).dot(right)
 
 
 ## Puts the car at a known place on the racing line (the start grid).
@@ -427,6 +446,9 @@ func set_line_offset(value: float) -> void:
 	offset = value
 	travelled = value
 	_projected = true
+	if line != null:
+		# The frame of the line follows the offset of the car (the helpers read it).
+		frame.measure(line, value)
 
 
 ## Tells the brain which gate comes next. The distance is measured on the next tick, when
@@ -495,15 +517,17 @@ func _update_drift(car: ArcadeCar) -> void:
 func _car_beside(car: ArcadeCar) -> bool:
 	if _ctx == null:
 		return false
-	for node in _ctx.near_of(car):
+	var my_pos := car.global_position
+	for node in _near:
 		if not is_instance_valid(node) or node == car:
 			continue
-		if not RivalContext.on_my_level(car, node):
+		# The level test is inline: it runs for every car of the near list.
+		if absf(my_pos.y - node.global_position.y) > RivalContext.LEVEL:
 			continue
-		var rel := node.global_position - car.global_position
-		if absf(rel.dot(line.right_at(offset))) > DRIFT_SIDE_BAND:
+		var rel := node.global_position - my_pos
+		if absf(rel.dot(frame.right)) > DRIFT_SIDE_BAND:
 			continue
-		if absf(rel.dot(line.tangent_at(offset))) > DRIFT_AHEAD_BAND:
+		if absf(rel.dot(frame.tangent)) > DRIFT_AHEAD_BAND:
 			continue
 		return true
 	return false

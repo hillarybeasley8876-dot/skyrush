@@ -71,7 +71,7 @@ func check(brain: RivalBrain, delta: float, car: ArcadeCar, ctx: RivalContext) -
 	else:
 		_over_cap_time = 0.0
 	# 4: the car is off the road: it is high above its line and far away from it.
-	var here := brain.line.point_at(brain.offset)
+	var here := brain.frame.point
 	if absf(car.global_position.y - here.y) > OFF_LINE_HEIGHT and cross > OFF_LINE_CROSS:
 		rescue(brain, car, ctx, "off the road")
 		return true

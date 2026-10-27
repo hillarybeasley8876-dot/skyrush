@@ -21,11 +21,16 @@ var length: float = 0.0
 var closed: bool = false
 ## The offset of the start of the table (the lead-in of an open line).
 var table_start: float = 0.0
+## The number of samples of the window of the max curvature table.
+var _max_span: int = 0
 
 var _points: PackedVector3Array = PackedVector3Array()
+var _segments: PackedVector3Array = PackedVector3Array()
+var _segment_len2: PackedFloat64Array = PackedFloat64Array()
 var _curvature: PackedFloat32Array = PackedFloat32Array()
 var _straights: PackedFloat32Array = PackedFloat32Array()
 var _max_curvature: PackedFloat32Array = PackedFloat32Array()
+var _max_window: PackedFloat32Array = PackedFloat32Array()
 var _profiles: Dictionary = {}
 
 
@@ -57,12 +62,20 @@ func _build_tables() -> void:
 			_points[i] = head + dir * offset
 		else:
 			_points[i] = curve.sample_baked(offset, true)
+	# The segments of the line: the projection of a car walks over them in every tick.
+	_segments.resize(count)
+	_segment_len2.resize(count)
+	for i in count:
+		var seg := _points[i + 1] - _points[i]
+		_segments[i] = seg
+		_segment_len2[i] = seg.length_squared()
 	_curvature.resize(count + 1)
 	for i in count + 1:
 		_curvature[i] = _curvature_at_index(i, count)
 	_smooth_curvature(count)
 	_build_straights(count)
 	_build_max_curvature(count)
+	_build_max_window(count)
 
 
 ## The Menger curvature of three points (1/m). 0 on a straight.
@@ -116,6 +129,7 @@ func _build_straights(count: int) -> void:
 ## line on every tick.
 func _build_max_curvature(count: int) -> void:
 	var span := int(MAX_CURVATURE_LOOKAHEAD / STEP)
+	_max_span = span
 	_max_curvature.resize(count + 1)
 	for i in count + 1:
 		var best := 0.0
@@ -124,12 +138,29 @@ func _build_max_curvature(count: int) -> void:
 		_max_curvature[i] = best
 
 
+## The highest curvature of the window of the max curvature table, for every point.
+##
+## The window of the table (the 16 samples of MAX_CURVATURE_LOOKAHEAD) is what the rivals
+## ask for in every tick: the table of the windows answers the question in one lookup.
+func _build_max_window(count: int) -> void:
+	var span := _max_span
+	_max_window.resize(count + 1)
+	for i in count + 1:
+		var best := 0.0
+		for k in range(0, span + 1):
+			best = maxf(best, _max_curvature[_wrap(i + k, count)])
+		_max_window[i] = best
+
+
 ## The highest curvature of the next `distance` metres (1/m).
 func max_curvature_ahead(offset: float, distance: float) -> float:
 	if _max_curvature.is_empty():
 		return 0.0
 	var span := int(distance / STEP)
 	var index := _index_at(offset)
+	if span == _max_span:
+		# The window table holds exactly this window: the lookup is the answer.
+		return _max_window[index]
 	var count := _max_curvature.size() - 1
 	var best := 0.0
 	for k in range(0, span + 1):
@@ -139,7 +170,10 @@ func max_curvature_ahead(offset: float, distance: float) -> float:
 
 ## Wraps an index into the table (the table has one extra point that repeats the first).
 func _wrap(index: int, count: int) -> int:
-	return ((index % count) + count) % count
+	var wrapped := index % count
+	if wrapped < 0:
+		wrapped += count
+	return wrapped
 
 
 ## The index of the table point at `offset` (the offset wraps on a closed line).
@@ -237,6 +271,14 @@ func speed_limit(offset: float, a_lat: float, a_brake: float) -> float:
 	return profile(a_lat, a_brake)[_index_at(offset)]
 
 
+## The speed the car may hold at `offset` for a profile it holds itself (the profile of a
+## rival is built once, not once per tick).
+func limit_of(profile: PackedFloat32Array, offset: float) -> float:
+	if profile.is_empty():
+		return INF
+	return profile[_index_at(offset)]
+
+
 ## The distance of the straight ahead (how far the curvature stays under the threshold).
 func straight_ahead(offset: float) -> float:
 	if _straights.is_empty():
@@ -257,9 +299,8 @@ func project(from_offset: float, pos: Vector3, window: float) -> float:
 	for i in range(first, last + 1):
 		var index := _wrap(i, count)
 		var a := _points[index]
-		var b := _points[index + 1]
-		var seg := b - a
-		var len_sq := seg.length_squared()
+		var seg := _segments[index]
+		var len_sq := _segment_len2[index]
 		var t := 0.0
 		if len_sq > 0.0001:
 			t = clampf((pos - a).dot(seg) / len_sq, 0.0, 1.0)

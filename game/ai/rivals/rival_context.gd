@@ -7,6 +7,9 @@ extends RefCounted
 
 const LEVEL := 4.0   ## m: the height difference under which two cars are on the same level
 
+## The empty list of a rival without near cars (it is shared: it is never written to).
+static var _empty: Array[Node3D] = [] as Array[Node3D]
+
 ## The player car (may be null in a headless test).
 var player: VehicleBase = null
 ## The player's position on the racing line (unwrapped, in metres).
@@ -33,13 +36,52 @@ var elapsed: float = 0.0
 ## The cars every rival has to keep clear of, keyed by the instance id of the rival.
 ## The list is rebuilt at 10 Hz by the director.
 var near: Dictionary = {}
+## The frame of the line at the place of every car that drives on it (the point of the
+## line and its right vector).
+##
+## The frame of a place on the line does not change while the line is the same: it is
+## measured again only when the car drives on. Every rival of the field measures the side
+## of the other cars from it, and the side of a car is the same for all of them.
+var _frames: Dictionary = {}
+## The frames of the line (7 numbers per car: the offset, the point and the right vector).
+var _frame_data: PackedFloat64Array = PackedFloat64Array()
+
+
+## The side of a car that drives on the racing line (m, positive = to the right).
+##
+## The side is measured from the line at the place of the car: the cars of the field are
+## compared on the same ribbon. The frame of the place is kept: it is the same for every
+## rival of the field, and it is measured again only when the car drives on.
+func lateral_of(node: Node3D, line: RivalLine, offset: float) -> float:
+	var id := node.get_instance_id()
+	var slot: int = int(_frames.get(id, -1))
+	if slot < 0:
+		# The car has no frame yet: it gets a slot of its own.
+		slot = _frame_data.size() / 7
+		_frame_data.resize((slot + 1) * 7)
+		_frames[id] = slot
+	var base := slot * 7
+	if _frame_data[base] != offset:
+		# The car drove on: the frame of its place on the line is measured again.
+		_frame_data[base] = offset
+		var point := line.point_at(offset)
+		var right := line.right_at(offset)
+		_frame_data[base + 1] = point.x
+		_frame_data[base + 2] = point.y
+		_frame_data[base + 3] = point.z
+		_frame_data[base + 4] = right.x
+		_frame_data[base + 5] = right.y
+		_frame_data[base + 6] = right.z
+	var here := Vector3(_frame_data[base + 1], _frame_data[base + 2], _frame_data[base + 3])
+	var right := Vector3(_frame_data[base + 4], _frame_data[base + 5], _frame_data[base + 6])
+	return (node.global_position - here).dot(right)
 
 
 ## The cars near one rival (the rivals and the traffic within the range of the director).
 func near_of(car: Node3D) -> Array[Node3D]:
 	if car == null:
-		return [] as Array[Node3D]
-	return near.get(car.get_instance_id(), [] as Array[Node3D]) as Array[Node3D]
+		return _empty
+	return near.get(car.get_instance_id(), _empty) as Array[Node3D]
 
 
 ## The distance a car has covered on the racing line (m).
