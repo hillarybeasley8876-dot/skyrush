@@ -181,6 +181,10 @@ func _report(world_path: String, director: Node) -> void:
 	_check(_probe.worst_height <= LanesWorldProbe.MAX_DEVIATION,
 		"%s: no car is more than %.1f m above or below its path (worst %.2f m)"
 		% [name, LanesWorldProbe.MAX_DEVIATION, _probe.worst_height])
+	var by_count := _probe.overlap_counts.keys()
+	by_count.sort_custom(func(x, y): return int(_probe.overlap_counts[x]) > int(_probe.overlap_counts[y]))
+	for key in by_count.slice(0, 12):
+		print("OVERLAP %s: %d samples, first %s" % [name, int(_probe.overlap_counts[key]), _probe.overlap_lanes[key]])
 	_check(_probe.overlaps == OVERLAP_LIMIT,
 		"%s: no two cars of a lane drive through each other (%d, worst %.2f m)"
 		% [name, _probe.overlaps, _probe.worst_overlap])

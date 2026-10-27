@@ -42,9 +42,11 @@ CRASH_AT_EXIT = (4294967295, -1)   # Godot exits with -1 at shutdown on a busy m
 
 
 def run_once(res, timeout):
+    # the test host has its own deadline in game seconds (120 unless told): the timeout of the suite has to reach it, or a
+    # test that needs longer (a race of two laps is 139 s) times out at 120 s whatever --timeout says
     try:
-        proc = subprocess.run([sys.executable, str(ROOT / "tools" / "gd.py"), "test", res], capture_output=True,
-                              text=True, encoding="utf-8", errors="replace", timeout=timeout + 600)
+        proc = subprocess.run([sys.executable, str(ROOT / "tools" / "gd.py"), "test", res, "--", "--timeout=%d" % timeout],
+                              capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout + 600)
         return (proc.stdout or "") + (proc.stderr or ""), proc.returncode
     except subprocess.TimeoutExpired as exc:
         return (exc.stdout or b"").decode("utf-8", "replace") if isinstance(exc.stdout, bytes) else (exc.stdout or ""), 124

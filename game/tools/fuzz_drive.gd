@@ -148,7 +148,9 @@ func _scan_others(seen: Dictionary, last: Dictionary, stale: Dictionary) -> void
 			var why := ""
 			if kmh > FAST_KMH and moved < TELEPORT_M and not bool(car.freeze):
 				why = "moved %.0f km/h" % kmh
-			elif (here.y < -10.0 and not _near_edge(here)) or here.y > 60.0:
+			elif (here.y < -10.0 and not _near_edge(here) and here.y < Game.world.nearest_road_transform(here).origin.y - 3.0) \
+					or here.y > 60.0:
+				# under the city is under its road: the Yan'an tunnel runs 28 m down, a car in it is where it should be
 				why = "at height %.0f m" % here.y
 			elif is_nan(here.x) or is_nan(here.y):
 				why = "NaN"

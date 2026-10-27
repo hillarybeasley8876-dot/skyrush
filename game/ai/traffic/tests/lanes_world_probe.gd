@@ -44,6 +44,9 @@ var longest_why: String = ""
 var overlaps: int = 0
 ## The worst overlap.
 var worst_overlap: float = 0.0
+## The first overlap seen on each lane (for the report) and how many samples each lane had.
+var overlap_lanes: Dictionary = {}
+var overlap_counts: Dictionary = {}
 ## The cars that drive at the wrong speed limit.
 var v0_errors: int = 0
 ## The worst speed limit error.
@@ -77,6 +80,8 @@ func reset() -> void:
 	longest_why = ""
 	overlaps = 0
 	worst_overlap = 0.0
+	overlap_lanes.clear()
+	overlap_counts.clear()
 	v0_errors = 0
 	worst_v0 = 0.0
 	removed = 0
@@ -237,6 +242,12 @@ func sample_overlaps(cars: Array) -> void:
 				continue
 			overlaps += 1
 			worst_overlap = maxf(worst_overlap, 0.4 * (a.car_length + b.car_length) - absf(local.z))
+			var key := "%d" % a.follower.lane
+			if not overlap_lanes.has(key):
+				overlap_lanes[key] = "lane %d s %.0f/%.0f at (%.0f %.1f %.0f), modes %d/%d, speeds %.1f/%.1f" % [a.follower.lane,
+					a.follower.s, b.follower.s, a.global_position.x, a.global_position.y, a.global_position.z, a.mode, b.mode,
+					a.speed, b.speed]
+			overlap_counts[key] = int(overlap_counts.get(key, 0)) + 1
 
 
 ## A car that left the traffic: the ones that stood still were at the end of a dead end road.
