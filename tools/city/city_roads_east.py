@@ -63,12 +63,17 @@ def yanan_tunnel():
     tools/city/check_tunnel_portals.py checks all of it.
     Rising 28 m between those two points needs a vertical curve of 1 % per
     10 m (radius ~1000 m, 0.1 g at 120 km/h) instead of the 0.5 % of a street.
+    Under the Bund the plan runs by (-60, 80) and (20, 10) instead of the
+    dossier's (-37, 84) and (2, 26): those made a bend of 44 m radius 15 m
+    down in the bore (0.64 g at 60 km/h); the tightest bend is 99 m now, at
+    the bottom under the river.  A smoother line is shorter, and the two
+    ramps need about 640 m each to go 28 m down at 4.8 %.
     """
-    plan = [(-360.0, 210.0), (-300.0, 198.0), (-225.0, 170.0), (-163.2, 118.1), (-37.4, 84.1),
-            (1.7, 26.3), (150.0, -150.0), (255.9, -196.6), (410.6, -332.3),
+    plan = [(-360.0, 210.0), (-300.0, 198.0), (-225.0, 170.0), (-163.2, 118.1), (-60.0, 80.0),
+            (20.0, 10.0), (150.0, -150.0), (255.9, -196.6), (410.6, -332.3),
             (617.1, -454.8), (759.0, -462.4)]
     anchors = [("start", 0.0, 0.0), ("p", 150.0, -150.0, -28.0, 0.0),
-               ("p", 715.0, -465.0, 0.0, 0.0), ("end", 0.0, 0.0)]
+               ("p", 717.0, -465.0, 0.0, 0.0), ("end", 0.0, 0.0)]
     return Road("yanan_tunnel", "延安东路隧道", "Yan'an E. Rd Tunnel", "tunnel",
                 plan, anchors, lanes_fwd=2, lanes_back=2, lane_width=3.5,
                 median=7.5, shoulder=0.5, speed_kmh=60,
