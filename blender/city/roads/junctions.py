@@ -32,25 +32,43 @@ def line_intersect(p1, d1, p2, d2):
     return p1 + d1 * t
 
 
+def _on_road(road, s):
+    """The point of the centre line of a road at the distance `s` along it."""
+    i = road.index_at(s)
+    if i >= len(road.path) - 1:
+        return road.path[-1]
+    seg = road.dist[i + 1] - road.dist[i]
+    t = 0.0 if seg < 1e-9 else max(0.0, min(1.0, (s - road.dist[i]) / seg))
+    return road.path[i].lerp(road.path[i + 1], t)
+
+
 def arm_geometry(city, junction):
     """The arms of a junction: [{road, index, dir, half, tangent, n, z, sign}].
 
     Only the arms that share a level are returned: a crossing with a road at
-    another height is grade separated and has no junction.
+    another height is grade separated and has no junction.  `off` says that the
+    junction stands beside the road instead of on it: the fill of such a
+    junction is drawn on the road, not on the centre of the junction.
     """
     centre = city.junction_centre(junction)
     arms = []
-    for (road, idx, _dist) in city.junction_arms(junction):
+    for (road, idx, dist) in city.junction_arms(junction):
         t = road.frames[idx][0]
         lay = profiles.layout(road)
         half = lay["asphalt_half"]
         s0, z0 = road.project(centre)
+        # the junction stands beside a road whose side street ends at it: the
+        # fill of the junction is then drawn on that road, not on the centre
+        off = dist > half
+        base = _on_road(road, s0) if off else centre
         if idx > 0:
             arms.append({"road": road, "index": idx, "dir": -t.copy(), "half": half,
-                         "tangent": t.copy(), "sign": -1.0, "z": z0, "s0": s0})
+                         "tangent": t.copy(), "sign": -1.0, "z": z0, "s0": s0,
+                         "base": base, "off": off})
         if idx < len(road.path) - 1:
             arms.append({"road": road, "index": idx, "dir": t.copy(), "half": half,
-                         "tangent": t.copy(), "sign": 1.0, "z": z0, "s0": s0})
+                         "tangent": t.copy(), "sign": 1.0, "z": z0, "s0": s0,
+                         "base": base, "off": off})
     for a in arms:
         d = a["dir"]
         a["n"] = Vector((-d.y, d.x, 0.0))
@@ -241,7 +259,8 @@ def boundary(arms, centre):
         a["_cross_z"] = z_rad
         radius = cross_d
         radius_b = cross_d_b
-        base = centre + a["dir"] * radius
+        base = _on_road(a["road"], a["s0"] + a["sign"] * radius) if a["off"] \
+            else centre + a["dir"] * radius
         cross_r = base - a["n"] * a["half"]
         cross_l = base + a["n"] * a["half"]
         ring.append((cross_r, -a["n"], z_rad))
@@ -256,7 +275,8 @@ def boundary(arms, centre):
             arc.append(Vector((q.x, q.y, z)))
             ring.append((q, (q - centre).normalized(), z))
         # the next arm's right side, from the corner back to its kerb line
-        base_b = centre + nxt["dir"] * radius_b
+        base_b = _on_road(nxt["road"], nxt["s0"] + nxt["sign"] * radius_b) if nxt["off"] \
+            else centre + nxt["dir"] * radius_b
         cross_r_b = base_b - nxt["n"] * nxt["half"]
         for s in range(1, 4):
             f = s / 4.0
@@ -295,22 +315,13 @@ def trim_indices(city, road, junction, path=None):
     The kerb of the road stops where the kerb-return arc starts, so the cut is at
     the arc's tangent point, not at the junction's outer cap. Only a road that
     is an arm of the junction's level is cut: a road that passes underneath is
-    left alone.
+    left alone. The samples of every junction of the road are taken together
+    (junction_holes.road_holes), so the cuts of two junctions cannot eat each
+    other, and a road that a junction stands beside is cut where the junction
+    stands on it; `path` is the road's own path.
     """
-    out = set()
-    arms, centre = arm_geometry(city, junction)
-    if not arms:
-        return out
-    if not any(a["road"].id == road.id for a in arms):
-        return out
-    boundary(arms, centre)
-    radius = road_radius(arms, road.id)
-    if radius <= 0.0:
-        return out
-    for i, p in enumerate(path if path is not None else road.path):
-        if (p - centre).length <= radius:
-            out.add(i)
-    return out
+    from city.roads import junction_holes
+    return set(junction_holes.road_holes(city, road).get(junction["id"], ()))
 
 
 def collision_excluded(city, road, junction, path=None):
@@ -355,5 +366,8 @@ def build(city, junction, tileset):
     z = fill[0].z if fill else 0.0
     junction_fill.build_fill(fill, tileset)
     junction_markings.build_kerb(arcs, tileset)
-    junction_markings.build_crossings(arms, centre, tileset, z, END_CAP)
+    # the crossings stand on the road of their arm, not on the centre of the
+    # junction, which stands beside a road whose side street ends at it
+    for a in arms:
+        junction_markings.build_crossings([a], a["base"], tileset, z, END_CAP)
     junction_markings.build_arrows(arms, centre, tileset, z)
