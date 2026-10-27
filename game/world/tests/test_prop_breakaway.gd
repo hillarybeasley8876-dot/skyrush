@@ -103,11 +103,17 @@ func _run() -> void:
 	_check(lights.is_empty() or off == lights.size(), "its light is off", "(%d of %d)" % [off, lights.size()])
 	_check(breaker.debris_count() > debris_before, "its pole falls")
 	# the pole lies, fades and goes (the car is parked meanwhile: rolling on, it knocks more props over, now that the soft
-	# furniture breaks away too)
+	# furniture breaks away too). The pieces of this lamp are followed, not the count: the suite runs every unit, and a traffic
+	# or police car that knocked a prop over while the pole faded left a piece of its own.
+	var pieces: Array = (breaker.get("_debris") as Array).slice(debris_before)
 	car.linear_velocity = Vector3.ZERO
 	car.freeze = true
 	await get_tree().create_timer(PropBreaker.DEBRIS_LIFE + PropBreaker.DEBRIS_FADE + 0.5, true, false, true).timeout
-	_check(breaker.debris_count() == debris_before, "the pole fades away", "(%d left)" % breaker.debris_count())
+	var left := 0
+	for piece in pieces:
+		if (breaker.get("_debris") as Array).has(piece):
+			left += 1
+	_check(not pieces.is_empty() and left == 0, "the pole fades away", "(%d of its %d pieces left)" % [left, pieces.size()])
 	car.freeze = false
 	# a car that creeps into a lamp does not break it
 	var slow_pick := _clear_lamp(breaker, car)

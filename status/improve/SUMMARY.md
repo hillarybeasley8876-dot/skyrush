@@ -333,6 +333,47 @@ within 0.2 deg/s, the g within 0.01). `vehicle/tests/test_probe_inside_box.gd`: 
 dropped beside a wall and one that scrapes it at 140 km/h keep their probes out of the wall (on the old code 126 and 114 probe ticks
 in the wall, the dropped car rolled 27 degrees; mutation-checked).
 
+## The streets stood over the open ramps of the Yan'an tunnel (the traffic of the Lujiazui Ring Rd in a deadlock)
+
+The whole-city traffic run (`test_lanes_world.gd`) showed up to 2,151 overlap samples on one lane and a car standing still for 65 s:
+the Lujiazui Ring Rd ran 0.2-0.6 m over the Pudong ramp of the tunnel, and the solid tube that `world/build/tunnel_trench.gd` stood up
+wherever the crown of a bore was over the ground (10-25) stood across it; the player's car hit it at 133 km/h. In Puxi, Fujian Rd, the
+Henan Rd link and the Yan'an Rd surface road ran 0-1.3 m over the other ramp. The map is changed so that no street crosses an open
+trough (`tools/city/city_roads_east.yanan_tunnel`): the tunnel starts at the east end of Fujian Rd (-360, 210) and keeps 25 m off the
+Yan'an Rd surface road until it is 6 m down; in Pudong it is at grade from x 717 and meets the ring road at a junction with signals
+(Lujiazui West Rd still crosses it over the bore). Rising 28 m between the two needs a vertical curve of 1 % per 10 m: `Road(kink=...)`,
+and validate.py allows it for this road only. Under the Bund the line no longer runs through a bend of 44 m radius (0.64 g at the
+60 km/h of the tunnel): the tightest bend is 99 m now, at the bottom. A new rule, "tunnel portals open to the sky"
+(`tools/city/check_tunnel_portals.py`, `selftest_tunnel_portals.py`, 11 cases; the old map fails on five streets): no carriageway and no
+lot on a trough (0.3-5.98 m deep), the tunnel meets a street at grade only at a junction.
+
+The roads unit draws the tunnel by its depth now (M3.1 job roads-tunnel-trough, one round): the bore only where the ground covers it,
+an open trough with a wall either side of each carriageway from under the road up to the ground and a parapet 1.0 m over the ground on
+the outer walls, a fence across the trough where it meets the bore, the height-limit bar there, asphalt along the whole tunnel (there
+was none), the ceiling lights only in the bore. It also drew an enamel sheet diagonally across the carriageway in the whole bore
+(`_zone_profiles` joined the two walls of a zone into one polyline), fixed. `tools/city/check_tunnel_build.py` (12 checks on the built
+tiles: no bore over the ground, walls and parapets on the trough seen from the street and from the median, nothing over the lanes, a
+floor under them, no barrier in the streets near the portals, no light in the open air): 9 of 12 failed before, 0 now. The game no
+longer builds the tube; it still cuts the ground over the ramps. `world/tests/test_tunnel_portals.gd`: the ramps are open to the sky,
+no barrier of the road tiles in the lanes of the streets near them (2,839 boxes), the ground cut over the junction mouths, the drives
+down and up both ramps (22 checks; with the old tube "open to the sky" fails, 289 of 294 points). The soak of the Pudong portal (4 sites
+x 150 s): no car stuck (the cars of the ring road stuck at the tube before); 60 random drives through the new junction and out of the
+tunnel: none odd.
+
+## Beijing E Rd ran along the middle of the Suzhou Creek
+
+The named E-W streets of Puxi were laid from the Bund to x -900 without looking at the water: Beijing E Rd went into the creek where
+it bends south and ran 178 m along its middle, so its traffic drove on the water and a car that left its edge fell into the creek (a
+random city drive lost a car there). The street ends where it meets the water now; the rule "no road in the water" knew only the
+polygon of the Huangpu and checks the strip of the creek too.
+
+## The grand loop comes back to its start
+
+`grand_loop` is a race (a circuit), but it ended at the north end of the Bund, 2.3 km from its start, and the closing leg was 5.4 km
+of side streets without a gate. It goes on by Beijing E Rd, Fujian Rd, the Yan'an Rd surface road and the D9 grid onto the G50 now
+(M3.1 job route-grand-loop, one round): 34 gates, 15.8 km, the last gate 390 m from the first (`tools/city/check_route_loop.py`;
+`check_routes_drivable.py` OK for every route). The gate boards of 34 gates are drawn, the 27 of the old loop deleted.
+
 ## Tools added (game/tools, tools/)
 
 `frame_probe.gd` (the frames of a whole-game drive, split; A/B switches), `spot_probe.gd` (what stands at a place, what the
@@ -345,6 +386,8 @@ places, followed for 4 s), `spawn_height_probe.gd` (the road height of every lan
 hands-off: the peaks of the turn, the bank, the g, the landing), `smooth_probe.gd` (how smoothly the car, the camera and the far
 traffic cars move on the screen), `fuzz_drive.gd --jumps=1` (a car moved by hand in sight), `parapet_probe.gd` (cars driven into the parapets and the medians of the elevated roads), `tools/city/restamp_blocks.py`,
 `tools/city/check_joint_runoff.py` (straight rays from the lane ends at the deck joints: fenced, road or open),
+`tools/city/check_tunnel_portals.py` (no street on an open trough; a rule of validate.py), `tools/city/check_tunnel_build.py` (the
+tunnel in the built tiles), `tools/city/check_route_loop.py`,
 `tools/run_follow.py` (follow trials),
 `blender/city/roads/edgewalls.py`, `blender/city/roads/buildingcut.py`.
 
