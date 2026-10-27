@@ -16,57 +16,82 @@
     {
       "name": "rivals scripts and scenes load clean",
       "cmd": "python tools/gd.py check --only=res://ai/rivals/",
-      "must": ["re:CHECK \\d+ files, 0 failed, 0 engine errors"],
+      "must": [
+        "re:CHECK \\d+ files, 0 failed, 0 engine errors"
+      ],
       "timeoutS": 1200
     },
     {
       "name": "the brains of five rivals cost less than 0.35 ms per tick",
       "cmd": "python tools/gd.py test res://ai/rivals/tests/test_performance.gd",
-      "must": ["PASS the AI of the rivals costs less than 0.35 ms per tick"],
+      "must": [
+        "PASS the AI of the rivals costs less than 0.35 ms per tick"
+      ],
       "timeoutS": 900
     },
     {
       "name": "the sandbox race is not worse (deterministic: 4 passes, 2 hard contacts today)",
       "cmd": "python tools/gd.py test res://ai/rivals/tests/test_race_flow.gd -- --timeout=420",
-      "must": ["PASS the race started", "PASS the results hold 6 racers (6)", "PASS every racer counted the gates",
-               "PASS no rival needed the marshal (0)", "PASS the field is within 15 s"],
-      "mustNot": ["re:at least 6 passes \\([0-3]\\)", "re:over 800 N\\*s \\(([3-9]|[1-9][0-9]+)\\)"],
-      "timeoutS": 1200
+      "must": [
+        "PASS the race started",
+        "PASS the results hold 6 racers (6)",
+        "PASS every racer counted the gates",
+        "PASS no rival needed the marshal (0)",
+        "PASS the field is within 15 s"
+      ],
+      "mustNot": [
+        "re:at least 6 passes \\([0-3]\\)",
+        "re:over 800 N\\*s \\(([3-9]|[1-9][0-9]+)\\)"
+      ],
+      "timeoutS": 1200,
+      "exit": null
     },
     {
       "name": "the rivals drive away from the grid",
       "cmd": "python tools/gd.py test res://ai/rivals/tests/test_rival_driving.gd",
-      "must": ["RIVAL DRIVING TESTS OK (0 failures)"],
+      "must": [
+        "RIVAL DRIVING TESTS OK (0 failures)"
+      ],
       "timeoutS": 900
     },
     {
       "name": "the rubber band",
       "cmd": "python tools/gd.py test res://ai/rivals/tests/test_rubber_band.gd",
-      "must": ["RUBBER BAND TESTS OK (0 failures)"],
+      "must": [
+        "RUBBER BAND TESTS OK (0 failures)"
+      ],
       "timeoutS": 900
     },
     {
       "name": "the start grid",
       "cmd": "python tools/gd.py test res://ai/rivals/tests/test_start_grid.gd",
-      "must": ["START GRID TESTS OK (0 failures)"],
+      "must": [
+        "START GRID TESTS OK (0 failures)"
+      ],
       "timeoutS": 900
     },
     {
       "name": "the levels of the road",
       "cmd": "python tools/gd.py test res://ai/rivals/tests/test_layers.gd",
-      "must": ["RIVAL LAYER TESTS OK (0 failures)"],
+      "must": [
+        "RIVAL LAYER TESTS OK (0 failures)"
+      ],
       "timeoutS": 900
     },
     {
       "name": "the start of a race in the real city",
       "cmd": "python tools/gd.py test res://ai/rivals/tests/test_real_start.gd -- --timeout=420",
-      "must": ["REAL START TESTS OK (0 failures)"],
+      "must": [
+        "REAL START TESTS OK (0 failures)"
+      ],
       "timeoutS": 1500
     },
     {
       "name": "a race on a real route",
       "cmd": "python tools/gd.py test res://ai/rivals/tests/test_real_route.gd -- --timeout=420",
-      "must": ["REAL ROUTE TESTS OK (0 failures)"],
+      "must": [
+        "REAL ROUTE TESTS OK (0 failures)"
+      ],
       "timeoutS": 1500
     }
   ]
