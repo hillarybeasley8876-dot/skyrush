@@ -1,0 +1,91 @@
+{
+  "id": "roads-junction-exits",
+  "title": "A car can turn off every two-way road at every junction it passes (no lanes that run through a junction)",
+  "brief": "briefs/improve/roads-junction-exits.md",
+  "isolation": "worktree",
+  "sparse": [
+    "tools/",
+    "data/",
+    "ref/",
+    "briefs/",
+    "blender/",
+    "game/assets/textures/",
+    "game/assets/city/_tex/",
+    "game/world/data/",
+    "SPEC.md",
+    "ART.md",
+    "CONTRACTS.md",
+    "README.md"
+  ],
+  "owns": [
+    "blender/city/roads/junctions.py",
+    "blender/city/roads/lanes.py"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 300,
+  "timeoutMin": 240,
+  "accept": [
+    {
+      "name": "full Blender road build into the scratch directory",
+      "timeoutS": 1500,
+      "cmd": "python tools/gd.py blender run blender/city/roads/build_roads.py -- --out F:/dev/skyrush-out/tmp/roads-junction-exits/tiles --data F:/dev/skyrush-out/tmp/roads-junction-exits/full",
+      "must": [
+        "DONE in"
+      ]
+    },
+    {
+      "name": "every two-way road of a junction can be left there",
+      "cmd": "python tools/city/check_junction_exits.py data/city/city.json F:/dev/skyrush-out/tmp/roads-junction-exits/full/lanes.json",
+      "must": [
+        "JUNCTION_EXITS OK"
+      ]
+    },
+    {
+      "name": "no duplicate connectors",
+      "cmd": "python tools/city/check_lane_dupes.py F:/dev/skyrush-out/tmp/roads-junction-exits/full/lanes.json --quiet",
+      "must": [
+        "LANE_DUPES OK"
+      ]
+    },
+    {
+      "name": "the lane graph is intact",
+      "cmd": "python tools/city/check_lane_graph.py F:/dev/skyrush-out/tmp/roads-junction-exits/full/lanes.json --quiet && python tools/city/check_chain_links.py F:/dev/skyrush-out/tmp/roads-junction-exits/full/lanes.json --quiet",
+      "must": [
+        "LANE_GRAPH OK",
+        "CHAIN_LINKS OK"
+      ]
+    },
+    {
+      "name": "every race route is drivable",
+      "timeoutS": 900,
+      "cmd": "python tools/city/check_routes_drivable.py data/city/city.json F:/dev/skyrush-out/tmp/roads-junction-exits/full/lanes.json",
+      "must": [
+        "ROUTES_DRIVABLE OK"
+      ]
+    },
+    {
+      "name": "the road surface does not lose coverage",
+      "timeoutS": 900,
+      "cmd": "python tools/city/check_surface_coverage.py F:/dev/skyrush-out/tmp/roads-junction-exits/tiles F:/dev/skyrush-out/tmp/roads-junction-exits/full/lanes.json --max-bad 3895",
+      "must": [
+        "SURFACE_COVERAGE bad samples"
+      ]
+    },
+    {
+      "name": "no lane of the city is walled off",
+      "timeoutS": 900,
+      "cmd": "python tools/city/check_path_blockers.py F:/dev/skyrush-out/tmp/roads-junction-exits/tiles --lanes F:/dev/skyrush-out/tmp/roads-junction-exits/full/lanes.json --max-bad 25 --max-barrier-area 395000",
+      "must": [
+        "PATH_BLOCKERS OK"
+      ]
+    },
+    {
+      "name": "the open deck edges do not grow",
+      "timeoutS": 900,
+      "cmd": "python tools/city/check_open_edges.py F:/dev/skyrush-out/tmp/roads-junction-exits/tiles F:/dev/skyrush-out/tmp/roads-junction-exits/full/lanes.json --max-regular 181 --max-connector 14 --top 0",
+      "must": [
+        "OPEN_EDGES OK"
+      ]
+    }
+  ]
+}
