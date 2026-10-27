@@ -13,7 +13,7 @@ extends Node
 ##   OVERLAP  two near cars whose centres were closer than 2.4 m for 3 s (they drive through each other)
 ##   OFFLANE  a near car more than 3.5 m from the centre of its lane for 3 s
 ##   FAST     a car that moved more than 70 m/s (not a teleport: less than 15 m in one sample)
-##   LOW      a car under the ground or over a 60 m of height
+##   LOW      a car under the ground (3 m under its nearest road: not a car in the tunnel) or over a 60 m of height
 ##   (only=N runs the site N alone: the random numbers of the others are still drawn, so it is the same place)
 
 const MAIN := "res://main.tscn"
@@ -200,7 +200,9 @@ func _run() -> void:
 					told["f%d" % id] = true
 					problems += 1
 					print("SOAK FAST    site %d at (%.0f %.1f %.0f): %s moved %.0f m/s" % [site, here.x, here.y, here.z, car.name, speed])
-				if (here.y < -2.0 or here.y > 60.0 or is_nan(here.y)) and not told.has("l%d" % id):
+				# under the ground is under its road: the Yan'an tunnel runs 28 m down, a car in it is where it should be
+				var low := here.y < -2.0 and here.y < Game.world.nearest_road_transform(here).origin.y - 3.0
+				if (low or here.y > 60.0 or is_nan(here.y)) and not told.has("l%d" % id):
 					told["l%d" % id] = true
 					problems += 1
 					print("SOAK LOW     site %d at (%.0f %.1f %.0f): %s" % [site, here.x, here.y, here.z, car.name])
