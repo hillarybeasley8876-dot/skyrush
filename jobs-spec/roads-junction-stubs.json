@@ -1,0 +1,101 @@
+{
+  "id": "roads-junction-stubs",
+  "title": "Two junctions close together leave no lane that a car cannot leave or cannot enter (the stubs of roads-junction-exits)",
+  "brief": "briefs/improve/roads-junction-stubs.md",
+  "isolation": "worktree",
+  "sparse": [
+    "tools/",
+    "data/",
+    "ref/",
+    "briefs/",
+    "blender/",
+    "game/assets/textures/",
+    "game/assets/city/_tex/",
+    "game/world/data/",
+    "SPEC.md",
+    "ART.md",
+    "CONTRACTS.md",
+    "README.md"
+  ],
+  "owns": [
+    "blender/city/roads/junction_holes.py",
+    "blender/city/roads/junctions.py",
+    "blender/city/roads/lanes.py",
+    "blender/city/roads/lane_links.py",
+    "blender/city/roads/lane_stubs.py"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 300,
+  "timeoutMin": 240,
+  "accept": [
+    {
+      "name": "full Blender road build into the scratch directory",
+      "timeoutS": 1500,
+      "cmd": "python tools/gd.py blender run blender/city/roads/build_roads.py -- --out F:/dev/skyrush-out/tmp/roads-junction-stubs/tiles --data F:/dev/skyrush-out/tmp/roads-junction-stubs/full",
+      "must": [
+        "DONE in"
+      ]
+    },
+    {
+      "name": "no new dead end, no new lane without a predecessor, no more stubs than the reference",
+      "cmd": "python tools/city/check_lane_stubs.py F:/dev/skyrush-out/tmp/roads-junction-stubs/full/lanes.json --ref F:/dev/skyrush-out/tmp/roads-junction-stubs/ref_lanes.json",
+      "must": [
+        "LANE_STUBS OK"
+      ]
+    },
+    {
+      "name": "no lane dead-ends at a junction (the 4 dead ends of the reference that are left)",
+      "cmd": "python tools/city/check_lane_graph.py F:/dev/skyrush-out/tmp/roads-junction-stubs/full/lanes.json --max-junction-termini 4",
+      "must": [
+        "LANE_GRAPH OK"
+      ]
+    },
+    {
+      "name": "the two-way roads of a junction can be left there (8 explained cases left, outside the files of the job)",
+      "cmd": "python tools/city/check_junction_exits.py data/city/city.json F:/dev/skyrush-out/tmp/roads-junction-stubs/full/lanes.json --max 8",
+      "must": [
+        "JUNCTION_EXITS OK"
+      ]
+    },
+    {
+      "name": "no duplicate connectors, the chains are linked",
+      "cmd": "python tools/city/check_lane_dupes.py F:/dev/skyrush-out/tmp/roads-junction-stubs/full/lanes.json --quiet && python tools/city/check_chain_links.py F:/dev/skyrush-out/tmp/roads-junction-stubs/full/lanes.json --quiet",
+      "must": [
+        "LANE_DUPES OK",
+        "CHAIN_LINKS OK"
+      ]
+    },
+    {
+      "name": "every race route is drivable",
+      "timeoutS": 900,
+      "cmd": "python tools/city/check_routes_drivable.py data/city/city.json F:/dev/skyrush-out/tmp/roads-junction-stubs/full/lanes.json",
+      "must": [
+        "ROUTES_DRIVABLE OK"
+      ]
+    },
+    {
+      "name": "the road surface does not lose coverage",
+      "timeoutS": 900,
+      "cmd": "python tools/city/check_surface_coverage.py F:/dev/skyrush-out/tmp/roads-junction-stubs/tiles F:/dev/skyrush-out/tmp/roads-junction-stubs/full/lanes.json --max-bad 3895",
+      "must": [
+        "SURFACE_COVERAGE bad samples"
+      ]
+    },
+    {
+      "name": "no lane of the city is walled off",
+      "timeoutS": 900,
+      "cmd": "python tools/city/check_path_blockers.py F:/dev/skyrush-out/tmp/roads-junction-stubs/tiles --lanes F:/dev/skyrush-out/tmp/roads-junction-stubs/full/lanes.json --max-bad 25 --max-barrier-area 395000",
+      "must": [
+        "PATH_BLOCKERS OK"
+      ]
+    },
+    {
+      "name": "the open deck edges do not grow",
+      "timeoutS": 900,
+      "cmd": "python tools/city/check_open_edges.py F:/dev/skyrush-out/tmp/roads-junction-stubs/tiles F:/dev/skyrush-out/tmp/roads-junction-stubs/full/lanes.json --max-regular 181 --max-connector 14 --top 0",
+      "must": [
+        "OPEN_EDGES OK"
+      ]
+    }
+  ]
+}

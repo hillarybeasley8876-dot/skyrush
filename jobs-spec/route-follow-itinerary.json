@@ -7,7 +7,7 @@
     "tools/city/city_marks_routes.py",
     "data/city/city.json"
   ],
-  "maxRounds": 5,
+  "maxRounds": 7,
   "maxTurns": 300,
   "timeoutMin": 240,
   "accept": [
@@ -29,7 +29,7 @@
     {
       "name": "every race drives its itinerary",
       "timeoutS": 900,
-      "cmd": "python tools/city/check_route_itinerary.py data/city/city.json H:/dev/skyrush/game/world/data/lanes.json --routes grand_loop,elevated_sprint,river_loop,lujiazui_ring",
+      "cmd": "python tools/city/check_route_itinerary.py data/city/city.json H:/dev/skyrush/game/world/data/lanes.json",
       "must": [
         "ROUTE_ITINERARY OK"
       ]

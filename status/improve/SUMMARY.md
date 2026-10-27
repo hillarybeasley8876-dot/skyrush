@@ -374,6 +374,21 @@ of side streets without a gate. It goes on by Beijing E Rd, Fujian Rd, the Yan'a
 (M3.1 job route-grand-loop, one round): 34 gates, 15.8 km, the last gate 390 m from the first (`tools/city/check_route_loop.py`;
 `check_routes_drivable.py` OK for every route). The gate boards of 34 gates are drawn, the 27 of the old loop deleted.
 
+## The roads a car could turn onto but not off (merged in code, not installed yet)
+
+17 two-way roads ran through a junction that entered them: a side street that ends at the kerb of a main road puts the centre of
+the junction beside the main road (Henan Rd at `st_d2_ew_4`: 18.5 m off its centre line), the main road was cut only within a
+radius of the centre and kept its lanes through the junction, so the side streets could turn onto it and nobody could turn off it
+(the way of three races to the Bund). M3.1 job roads-junction-exits cuts a road where its junction stands on it (17 -> 8, the 8
+explained in its status file; `tools/city/check_junction_exits.py`); the lead moved the hole logic into `junction_holes.py`
+(the build stayed byte for byte the same). The road surface of the new build is checked against the old one by coverage, not by
+triangles: the big corner flaps of asphalt at the wide junctions are gone, the gaps of Century Ave are closed, and the street
+furniture stands on asphalt as often as before (814 solid props against 839). **The build is not installed**: where two junctions
+stand close together the shared cut leaves 6 m of road between them, and its lanes are dead ends (all three southbound lanes of the
+Lujiazui Ring Rd) or cannot be entered (26 new orphan lanes, Century Ave among them): `game/.../test_lanes.gd` "no lane dead-ends
+at a junction" went from 5 to 10. `tools/city/check_lane_stubs.py` (with its selftest) compares a build with the one before;
+M3.1 job roads-junction-stubs fixes the cuts. Until then the committed tiles and `lanes.json` are the ones before the job.
+
 ## Tools added (game/tools, tools/)
 
 `frame_probe.gd` (the frames of a whole-game drive, split; A/B switches), `spot_probe.gd` (what stands at a place, what the
@@ -387,7 +402,8 @@ hands-off: the peaks of the turn, the bank, the g, the landing), `smooth_probe.g
 traffic cars move on the screen), `fuzz_drive.gd --jumps=1` (a car moved by hand in sight), `parapet_probe.gd` (cars driven into the parapets and the medians of the elevated roads), `tools/city/restamp_blocks.py`,
 `tools/city/check_joint_runoff.py` (straight rays from the lane ends at the deck joints: fenced, road or open),
 `tools/city/check_tunnel_portals.py` (no street on an open trough; a rule of validate.py), `tools/city/check_tunnel_build.py` (the
-tunnel in the built tiles), `tools/city/check_route_loop.py`,
+tunnel in the built tiles), `tools/city/check_route_loop.py`, `tools/city/check_route_itinerary.py`, `tools/city/check_junction_exits.py`,
+`tools/city/check_lane_dupes.py`, `tools/city/check_lane_stubs.py`,
 `tools/run_follow.py` (follow trials),
 `blender/city/roads/edgewalls.py`, `blender/city/roads/buildingcut.py`.
 

@@ -83,8 +83,8 @@ data/city/city.json` (the Godot test of the acceptance reads it). Everything els
 ## Acceptance (the runner executes these itself, in order)
 1. `python tools/city/build_city.py --out data/city/city.json` prints `json size`.
 2. Only the routes change: every key of the new city.json but `routes` is the same as in `F:/dev/skyrush-out/tmp/route-follow/ref_city.json`.
-3. `check_route_itinerary.py data/city/city.json H:/dev/skyrush/game/world/data/lanes.json --routes grand_loop,elevated_sprint,river_loop,lujiazui_ring`
-   prints `ROUTE_ITINERARY OK` (bund_sprint is excused, see "Lead decisions").
+3. `check_route_itinerary.py data/city/city.json H:/dev/skyrush/game/world/data/lanes.json` prints `ROUTE_ITINERARY OK` (all five
+   routes; see "Lead decisions (round 5)").
 4. `check_routes_drivable.py data/city/city.json H:/dev/skyrush/game/world/data/lanes.json` prints `ROUTES_DRIVABLE OK`.
 5. `accept_rules.py data/city/city.json --baseline tools/city/rules_baseline.json` prints `ACCEPT_RULES OK`.
 6. `check_route_loop.py data/city/city.json F:/dev/skyrush-out/tmp/route-follow/ref_city.json --loop-only` prints `ROUTE_LOOP OK`
@@ -107,6 +107,31 @@ data/city/city.json` (the Godot test of the acceptance reads it). Everything els
   Bund.
 - The lane graph of the game changed under you (the duplicate connectors are gone, job roads-lane-dupes): the checks read
   `H:/dev/skyrush/game/world/data/lanes.json` now (the lead's current one), not the copy in your worktree.
+
+## Lead decisions (round 5)
+- **The lanes of the game did not change** since round 4: the build of job roads-junction-exits (it adds the turn from Henan Rd onto
+  `st_d2_ew_4`) left dead-end lanes and was not installed; job roads-junction-stubs fixes it. The acceptance reads
+  `H:/dev/skyrush/game/world/data/lanes.json` as before. When the new lanes land, the lead re-runs your acceptance on them.
+- **bund_sprint**: your itinerary (Dongchang Rd and `st_d1_ew_7` instead of `st_d2_ew_4`) is accepted: it keeps the Bund, Nanjing
+  E Rd and the tunnel, the map does not change, and the race drives it. It is **no longer excused**: acceptance 3 checks all five
+  routes now.
+- What fails with your `city.json` today (the lead ran `check_route_itinerary.py data/city/city.json
+  H:/dev/skyrush/game/world/data/lanes.json`, all routes): `ROUTE_ITINERARY FAIL 7`
+
+      OFF_ITINERARY grand_loop leg 29->30: 258 m off the itinerary (st_d4_ns_11 60 m, st_d4_ew_6 198 m)
+      SKIPPED grand_loop: the race never drives st_nanjing_e_rd
+      SKIPPED grand_loop: the race never drives bund_zhongshan_e1
+      OFF_ITINERARY river_loop leg 9->10: 120 m off the itinerary (st_hankou_rd 84 m, st_sichuan_rd 36 m)
+      SKIPPED river_loop: the race never drives st_d1_ew_7
+      OFF_ITINERARY lujiazui_ring leg 0->1: 96 m off the itinerary (st_d7_ns_5 66 m, st_d7_ew_17 30 m)
+      OFF_ITINERARY lujiazui_ring leg 3->4: 210 m off the itinerary (st_d7_ns_15 150 m, st_d7_ew_10 60 m)
+
+- **The grand loop must really drive Nanjing E Rd and the Bund** (the point of the job). Measured on the map: the grand loop drives
+  155 m of Nanjing E Rd (from the junction of Dongchang Rd, 155 m along the road, to the Bund at 0 m) and 165 m of the Bund (from
+  Nanjing E Rd, 567 m along `bund_zhongshan_e1`, to Beijing E Rd at 732 m). Both are longer than the shortest leg the rule allows
+  (`CHECKPOINT_MIN` = 150 m since commit ae67d94): a gate on each of them is allowed, and without one the shortest way between the
+  gates before and after does not take them. Do not change the constants or the rule.
+- `maxRounds` is 7: you have up to three more rounds.
 
 ## Pitfalls
 - The rule "route checkpoints on the lanes" wants 300-500 m of driving between two gates, measured with the shortest path of the
