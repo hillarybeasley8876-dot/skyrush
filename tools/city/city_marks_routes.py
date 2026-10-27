@@ -18,14 +18,18 @@ from city_rules_graph import build_lane_graph, driven_distance
 ROUTE_SPECS = [
     # the Yan'an elevated road, the dragon interchange, the N-S elevated
     # road, the inner ring, the Nanpu spiral and bridge, the Pudong loop,
-    # the Century Ave, the tunnel, the Henan Rd and the Bund
+    # the Century Ave, the tunnel, the Henan Rd, the Bund, the Beijing Rd,
+    # the Fujian Rd, the Yan'an Rd and the D9 grid, back to the G50 and to
+    # the start of the elevated road
     ("grand_loop", "申城大环线", "race", [
         ("yanan_elevated", 1), ("ramp_rt_eb_sb", 1), ("ns_elevated", 1),
         ("inner_ring", 1), ("nanpu_spiral_upper", 1), ("nanpu_bridge", 1),
         ("nanpu_pudong_loop", 1), ("pudong_south_rd", -1),
         ("century_ave", -1), ("yanan_tunnel", -1), ("st_fujian_portal", -1),
         ("st_henan_rd", 1), ("st_d2_ew_4", 1), ("st_nanjing_e_rd", -1),
-        ("bund_zhongshan_e1", 1)]),
+        ("bund_zhongshan_e1", 1), ("st_beijing_e_rd", 1), ("st_fujian_rd", -1),
+        ("yanan_rd_surface", -1), ("st_d9_ns_8", 1), ("st_d9_ew_8", -1),
+        ("st_d9_ns_2", -1), ("g50_west", 1)]),
     # the elevated road, the dragon interchange, the N-S elevated road,
     # the inner ring, the Nanpu spiral and bridge and the tunnel
     ("elevated_sprint", "高架冲刺", "sprint", [
