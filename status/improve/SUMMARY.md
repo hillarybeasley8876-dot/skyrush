@@ -90,6 +90,11 @@ thrown up without a hop, the last 6 s of the car (position, speed, wheels, what 
   degrees of turning), the racing line turns off the ring onto the side streets and four rivals need the marshal at the start.
   M3.1 job roads-connector-curves makes the curves smooth; which copy a movement keeps (`lane_links._add_movement`) waits for
   roads-junction-stubs, which owns that file now.
+* The Yan'an elevated lands on the lanes of the Yan'an surface road: its last 80 m (x -600 to -520, 2 m down to 0) run 1.4 m
+  from the centre line of the surface road (its `attach_end` is on the left side), so the surface lanes pass under a deck 0.3-2
+  m high (`roads/test_drive_collision`: 109 of its 179 blocked samples are there). The ramp has to land beside the surface road.
+* The first corner of the Bund sprint: since the Bund can turn into Nanjing E Rd, the race turns there 200 m after the grid, six
+  cars from three lanes into two; `rivals/test_real_route` counts 3 hits over 800 N*s, `test_real_start` one rival stuck.
 * About 830 trees, lamps and signs stand on the asphalt of a junction (808 of them within 25 m of its centre): the furniture
   filter keeps a box of 8 m and the mouths free, a wide or offset junction is bigger than that.
 
