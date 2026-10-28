@@ -60,6 +60,24 @@ The test prints the legs of every route and, per route, `INFO route <id>: <sampl
    `no forward path`, `cannot reach`.
 2. `python -c "import json; c=json.load(open('data/city/test_city.json',encoding='utf-8')); r=[x for x in c['routes'] if x['id']=='test_loop'][0]; ok=r['kind']=='race' and r['laps']==2 and len(r['checkpoints'])>=4 and any(p[1]>=8 for p in r['checkpoints']) and r['grid']==[-450,0,-5,90]; print('TEST_LOOP_SHAPE OK' if ok else 'TEST_LOOP_SHAPE FAIL')"` prints `TEST_LOOP_SHAPE OK`.
 
+## Lead decisions (round 2)
+Round 1 is not accepted: `test_circuit` is a second road drawn over the ones the test city has. 52 of its points lie on the
+corridor of `main_ew` (z = 0), its elevated part runs on the deck of `elev_ew` (z = 60, y = 10), it is 2222 m long and joined to
+nothing; the race runs on it alone, and its gate "on the elevated road" stands on `test_circuit`, not on `elev_ew`. The race of
+the test city has to run on the roads of the test city.
+- Take `test_circuit` out. Join the roads with **short link roads** (each under 400 m) whose two ends meet existing roads, with a
+  junction record that lists the link and the road it meets (or an attach, like `off_ramp_e`). For example: from the east end of
+  `main_ew` (500, 0, 0) to the east end of `elev_ew` (480, 0, 60), and from the west end of `elev_ew` (-480, 0, 60) to the west
+  end of `main_ew` (-500, 0, 0). The game joins the lanes of roads that meet at a junction record and the lane ends that come close
+  to another road (`game/world/api/lane_links.gd`: `_link_junctions`, `_link_turns`, `_link_proximity`); read it to see which
+  ends it joins.
+- `test_loop` has gates on `main_ew` (at ground level) and on `elev_ew` where it is at least 8 m up (the original gates
+  (0, 0, -5, 90) and (0, 10, 64, 270) are such places), in the order the race drives: `main_ew`, a link, `elev_ew`, a link, back.
+- New acceptance step 3: `python tools/city/check_test_city.py data/city/test_city.json F:/dev/skyrush-out/tmp/test_city_ref.json`
+  prints `TEST_CITY OK` (read its docstring: CHANGED, ALONG, LONG, LOOSE_END, GATES). On your round 1 it prints `ALONG
+  test_circuit: 433 of 476 samples run along an existing road`, `LONG test_circuit: 2222 m`, two `LOOSE_END`, `GATES` (no gate on
+  main_ew, none on elev_ew).
+
 ## Pitfalls
 - The real city (`data/city/city.json`) is checked by the same test: its routes pass today and must stay so (you do not touch it).
 - A gate stands on a lane, faces along the race, and the shortest lane path between two gates is the racing line: a gate just past
