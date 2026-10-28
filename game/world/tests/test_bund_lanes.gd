@@ -18,7 +18,9 @@ const PROBE_LIFT := 0.71
 const MAX_HITS := 0
 ## The part of the lanes that has to be left (a pass that deletes the lanes passes this test too).
 const MIN_SAMPLES := 3000
-const MIN_STREET_LANES := 11000
+## The lanes of the city (a build that loses lanes fails here): 11,359 with the duplicate connectors of the offset crossings,
+## 10,790 since roads-lane-dupes removed the 665 duplicates (and the junction jobs added the movements of 130 approaches).
+const MIN_STREET_LANES := 10500
 
 var _failures: int = 0
 

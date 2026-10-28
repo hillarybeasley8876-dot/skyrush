@@ -14,7 +14,7 @@ turns into it, so the traffic keeps the lane it was in.
 import math
 
 from city.roads import junctions as jn
-from city.roads import lane_links
+from city.roads import buildingcut, lane_links
 
 
 def feed_exits(city, lanes, links):
@@ -31,6 +31,10 @@ def feed_exits(city, lanes, links):
     fed = set(link["to"] for link in links)
     seen = set(lane["id"] for lane in lanes)
     left = _left_roads(links, by_id)
+    # the movements are added after the lanes were cut at the buildings of the Bund (buildingcut): a movement
+    # that runs through a building is not added (a left turn of Nanjing E Rd into Sichuan Rd ran 36 m through
+    # the back of Sassoon House)
+    boxes = buildingcut.footprints() if "bund_zhongshan_e1" in city.by_id else []
     made = 0
     for junction in city.junctions:
         arms, centre = jn.arm_geometry(city, junction)
@@ -53,12 +57,26 @@ def feed_exits(city, lanes, links):
                 lane_links.add_movement(lanes, links, seen, junction, src, dst, kind, centre, fan)
                 if len(links) == before:
                     continue      # the movement could not be built
+                if _through_building(boxes, lanes[-1]):
+                    lanes.pop()
+                    del links[before:]
+                    continue
                 src["next"].append(links[before]["to"])
                 fed.add(dst["id"])
                 made += 1
     if made:
         print("LANES %d lanes that leave a junction got a movement" % made)
     return made
+
+
+def _through_building(boxes, lane):
+    """True when a point of the lane lies in (or within buildingcut.MARGIN of) a building of the Bund."""
+    if not boxes:
+        return False
+    pts = lane["points"]
+    if pts[0][1] > buildingcut.ELEVATED and pts[-1][1] > buildingcut.ELEVATED:
+        return False
+    return any(buildingcut._inside(boxes, p[0], p[2]) is not None for p in pts)
 
 
 def _left_roads(links, by_id):
