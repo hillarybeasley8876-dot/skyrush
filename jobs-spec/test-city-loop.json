@@ -28,6 +28,13 @@
       "must": [
         "TEST_LOOP_SHAPE OK"
       ]
+    },
+    {
+      "name": "the race runs on the roads of the test city (no road drawn over another, links joined at junctions)",
+      "cmd": "python tools/city/check_test_city.py data/city/test_city.json F:/dev/skyrush-out/tmp/test_city_ref.json",
+      "must": [
+        "TEST_CITY OK"
+      ]
     }
   ]
 }
