@@ -1,0 +1,95 @@
+{
+  "id": "roads-dead-end-uturns",
+  "title": "No lane ends at a junction without a way on (a road that ends where it cannot go on turns round)",
+  "brief": "briefs/improve/roads-dead-end-uturns.md",
+  "isolation": "worktree",
+  "owns": [
+    "blender/city/roads/lane_links.py",
+    "blender/city/roads/lane_turnround.py",
+    "game/world/data/lanes.json"
+  ],
+  "maxRounds": 4,
+  "maxTurns": 300,
+  "timeoutMin": 240,
+  "accept": [
+    {
+      "name": "full Blender road build into the scratch directory",
+      "timeoutS": 1800,
+      "cmd": "python tools/gd.py blender run blender/city/roads/build_roads.py -- --out F:/dev/skyrush-out/tmp/roads-dead-end-uturns/tiles --data F:/dev/skyrush-out/tmp/roads-dead-end-uturns/full",
+      "must": [
+        "DONE in"
+      ]
+    },
+    {
+      "name": "no lane dead-ends at a junction",
+      "cmd": "python tools/city/check_lane_graph.py F:/dev/skyrush-out/tmp/roads-dead-end-uturns/full/lanes.json --max-junction-termini 0",
+      "must": [
+        "LANE_GRAPH OK"
+      ]
+    },
+    {
+      "name": "no new dead end or orphan lane",
+      "cmd": "python tools/city/check_lane_stubs.py F:/dev/skyrush-out/tmp/roads-dead-end-uturns/full/lanes.json --ref F:/dev/skyrush-out/tmp/roads-dead-end-uturns/ref_lanes.json",
+      "must": [
+        "LANE_STUBS OK"
+      ]
+    },
+    {
+      "name": "the connectors stay smooth",
+      "cmd": "python tools/city/check_connector_shape.py F:/dev/skyrush-out/tmp/roads-dead-end-uturns/full/lanes.json --max 100 --quiet",
+      "must": [
+        "CONNECTOR_SHAPE OK"
+      ]
+    },
+    {
+      "name": "the junction exits, no duplicates, the chains",
+      "cmd": "python tools/city/check_junction_exits.py data/city/city.json F:/dev/skyrush-out/tmp/roads-dead-end-uturns/full/lanes.json --max 5 --quiet && python tools/city/check_lane_dupes.py F:/dev/skyrush-out/tmp/roads-dead-end-uturns/full/lanes.json --quiet && python tools/city/check_chain_links.py F:/dev/skyrush-out/tmp/roads-dead-end-uturns/full/lanes.json --quiet",
+      "must": [
+        "JUNCTION_EXITS OK",
+        "LANE_DUPES OK",
+        "CHAIN_LINKS OK"
+      ]
+    },
+    {
+      "name": "every race route is drivable",
+      "timeoutS": 900,
+      "cmd": "python tools/city/check_routes_drivable.py data/city/city.json F:/dev/skyrush-out/tmp/roads-dead-end-uturns/full/lanes.json",
+      "must": [
+        "ROUTES_DRIVABLE OK"
+      ]
+    },
+    {
+      "name": "no lane of the city is walled off",
+      "timeoutS": 900,
+      "cmd": "python tools/city/check_path_blockers.py F:/dev/skyrush-out/tmp/roads-dead-end-uturns/tiles --lanes F:/dev/skyrush-out/tmp/roads-dead-end-uturns/full/lanes.json --max-bad 25 --max-barrier-area 395000",
+      "must": [
+        "PATH_BLOCKERS OK"
+      ]
+    },
+    {
+      "name": "the U-turns are wide enough and few",
+      "cmd": "python tools/city/check_new_uturns.py F:/dev/skyrush-out/tmp/roads-dead-end-uturns/full/lanes.json --ref F:/dev/skyrush-out/tmp/roads-dead-end-uturns/ref_lanes.json --min-chord 12 --max 12",
+      "must": [
+        "UTURNS OK"
+      ]
+    },
+    {
+      "name": "the lanes of the build go into the game",
+      "cmd": "python -c \"import shutil; shutil.copyfile('F:/dev/skyrush-out/tmp/roads-dead-end-uturns/full/lanes.json', 'game/world/data/lanes.json'); print('INSTALLED')\"",
+      "must": [
+        "INSTALLED"
+      ]
+    },
+    {
+      "name": "test_lanes passes",
+      "timeoutS": 1800,
+      "cmd": "python tools/gd.py test res://assets/city/roads/tests/test_lanes.gd -- --timeout=600",
+      "must": [
+        "PASS no lane dead-ends at a junction"
+      ],
+      "mustNot": [
+        "FAIL "
+      ]
+    }
+  ]
+}
