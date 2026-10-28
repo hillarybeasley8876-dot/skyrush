@@ -133,6 +133,18 @@ data/city/city.json` (the Godot test of the acceptance reads it). Everything els
   gates before and after does not take them. Do not change the constants or the rule.
 - `maxRounds` is 7: you have up to three more rounds.
 
+## Lead decisions (round 6)
+- **The lanes of the game are new** (jobs roads-junction-exits, roads-junction-stubs and roads-connector-curves are merged): a road
+  is cut where a side street meets it beside its centre line (Henan Rd now turns into `st_d2_ew_4`, the Bund into Nanjing E Rd),
+  two junctions close together share one cut, the connectors are smooth curves. `H:/dev/skyrush/game/world/data/lanes.json` is
+  the new graph, and your worktree has the new lanes and road tiles too (the lead merged them: `test_route_layers.gd` imports
+  the new tiles on its first run, a few minutes). The acceptance reads them.
+- Your `city.json` of the end of round 5 on the new lanes: `ROUTES_DRIVABLE OK` (0 bad legs, 0 reversals on every route) and
+  `ROUTE_ITINERARY FAIL 1`: `SKIPPED river_loop: the race never drives bund_zhongshan_e1`. The rules gate of round 5:
+  `route river_loop: # m between cp08 and cp09` and `cp11 cannot be reached from cp10` (the Python graph).
+- Round 5 ran out of turns (300 tool calls). `maxRounds` is 9 now. Keep your status file short and current: write the state
+  of the five routes into it before you run long experiments.
+
 ## Pitfalls
 - The rule "route checkpoints on the lanes" wants 300-500 m of driving between two gates, measured with the shortest path of the
   Python graph. A leg whose shortest path is under 300 m while it is 400 m along the itinerary is a place where the race would cut:
