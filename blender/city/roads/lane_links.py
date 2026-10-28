@@ -610,6 +610,12 @@ def link_chains(city, lanes, segments, links):
     for road, here, parent, there in _chain_joints(city):
         _chain_joint(by_road, segments, lanes, links, succ, fed,
                      road, here, parent, there)
+    # The turn round of the roads that end at a crossing comes last: a lane
+    # that arrives at a junction and that no movement leads out of turns round
+    # (lane_turnround).  It runs after the junctions, the attaches and the
+    # chains, so a lane that already has a way on is left alone.
+    from city.roads import lane_turnround
+    lane_turnround.turn_arounds(city, lanes, links)
 
 
 def _chain_joints(city):
