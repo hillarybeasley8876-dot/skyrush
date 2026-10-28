@@ -83,20 +83,19 @@ thrown up without a hop, the last 6 s of the car (position, speed, wheels, what 
 * `st_d7b_ew_11`: the right turn into it from `st_d7b_ns_7` goes to the far end of the lane of the other direction (92 m, over the
   river); `st_link_25/33` start 10-15 m out over the river (roads data; `tools/spawn_height_probe.gd` lists them).
 * 18,329 tree trunks (0.25 m) stop a car dead: they stand (a street tree is a tree), they cost 40 % of the damage of a wall.
-* The junction connectors: 1093 of 7261 loop, back up or turn a corner in one step (`tools/city/check_connector_shape.py`;
-  `lane_paths.clamp_to_fill` moves every sample outside the fill of a junction to the nearest point of its outline). Since the
-  duplicate connectors were removed (7b54859) `rivals/test_real_start` fails: of the two copies of the straight movement of
-  Lujiazui Ring Rd at the offset crossing st_d7_ew_16 / st_d7_ew_17 the first junction kept a 61.6 m loop (chord 24.2 m, 167
-  degrees of turning), the racing line turns off the ring onto the side streets and four rivals need the marshal at the start.
-  M3.1 job roads-connector-curves makes the curves smooth; which copy a movement keeps (`lane_links._add_movement`) waits for
-  roads-junction-stubs, which owns that file now.
+* 629 movements are built by two junction records of one crossing, and the first junction keeps its copy
+  (`lane_links._add_movement`): the copy of the other junction may be the better curve. 94 connectors still loop or kink, where
+  no curve stays on the asphalt (two fills with ground between them).
 * The Yan'an elevated lands on the lanes of the Yan'an surface road: its last 80 m (x -600 to -520, 2 m down to 0) run 1.4 m
   from the centre line of the surface road (its `attach_end` is on the left side), so the surface lanes pass under a deck 0.3-2
   m high (`roads/test_drive_collision`: 109 of its 179 blocked samples are there). The ramp has to land beside the surface road.
-* The first corner of the Bund sprint: since the Bund can turn into Nanjing E Rd, the race turns there 200 m after the grid, six
-  cars from three lanes into two; `rivals/test_real_route` counts 3 hits over 800 N*s, `test_real_start` one rival stuck.
-* About 830 trees, lamps and signs stand on the asphalt of a junction (808 of them within 25 m of its centre): the furniture
-  filter keeps a box of 8 m and the mouths free, a wide or offset junction is bigger than that.
+* The first corner of the Bund sprint: since the Bund can turn into Nanjing E Rd, the race turns there 230 m after the grid,
+  six cars from three lanes into two; `rivals/test_real_route` counts 3 hits over 800 N*s there (up to 30,000 N*s),
+  `test_real_start` two rivals stuck. The rivals have to queue for a corner that is narrower than the field.
+* The noise walls of the Yan'an elevated: the furniture filter drops a prop on the parapet of a deck when the mouth of a surface
+  junction below covers it (it compares the lanes it looks at, not the level): 7 of the 19 walls are placed.
+* `tools/city/city_marks_routes.py` has 961 lines (the rule of the repo is 400): the gate placement and the model of the game's
+  routing are modules of their own.
 
 ## The frame rate (the player: "the frame rate is not stable")
 
@@ -388,20 +387,57 @@ of side streets without a gate. It goes on by Beijing E Rd, Fujian Rd, the Yan'a
 (M3.1 job route-grand-loop, one round): 34 gates, 15.8 km, the last gate 390 m from the first (`tools/city/check_route_loop.py`;
 `check_routes_drivable.py` OK for every route). The gate boards of 34 gates are drawn, the 27 of the old loop deleted.
 
-## The roads a car could turn onto but not off (merged in code, not installed yet)
+## The roads a car could turn onto but not off, and the lane graph of the junctions
 
 17 two-way roads ran through a junction that entered them: a side street that ends at the kerb of a main road puts the centre of
 the junction beside the main road (Henan Rd at `st_d2_ew_4`: 18.5 m off its centre line), the main road was cut only within a
 radius of the centre and kept its lanes through the junction, so the side streets could turn onto it and nobody could turn off it
-(the way of three races to the Bund). M3.1 job roads-junction-exits cuts a road where its junction stands on it (17 -> 8, the 8
-explained in its status file; `tools/city/check_junction_exits.py`); the lead moved the hole logic into `junction_holes.py`
-(the build stayed byte for byte the same). The road surface of the new build is checked against the old one by coverage, not by
-triangles: the big corner flaps of asphalt at the wide junctions are gone, the gaps of Century Ave are closed, and the street
-furniture stands on asphalt as often as before (814 solid props against 839). **The build is not installed**: where two junctions
-stand close together the shared cut leaves 6 m of road between them, and its lanes are dead ends (all three southbound lanes of the
-Lujiazui Ring Rd) or cannot be entered (26 new orphan lanes, Century Ave among them): `game/.../test_lanes.gd` "no lane dead-ends
-at a junction" went from 5 to 10. `tools/city/check_lane_stubs.py` (with its selftest) compares a build with the one before;
-M3.1 job roads-junction-stubs fixes the cuts. Until then the committed tiles and `lanes.json` are the ones before the job.
+(the way of three races to the Bund). Five M3.1 jobs and the lead's checks, one after the other:
+* roads-junction-exits cuts a road where its junction stands on it (17 -> 8; `tools/city/check_junction_exits.py`; the lead moved
+  the hole logic into `junction_holes.py`). Its build was held back: where two junctions stand close together the shared cut left
+  6 m of road between them, whose lanes were dead ends (all three southbound lanes of the Lujiazui Ring Rd) or orphans (26, Century
+  Ave among them) - the lane-graph check had no limit on the dead ends (`--max-junction-termini`), the lead's acceptance gap.
+* roads-junction-stubs: two junctions closer than a lane share one cut (`junction_holes.cut_group`), a lane that leaves a junction
+  and that nothing leads into gets a movement (`lane_stubs.py`): 0 new dead ends or orphans (`tools/city/check_lane_stubs.py`),
+  5 roads run through a junction.
+* roads-connector-curves: 1093 of the 7261 junction connectors looped, backed up or turned a corner in one step
+  (`tools/city/check_connector_shape.py`): `lane_paths.clamp_to_fill` moved every sample outside the fill of a junction onto its
+  outline. The shape is searched now (`connector_curve.py`); 94 are left where no curve can stay on the asphalt. The duplicate
+  connectors that roads-lane-dupes removed had kept a 61.6 m loop on the Lujiazui Ring Rd (the race turned off the ring there and
+  four rivals needed the marshal at its start, `rivals/test_real_start`); with the curves that start is clean.
+* roads-dead-end-uturns: an approach with no other arm to drive into turns round on a radius of 6 m (Pudong South Rd at the foot
+  of the one-way Nanpu ramp; `tools/city/check_new_uturns.py`): no lane dead-ends at a junction, `roads/test_lanes` passes.
+The road surface of each build was compared with the one before by coverage, not by triangles (the same area triangulated again is
+no change): the big corner flaps of asphalt of the wide junctions are gone, the gaps of Century Ave are closed, 3748 surface samples
+are off the road (3895). The street furniture of the junctions was dumped from the game and compared: as often on asphalt as before.
+
+## The street furniture stands on the sidewalk
+
+`blender/city/roads/furniture.py` put the trees, the lamps and the shelters half the lanes of one side out from the centre line:
+in the outer lane (99 % of the 19,115 trees, 95 % of the lamps). The game's furniture filter pushed 27,487 of them onto the
+sidewalk at every load, and where there is no sidewalk, in a junction, 841 solid props stayed on the asphalt (a tree 2.65 m from
+the centre of a turning lane). M3.1 job road-furniture-sidewalks places every prop on the sidewalk of its side and none in the cut
+of a junction (`tools/city/check_furniture_ground.py` on the build and on `game/tools/furniture_dump.gd`, the props the game
+places): 0.7 % of the solid props of the build stand on asphalt, 58 of what the game places, none is moved at load. The traffic
+light masts stand at the kerb of their arm with the arm over the lanes (the arm of the glb is on -Z; it reached along the road).
+One street-name plate per arm (at the kerb of the approach), the trees every 5.25 m (10.5 m on a side).
+
+## The races drive their itineraries
+
+The game builds the racing line as the shortest lane path between two gates, and the generator placed the gates by shortest-path
+distance too: where an itinerary came back near itself the race skipped it (the grand loop never drove Nanjing E Rd and the Bund,
+the river loop never drove Century Ave, the Lujiazui ring cut across by side streets; `tools/city/check_route_itinerary.py`). M3.1
+job route-follow-itinerary (7 rounds; the lanes changed under it twice) measures the gate distance along the itinerary and models
+the game's routing to put a gate before every turn the race would cut: every route drives its itinerary (36 gates on the grand
+loop, 23, 11, 6, 7), 0 reversals, the map unchanged but its routes. The gate boards of 36, 23, 11 and 7 gates are drawn, the ones
+of 34, 25 and 12 deleted; the building sidecars restamped (the map changed only in its routes).
+
+## The circuit of the test city
+
+The race of `data/city/test_city.json` (test_world_api) could not be driven: its lane graph had no loop. Round 1 of M3.1 job
+test-city-loop drew a second road of 2222 m over main_ew and over the deck of elev_ew, joined to nothing (the lead rejected it:
+`tools/city/check_test_city.py`); round 2 joins the ends of main_ew and elev_ew with two links at junction records:
+`world/test_world_api` passes (670 checks).
 
 ## Tools added (game/tools, tools/)
 
@@ -417,7 +453,8 @@ traffic cars move on the screen), `fuzz_drive.gd --jumps=1` (a car moved by hand
 `tools/city/check_joint_runoff.py` (straight rays from the lane ends at the deck joints: fenced, road or open),
 `tools/city/check_tunnel_portals.py` (no street on an open trough; a rule of validate.py), `tools/city/check_tunnel_build.py` (the
 tunnel in the built tiles), `tools/city/check_route_loop.py`, `tools/city/check_route_itinerary.py`, `tools/city/check_junction_exits.py`,
-`tools/city/check_lane_dupes.py`, `tools/city/check_lane_stubs.py`,
+`tools/city/check_lane_dupes.py`, `tools/city/check_lane_stubs.py`, `tools/city/check_connector_shape.py`,
+`tools/city/check_furniture_ground.py` (with `game/tools/furniture_dump.gd`), `tools/city/check_new_uturns.py`, `tools/city/check_test_city.py`,
 `tools/run_follow.py` (follow trials),
 `blender/city/roads/edgewalls.py`, `blender/city/roads/buildingcut.py`.
 
